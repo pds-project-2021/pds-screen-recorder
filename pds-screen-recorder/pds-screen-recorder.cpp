@@ -1,20 +1,41 @@
-// pds-screen-recorder.cpp : Questo file contiene la funzione 'main', in cui inizia e termina l'esecuzione del programma.
-//
+#include <gtk/gtk.h>
 
-#include <iostream>
-
-int main()
+static void
+print_hello(GtkWidget* widget,
+    gpointer   data)
 {
-    std::cout << "Hello World!\n";
+    g_print("Hello World\n");
 }
 
-// Per eseguire il programma: CTRL+F5 oppure Debug > Avvia senza eseguire debug
-// Per eseguire il debug del programma: F5 oppure Debug > Avvia debug
+static void
+activate(GtkApplication* app,
+    gpointer        user_data)
+{
+    GtkWidget* window;
+    GtkWidget* button;
 
-// Suggerimenti per iniziare: 
-//   1. Usare la finestra Esplora soluzioni per aggiungere/gestire i file
-//   2. Usare la finestra Team Explorer per connettersi al controllo del codice sorgente
-//   3. Usare la finestra di output per visualizzare l'output di compilazione e altri messaggi
-//   4. Usare la finestra Elenco errori per visualizzare gli errori
-//   5. Passare a Progetto > Aggiungi nuovo elemento per creare nuovi file di codice oppure a Progetto > Aggiungi elemento esistente per aggiungere file di codice esistenti al progetto
-//   6. Per aprire di nuovo questo progetto in futuro, passare a File > Apri > Progetto e selezionare il file con estensione sln
+    window = gtk_application_window_new(app);
+    gtk_window_set_title(GTK_WINDOW(window), "Window");
+    gtk_window_set_default_size(GTK_WINDOW(window), 200, 200);
+
+    button = gtk_button_new_with_label("Hello World");
+    g_signal_connect(button, "clicked", G_CALLBACK(print_hello), NULL);
+    gtk_window_set_child(GTK_WINDOW(window), button);
+
+    gtk_window_present(GTK_WINDOW(window));
+}
+
+int
+main(int    argc,
+    char** argv)
+{
+    GtkApplication* app;
+    int status;
+
+    app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
+    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+    status = g_application_run(G_APPLICATION(app), argc, argv);
+    g_object_unref(app);
+
+    return status;
+}
