@@ -2,22 +2,24 @@
 #include <iostream>
 
 GtkWidget* window;
-static void
-print_hello(GtkWidget* widget,
-    gpointer   data)
-{
-    g_print("Hello World\n");
+
+static void record (GtkWidget* widget, gpointer   data) {
+    g_print("Record button pressed\n");
 }
-static void
-close(GtkWidget* widget,
-    gpointer   data)
-{
+
+static void pause (GtkWidget* widget, gpointer   data) {
+    g_print("Pause button pressed\n");
+}
+
+static void stop (GtkWidget* widget, gpointer   data) {
+    g_print("Stop button pressed\n");
+}
+
+static void close(GtkWidget* widget, gpointer   data) {
     gtk_window_close(GTK_WINDOW(window));
 }
-static void
-activate(GtkApplication* app,
-    gpointer        user_data)
-{
+
+static void activate(GtkApplication* app, gpointer        user_data) {
     GtkWidget* buttonGrid;
     GtkWidget* recordButton;
     GtkWidget* pauseButton;
@@ -27,13 +29,15 @@ activate(GtkApplication* app,
     window = gtk_application_window_new(app);
     buttonGrid = gtk_grid_new();
     gtk_window_set_title(GTK_WINDOW(window), "Screen recorder");
-    gtk_window_set_default_size(GTK_WINDOW(window), 200, 200);
-    gtk_window_set_decorated(GTK_WINDOW(window), false);
+    gtk_window_set_default_size(GTK_WINDOW(window), 200, 50);
+    //gtk_window_set_decorated(GTK_WINDOW(window), false);
     recordButton = gtk_button_new_with_label("Record");
     pauseButton = gtk_button_new_with_label("Pause");
     stopButton = gtk_button_new_with_label("Stop");
     closeButton = gtk_button_new_with_label("Close");
-    g_signal_connect(recordButton, "clicked", G_CALLBACK(print_hello), NULL);
+    g_signal_connect(recordButton, "clicked", G_CALLBACK(record), NULL);
+    g_signal_connect(pauseButton, "clicked", G_CALLBACK(pause), NULL);
+    g_signal_connect(stopButton, "clicked", G_CALLBACK(stop), NULL);
     g_signal_connect(closeButton, "clicked", G_CALLBACK(close), NULL);
     gtk_window_set_child(GTK_WINDOW(window), buttonGrid);
     gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
@@ -41,7 +45,6 @@ activate(GtkApplication* app,
     gtk_grid_attach_next_to(GTK_GRID(buttonGrid), pauseButton, recordButton, GTK_POS_RIGHT, 100, 50);
     gtk_grid_attach_next_to(GTK_GRID(buttonGrid), stopButton, pauseButton, GTK_POS_RIGHT, 100, 50);
     gtk_grid_attach_next_to(GTK_GRID(buttonGrid), closeButton, stopButton, GTK_POS_RIGHT, 100, 50);
-    std::cout << gtk_grid_get_baseline_row << "\n";
     gtk_window_present(GTK_WINDOW(window));
 }
 
