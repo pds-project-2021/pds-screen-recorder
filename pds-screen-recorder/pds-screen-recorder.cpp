@@ -20,7 +20,7 @@ static void close(GtkWidget* widget, gpointer   data) {
 }
 
 static void activate(GtkApplication* app, gpointer        user_data) {
-    GtkWidget* buttonGrid;
+    //GtkWidget* buttonGrid;
     GtkWidget* recordButton;
     GtkWidget* pauseButton;
     GtkWidget* stopButton;
@@ -32,7 +32,7 @@ static void activate(GtkApplication* app, gpointer        user_data) {
 
 
     window = gtk_application_window_new(app);
-    buttonGrid = gtk_grid_new();
+    //buttonGrid = gtk_grid_new();
     headerBar = gtk_header_bar_new();
     image = gtk_image_new_from_file("icon_small.png");
     title = gtk_text_buffer_new(NULL);
@@ -57,11 +57,11 @@ static void activate(GtkApplication* app, gpointer        user_data) {
     //gtk_header_bar_set_title_widget(GTK_HEADER_BAR(headerBar), titleView);
     gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
     //gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), titleView);
-    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
-    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
     gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
+    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
+    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
     //gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), closeButton);
-    gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
+    //gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
     //gtk_grid_insert_next_to(GTK_GRID(buttonGrid), recordButton, GTK_POS_RIGHT);
     //gtk_grid_attach_next_to(GTK_GRID(buttonGrid), pauseButton, recordButton, GTK_POS_RIGHT, 100, 50);
     //gtk_grid_attach_next_to(GTK_GRID(buttonGrid), stopButton, pauseButton, GTK_POS_RIGHT, 100, 50);
