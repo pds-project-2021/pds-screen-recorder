@@ -41,6 +41,7 @@ static void activate(GtkApplication* app, gpointer        user_data) {
     gtk_window_set_title(GTK_WINDOW(window), "Screen recorder");
     gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
     gtk_window_set_decorated(GTK_WINDOW(window), false);
+    gtk_window_set_resizable(GTK_WINDOW(window), false);
     recordButton = gtk_button_new_with_label("Record");
     pauseButton = gtk_button_new_with_label("Pause");
     stopButton = gtk_button_new_with_label("Stop");
