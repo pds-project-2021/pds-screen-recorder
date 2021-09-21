@@ -1,0 +1,8 @@
+﻿################################################################################
+# Il file gitignore è stato creato automaticamente da Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/pds-screen-recorder/v16/ipch/AutoPCH/4ed5cf3b7b94cec9
+/.vs/pds-screen-recorder/v16/Browse.VC.opendb
+/.vs/pds-screen-recorder/v16/Browse.VC.db-wal
+/.vs/pds-screen-recorder/v16/Browse.VC.db-shm
