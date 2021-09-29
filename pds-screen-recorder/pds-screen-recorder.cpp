@@ -7,7 +7,7 @@ static void record (GtkWidget* widget, gpointer   data) {
     g_print("Record button pressed\n");
 }
 
-static void pause (GtkWidget* widget, gpointer   data) {
+static int _pause (GtkWidget* widget, gpointer   data) {
     g_print("Pause button pressed\n");
 }
 
@@ -47,7 +47,7 @@ static void activate(GtkApplication* app, gpointer        user_data) {
     stopButton = gtk_button_new_with_label("Stop");
     //closeButton = gtk_button_new_with_label("Close");
     g_signal_connect(recordButton, "clicked", G_CALLBACK(record), NULL);
-    g_signal_connect(pauseButton, "clicked", G_CALLBACK(pause), NULL);
+    g_signal_connect(pauseButton, "clicked", G_CALLBACK(_pause), NULL);
     g_signal_connect(stopButton, "clicked", G_CALLBACK(stop), NULL);
     //g_signal_connect(closeButton, "clicked", G_CALLBACK(close), NULL);
     //gtk_window_set_child(GTK_WINDOW(window), buttonGrid);
