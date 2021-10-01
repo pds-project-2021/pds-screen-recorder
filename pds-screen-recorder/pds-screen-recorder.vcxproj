@@ -88,6 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\src\vcpkg\installed\x86-windows\include\harfbuzz;C:\src\vcpkg\installed\x86-windows\include\gtk-4.0;C:\src\vcpkg\installed\x86-windows\include\cairo;C:\src\vcpkg\installed\x86-windows\include\pango-1.0;C:\src\vcpkg\installed\x86-windows\include\glib-2.0;C:\src\vcpkg\installed\x86-windows\include\gdk-pixbuf-2.0;C:\src\vcpkg\installed\x86-windows\include\graphene-1.0;C:\src\vcpkg\installed\x86-windows\lib\glib-2.0\include;C:\src\vcpkg\installed\x86-windows\lib\graphene-1.0\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

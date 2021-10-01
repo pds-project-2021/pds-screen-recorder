@@ -9,6 +9,7 @@ static void record (GtkWidget* widget, gpointer   data) {
 
 static int _pause (GtkWidget* widget, gpointer   data) {
     g_print("Pause button pressed\n");
+    return 0;
 }
 
 static void stop (GtkWidget* widget, gpointer   data) {

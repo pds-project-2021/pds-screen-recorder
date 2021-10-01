@@ -1,2 +1,2 @@
 ﻿  pds-screen-recorder.cpp
-  pds-screen-recorder.vcxproj -> C:\Users\alebo\source\repos\pds-project-2021\pds-screen-recorder\x64\Debug\pds-screen-recorder.exe
+C:\Users\alebo\source\repos\pds-project-2021\pds-screen-recorder\pds-screen-recorder\pds-screen-recorder.cpp(1,10): fatal error C1083: Non è possibile aprire il file inclusione: 'gtk/gtk.h': No such file or directory
