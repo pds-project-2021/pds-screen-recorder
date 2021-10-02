@@ -142,6 +142,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="pds-screen-recorder.cpp" />
+    <ClCompile Include="ScreenRecorder.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ScreenRecorder.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
