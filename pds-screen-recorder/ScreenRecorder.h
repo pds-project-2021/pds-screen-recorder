@@ -11,7 +11,7 @@ extern "C"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 #include "libavdevice/avdevice.h"
-#include "SDL/SDL.h"
+#include "SDL2/SDL.h"
 };
 #else
 //Linux...
@@ -23,7 +23,7 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavdevice/avdevice.h>
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #ifdef __cplusplus
 };
 #endif
@@ -51,10 +51,10 @@ private:
 	AVDictionary* options;
 
 public:
-	int sfp_refresh_thread();
-	void show_dshow_device(); 
+	int sfp_refresh_thread(void* opaque);
+	void show_dshow_device();
 	void show_avfoundation_device();
 	void show_dshow_device();
-	void start_recording();
-}
+	int start_recording();
+};
 

@@ -42,7 +42,6 @@ ScreenRecorder::ScreenRecorder()
 	AVInputFormat* ifmt = av_find_input_format("gdigrab");
 	if (avformat_open_input(&pFormatCtx, "desktop", ifmt, &options) != 0) {
 		printf("Couldn't open input stream.\n");
-		return -1;
 	}
 
 #endif
@@ -118,7 +117,7 @@ void ScreenRecorder::show_avfoundation_device() {
 
 
 
-void ScreenRecorder::start_recording()
+int ScreenRecorder::start_recording()
 {
 
 
@@ -162,12 +161,13 @@ void ScreenRecorder::start_recording()
 		return -1;
 	}
 	int screen_w = 640, screen_h = 360;
-	const SDL_VideoInfo* vi = SDL_GetVideoInfo();
+	SDL_DisplayMode* dm;
+	SDL_GetCurrentDisplayMode(0, dm);
 	//Half of the Desktop's width and height.
-	screen_w = vi->current_w / 2;
-	screen_h = vi->current_h / 2;
-	SDL_Surface* screen;
-	screen = SDL_SetVideoMode(screen_w, screen_h, 0, 0);
+	screen_w = dm->w / 2;
+	screen_h = dm->h / 2;
+	SDL_Window* screen;
+	screen = SDL_CreateWindow("Video Recording", 0, 0, screen_w, screen_h, 0);
 
 	if (!screen) {
 		printf("SDL: could not set video mode - exiting:%s\n", SDL_GetError());
@@ -261,5 +261,5 @@ void ScreenRecorder::start_recording()
 	av_free(pFrameYUV);
 	avcodec_close(pCodecCtx);
 	avformat_close_input(&pFormatCtx);
-
+	return 0;
 }
