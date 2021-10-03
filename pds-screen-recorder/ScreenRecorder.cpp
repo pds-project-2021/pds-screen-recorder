@@ -173,8 +173,12 @@ int ScreenRecorder::start_recording()
 		printf("SDL: could not set video mode - exiting:%s\n", SDL_GetError());
 		return -1;
 	}
-	SDL_Overlay* bmp;
-	bmp = SDL_CreateYUVOverlay(pCodecCtx->width, pCodecCtx->height, SDL_YV12_OVERLAY, screen);
+	SDL_Renderer* renderer = SDL_CreateRenderer(screen, -1, 0);
+	if (!renderer) {
+		printf("SDL: could not create renderer - exiting\n", SDL_GetError());
+		return -1;
+	};
+	SDL_Texture* txr = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, pCodecCtx->width, pCodecCtx->height);
 	SDL_Rect rect;
 	rect.x = 0;
 	rect.y = 0;
@@ -192,9 +196,7 @@ int ScreenRecorder::start_recording()
 	struct SwsContext* img_convert_ctx;
 	img_convert_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL);
 	//------------------------------
-	SDL_Thread* video_tid = SDL_CreateThread(sfp_refresh_thread, NULL);
-	//
-	SDL_WM_SetCaption("Simplest FFmpeg Grab Desktop", NULL);
+	SDL_Thread* video_tid = SDL_CreateThread(sfp_refresh_thread, "video", NULL);
 	//Event Loop
 	SDL_Event event;
 
