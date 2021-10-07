@@ -26,5 +26,5 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
 find_package(SDL2 REQUIRED)
 include_directories(SDL2 ${SDL2_INCLUDE_DIRS})
 
-add_executable(pds_screen_recorder src/main.cpp src/ScreenRecorder.cpp src/ScreenRecorder.h)
+add_executable(pds_screen_recorder src/main.cpp src/ScreenRecorder.cpp src/ScreenRecorder.h src/exceptions/fsException.h src/exceptions/dataException.h src/exceptions/avException.h)
 target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${SDL2_LIBRARIES} PkgConfig::LIBAV)
