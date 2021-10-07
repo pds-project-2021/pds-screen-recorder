@@ -35,11 +35,12 @@ extern "C" {
 class ScreenRecorder {
 private:
   AVFormatContext *pFormatCtx;
-  int i, video_index;
-  AVCodecContext *pCodecCtx;
+  AVCodecParameters *pCodecPar;
   AVCodec *pCodec;
   AVInputFormat *ifmt;
   AVDictionary *options;
+
+  int i, video_index;
 
 public:
   ScreenRecorder();

@@ -1,7 +1,7 @@
 #include <gtk/gtk.h>
 #include <iostream>
 
-//#include "ScreenRecorder.h"
+#include "ScreenRecorder.h"
 
 GtkWidget *window;
 
@@ -87,7 +87,11 @@ int gtk_test(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-  auto status = gtk_test(argc, argv);
+//  return gtk_test(argc, argv);
 
-  return status;
+  auto s = ScreenRecorder();
+
+  s.start_recording();
+
+  return 0;
 }

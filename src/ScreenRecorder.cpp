@@ -1,8 +1,11 @@
 #include "ScreenRecorder.h"
+#include "exceptions/avException.h"
+#include "exceptions/fsException.h"
+#include "exceptions/dataException.h"
 
 ScreenRecorder::ScreenRecorder() {
 //  thread_exit = 0;
-  av_register_all();
+
   avformat_network_init();
   pFormatCtx = avformat_alloc_context();
   // Open File
@@ -15,7 +18,7 @@ ScreenRecorder::ScreenRecorder() {
   // Windows
 #ifdef _WIN32
   // Use gdigrab
-  AVDictionary *options = NULL;
+  options = nullptr;
   // Set some options
   // grabbing frame rate
   // av_dict_set(&options,"framerate","5",0);
@@ -25,13 +28,13 @@ ScreenRecorder::ScreenRecorder() {
   // av_dict_set(&options,"offset_y","40",0);
   // Video frame size. The default is to capture the full screen
   // av_dict_set(&options,"video_size","640x480",0);
-  AVInputFormat *ifmt = av_find_input_format("gdigrab");
+  ifmt = av_find_input_format("gdigrab");
   if (avformat_open_input(&pFormatCtx, "desktop", ifmt, &options) != 0) {
-    printf("Couldn't open input stream.\n");
+    throw avException("Couldn't open input stream");
   }
 #elif defined linux
   // Linux
-  AVDictionary *options = NULL;
+  options = nullptr;
   // Set some options
   // grabbing frame rate
   // av_dict_set(&options,"framerate","5",0);
@@ -39,46 +42,44 @@ ScreenRecorder::ScreenRecorder() {
   // av_dict_set(&options,"follow_mouse","centered",0);
   // Video frame size. The default is to capture the full screen
   // av_dict_set(&options,"video_size","640x480",0);
-  AVInputFormat *ifmt = av_find_input_format("x11grab");
+  ifmt = av_find_input_format("x11grab");
   // Grab at position 10,20
-  if (avformat_open_input(&pFormatCtx, ":0.0+10,20", ifmt, &options) != 0) {
-    printf("Couldn't open input stream.\n");
-//    return -1;
+  if (avformat_open_input(&pFormatCtx, ":0.0+0.0", ifmt, &options) != 0) {
+    throw avException("Couldn't open input stream");
   }
 #else
   show_avfoundation_device();
   // Mac
-  AVInputFormat *ifmt = av_find_input_format("avfoundation");
+  ifmt = av_find_input_format("avfoundation");
   // Avfoundation
   //[video]:[audio]
   if (avformat_open_input(&pFormatCtx, "1", ifmt, NULL) != 0) {
-    printf("Couldn't open input stream.\n");
-    return -1;
+    throw avException("Couldn't open input stream");
   }
 #endif
 }
 
 int ScreenRecorder::sfp_refresh_thread(void *opaque) {
 //  thread_exit = 0;
-  while (1) {
-    SDL_Event event;
-    event.type = SFM_REFRESH_EVENT;
-    SDL_PushEvent(&event);
-    SDL_Delay(40);
-  }
+//  while (1) {
+//    SDL_Event event;
+//    event.type = SFM_REFRESH_EVENT;
+//    SDL_PushEvent(&event);
+//    SDL_Delay(40);
+//  }
 //  thread_exit = 0;
   // Break
-  SDL_Event event;
-  event.type = SFM_BREAK_EVENT;
-  SDL_PushEvent(&event);
-
-  return 0;
+//  SDL_Event event;
+//  event.type = SFM_BREAK_EVENT;
+//  SDL_PushEvent(&event);
+//
+//  return 0;
 }
 
 // Show Dshow Device
 void ScreenRecorder::show_dshow_device() {
-  AVFormatContext *pFormatCtx = avformat_alloc_context();
-  AVDictionary *options = NULL;
+  pFormatCtx = avformat_alloc_context();
+  options = nullptr;
   av_dict_set(&options, "list_devices", "true", 0);
   AVInputFormat *iformat = av_find_input_format("dshow");
   printf("========Device Info=============\n");
@@ -88,8 +89,8 @@ void ScreenRecorder::show_dshow_device() {
 
 // Show AVFoundation Device
 void ScreenRecorder::show_avfoundation_device() {
-  AVFormatContext *pFormatCtx = avformat_alloc_context();
-  AVDictionary *options = NULL;
+  pFormatCtx = avformat_alloc_context();
+  options = nullptr;
   av_dict_set(&options, "list_devices", "true", 0);
   AVInputFormat *iformat = av_find_input_format("avfoundation");
   printf("==AVFoundation Device Info===\n");
@@ -98,30 +99,26 @@ void ScreenRecorder::show_avfoundation_device() {
 }
 
 int ScreenRecorder::start_recording() {
-
-  if (avformat_find_stream_info(pFormatCtx, NULL) < 0) {
-    printf("Couldn't find stream information.\n");
-    return -1;
+  if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
+    throw avException("Couldn't find stream information");
   }
   video_index = -1;
   for (i = 0; i < pFormatCtx->nb_streams; i++)
-    if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
       video_index = i;
       break;
     }
   if (video_index == -1) {
-    printf("Didn't find a video stream.\n");
-    return -1;
+    throw avException("Didn't find a video stream");
   }
-  pCodecCtx = pFormatCtx->streams[video_index]->codec;
-  pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
-  if (pCodec == NULL) {
-    printf("Codec not found.\n");
-    return -1;
+  pCodecPar = pFormatCtx->streams[video_index]->codecpar;
+  pCodec = avcodec_find_decoder(pCodecPar->codec_id);
+  auto pCodecCtx = pFormatCtx->streams[video_index]->codec;
+  if (pCodec == nullptr) {
+    throw avException("Codec not found");
   }
-  if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
-    printf("Could not open codec.\n");
-    return -1;
+  if (avcodec_open2(pCodecCtx, pCodec, nullptr) < 0) {
+    throw avException("Could not open codec");
   }
   AVFrame *pFrame, *pFrameYUV;
   pFrame = av_frame_alloc();
@@ -132,9 +129,9 @@ int ScreenRecorder::start_recording() {
   // AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height);
   // SDL----------------------------
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER)) {
-    printf("Could not initialize SDL - %s\n", SDL_GetError());
-    return -1;
+    throw avException(std::string("Could not initialize SDL - ") + SDL_GetError());
   }
+
   int screen_w = 640, screen_h = 360;
   SDL_DisplayMode *dm;
   SDL_GetCurrentDisplayMode(0, dm);
@@ -145,14 +142,13 @@ int ScreenRecorder::start_recording() {
   screen = SDL_CreateWindow("Video Recording", 0, 0, screen_w, screen_h, 0);
 
   if (!screen) {
-    printf("SDL: could not set video mode - exiting:%s\n", SDL_GetError());
-    return -1;
+    throw avException(std::string("SDL: could not set video mode - exiting:") + SDL_GetError());
   }
   SDL_Renderer *renderer = SDL_CreateRenderer(screen, -1, 0);
   if (!renderer) {
-    printf("SDL: could not create renderer - exiting\n", SDL_GetError());
-    return -1;
-  };
+    throw avException(std::string("SDL: could not create renderer - exiting:")+ SDL_GetError());
+  }
+
   SDL_Texture *txr = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
                                        SDL_TEXTUREACCESS_STREAMING,
                                        pCodecCtx->width, pCodecCtx->height);
@@ -169,9 +165,9 @@ int ScreenRecorder::start_recording() {
   struct SwsContext *img_convert_ctx;
   img_convert_ctx = sws_getContext(
       pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width,
-      pCodecCtx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL);
+      pCodecCtx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, nullptr, nullptr, nullptr);
   //------------------------------
-  SDL_Thread *video_tid = SDL_CreateThread(sfp_refresh_thread, "video", NULL);
+  SDL_Thread *video_tid = SDL_CreateThread(sfp_refresh_thread, "video", nullptr);
   // Event Loop
   SDL_Event event;
 
@@ -185,8 +181,7 @@ int ScreenRecorder::start_recording() {
           // TODO update deprecated call
           ret = avcodec_decode_video2(pCodecCtx, pFrame, &got_picture, packet);
           if (ret < 0) {
-            printf("Decode Error.\n");
-            return -1;
+            throw avException("Decode Error");
           }
           if (got_picture) {
 //            SDL_LockYUVOverlay(bmp);
@@ -221,7 +216,6 @@ int ScreenRecorder::start_recording() {
   sws_freeContext(img_convert_ctx);
   SDL_Quit();
 
-  // av_free(out_buffer);
   av_free(pFrameYUV);
   avcodec_close(pCodecCtx);
   avformat_close_input(&pFormatCtx);
