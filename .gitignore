@@ -10,3 +10,5 @@
 # cmake clion
 cmake-build-debug
 .idea
+out
+x64
