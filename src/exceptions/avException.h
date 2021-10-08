@@ -12,5 +12,4 @@ public:
     explicit avException(const std::string &arg) : runtime_error(arg) {}
 };
 
-
 #endif // PDS_SCREEN_RECORDER_AVEXCEPTION_H

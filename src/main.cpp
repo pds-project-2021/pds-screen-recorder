@@ -87,11 +87,17 @@ int gtk_test(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-//  return gtk_test(argc, argv);
+  //  return gtk_test(argc, argv);
 
   auto s = ScreenRecorder();
 
-  s.start_recording();
+  s.init();
+  std::cout << "111111" << std::endl;
+
+  s.init_outputfile();
+  std::cout << "2222222" << std::endl;
+  s.CaptureVideoFrames();
+  std::cout << "3333333" << std::endl;
 
   return 0;
 }
