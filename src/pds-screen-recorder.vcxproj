@@ -141,7 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="pds-screen-recorder.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="ScreenRecorder.cpp" />
   </ItemGroup>
   <ItemGroup>

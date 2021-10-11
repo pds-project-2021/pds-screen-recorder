@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31702.278
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pds-screen-recorder", "pds-screen-recorder\pds-screen-recorder.vcxproj", "{34F935B2-FA55-4E10-BD1E-291C14D0A72E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pds-screen-recorder", "src\pds-screen-recorder.vcxproj", "{34F935B2-FA55-4E10-BD1E-291C14D0A72E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +26,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {DBD2B25B-A901-4B4F-A5AD-C042314FA219}
+		SolutionGuid = {9FEBA7D5-5A41-4449-94F9-1E23977198B2}
 	EndGlobalSection
 EndGlobal
