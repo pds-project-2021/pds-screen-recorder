@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.20)
 project(pds_screen_recorder)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -19,8 +19,7 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavcodec
     libswresample
     libswscale
-    libavutil
-)
+    libavutil)
 
 # SDL2
 find_package(SDL2 REQUIRED)
