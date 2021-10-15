@@ -7,8 +7,10 @@
 #include <iostream>
 #include <math.h>
 #include <string.h>
-#include <unistd.h>
-
+extern "C" {
+    #include <libavutil/imgutils.h>
+    #include <libavutil/pixdesc.h>
+}
 #include "exceptions/avException.h"
 #include "exceptions/dataException.h"
 #include "exceptions/fsException.h"

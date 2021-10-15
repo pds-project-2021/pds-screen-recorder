@@ -10,7 +10,6 @@ if(UNIX)
     include_directories(${GTK4_INCLUDE_DIRS})
     link_directories(${GTK4_LIBRARY_DIRS})
     add_definitions(${GTK4_CFLAGS_OTHER})
-    message(${GTK4_LIBRARIES})
     # ffmpeg
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
@@ -49,14 +48,14 @@ if(WIN32)
             "harfbuzz"
             "gdk_pixbuf-2.0"
             "cairo-gobject"
-            "cairovulkan"
             "graphene-1.0"
             "gio-2.0"
             "gobject-2.0"
             "glib-2.0")
     include_directories(${GTK4_INCLUDE_DIRS})
+    link_directories("${VCPKG_INCLUDE_PATH}/lib" "${VCPKG_INCLUDE_PATH}/bin")
     find_package(FFMPEG REQUIRED)
-    include_directories(FFMPEG ${FFMPEG_INCLUDE_DIRS})
+    include_directories(${FFMPEG_INCLUDE_DIRS})
 endif()
 # SDL2
 find_package(SDL2 REQUIRED)
