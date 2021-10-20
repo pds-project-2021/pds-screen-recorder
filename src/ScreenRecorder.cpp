@@ -193,7 +193,7 @@ int ScreenRecorder::init() {
 }
 
 int ScreenRecorder::init_outputfile() {
-  output_file = "../media/output.mp4";
+  output_file = "../output.mp4";
 
   outputCodec = avcodec_find_encoder(AV_CODEC_ID_H264);
   if (!outputCodec) {
