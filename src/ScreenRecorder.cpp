@@ -234,7 +234,7 @@ int ScreenRecorder::init_outputfile() {
   outputCodecPar = videoStream->codecpar;
   outputCodecPar->codec_id = AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; AV_CODEC_ID_MPEG1VIDEO;
   outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
-  outputCodecPar->format = AV_PIX_FMT_YUV444P;
+  outputCodecPar->format = AV_PIX_FMT_YUV420P;
   outputCodecPar->bit_rate = 800000; // 2500000
   outputCodecPar->width = inputCodecPar->width;
   outputCodecPar->height = inputCodecPar->height;
@@ -262,10 +262,12 @@ int ScreenRecorder::init_outputfile() {
 
   /* create empty video file */
   if (!(outputFormatContext->flags & AVFMT_NOFILE)) {
-    ret = avio_open2(&outputFormatContext->pb, output_file, AVIO_FLAG_WRITE,
+    ret = avio_open2(&(outputFormatContext->pb), output_file, AVIO_FLAG_WRITE,
                       nullptr, nullptr);
     if (ret < 0) {
-      throw avException("Error in creating the video file");
+        char buf[35];
+        av_strerror(ret, buf, sizeof(buf));
+        throw avException(buf);
     }
   }
 
