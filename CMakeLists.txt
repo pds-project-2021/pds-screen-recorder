@@ -5,13 +5,13 @@ set(CMAKE_CXX_STANDARD 14)
 
 
 if(UNIX)
+    find_package(PkgConfig REQUIRED)
     # GTK4
-    find_package(GTK REQUIRED gtk4)
+    pkg_check_modules(GTK4 REQUIRED gtk4)
     include_directories(${GTK4_INCLUDE_DIRS})
     link_directories(${GTK4_LIBRARY_DIRS})
     add_definitions(${GTK4_CFLAGS_OTHER})
     # ffmpeg
-    find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
         libavdevice
         libavfilter
@@ -23,7 +23,7 @@ if(UNIX)
         )
 endif()
 if(WIN32)
-    find_package(GTK REQUIRED gtk4)
+    find_package(GTK REQUIRED)
     set(VCPKG_INCLUDE_PATH C:/src/vcpkg/installed/x64-windows)
     set(GTK4_INCLUDE_DIRS "${VCPKG_INCLUDE_PATH}/include/gtk-4.0"
             "${VCPKG_INCLUDE_PATH}/include/gio-unix-2.0"

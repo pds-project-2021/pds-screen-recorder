@@ -133,20 +133,26 @@ int ScreenRecorder::init() {
   av_dict_set(&options, "video_size", "1920x1080", 0);
   av_dict_set(&options, "show_region", "1", 0);
 
-  /*
-  X11 video input device.
-  To enable this input device during configuration you need libxcb installed on
-  your system. It will be automatically detected during configuration. This
-  device allows one to capture a region of an X11 display. refer :
-  https://www.ffmpeg.org/ffmpeg-devices.html#x11grab
-  */
-  inputFormat = av_find_input_format("x11grab");
-  auto ret = avformat_open_input(&inputFormatContext, ":0.0+0,0", inputFormat, &options);
-  if (ret != 0) {
-    throw avException("Error in opening input device");
-  }
-
-  ret = avformat_find_stream_info(inputFormatContext, &options);
+#ifdef _WIN32
+    options = nullptr;
+    inputFormat = av_find_input_format("gdigrab");
+    if (avformat_open_input(&inputFormatContext, "desktop", inputFormat, &options) != 0) {
+        throw avException("Couldn't open input stream");
+        }
+#elif defined linux
+    options = nullptr;
+    inputFormat = av_find_input_format("x11grab");
+    if (avformat_open_input(&inputFormatContext, ":0.0+0,0", inputFormat, &options) != 0) {
+        throw avException("Couldn't open input stream");
+      }
+#else
+    show_avfoundation_device();
+    inputFormat = av_find_input_format("avfoundation");
+    if (avformat_open_input(&inputFormatContext, "1", inputFormat, nullptr) != 0) {
+        throw avException("Couldn't open input stream");
+      }
+#endif
+  auto ret = avformat_find_stream_info(inputFormatContext, &options);
   if (ret < 0) {
     throw avException("Unable to find the stream information");
   }
@@ -177,8 +183,13 @@ int ScreenRecorder::init() {
   if (ret < 0) {
     throw avException("Unable to open the av codec");
   }
-
-  av_dump_format(inputFormatContext, 0, ":0.0+0,0", 0);
+#ifdef _WIN32
+    av_dump_format(inputFormatContext, 0, "desktop", 0);
+#elif defined linux
+    av_dump_format(inputFormatContext, 0, ":0.0+0,0", 0);
+#else
+    av_dump_format(inputFormatContext, 0, "1", 0);
+#endif
 }
 
 int ScreenRecorder::init_outputfile() {
@@ -356,9 +367,9 @@ int ScreenRecorder::CaptureVideoFrames() {
   }
 
   while (av_read_frame(inputFormatContext, packet) >= 0) {
-//    if (count++ == frameCount) {
-//      break;
-//    }
+    if (count++ == frameCount) {
+    break;
+    }
 
     if (packet->stream_index == videoStream->index) {
 //      avcodec_decode_video2(inputCodecContext, frame, &frameFinished, packet);
