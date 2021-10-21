@@ -128,9 +128,9 @@ int ScreenRecorder::init() {
   options = nullptr;
   av_dict_set(&options, "framerate", "30", 0);
   av_dict_set(&options, "preset", "medium", 0);
-  av_dict_set(&options, "offset_x", "100", 0);
-  av_dict_set(&options, "offset_y", "200", 0);
-  av_dict_set(&options, "video_size", "1920x1080", 0);
+  av_dict_set(&options, "offset_x", "0", 0);
+  av_dict_set(&options, "offset_y", "0", 0);
+  //av_dict_set(&options, "video_size", "1920x1080", 0);
   av_dict_set(&options, "show_region", "1", 0);
 
 #ifdef _WIN32
@@ -164,8 +164,6 @@ int ScreenRecorder::init() {
   }
 
   inputCodecPar = inputFormatContext->streams[index]->codecpar;
-  inputCodecPar->width = 1920;
-  inputCodecPar->height = 1080;
   inputCodecPar->format = AV_PIX_FMT_YUV444P;
 
   inputCodec = avcodec_find_decoder(inputCodecPar->codec_id);
@@ -275,12 +273,14 @@ int ScreenRecorder::init_outputfile() {
 //    throw avException("Output file dose not contain any stream");
 //  }
 
-  swsContext = sws_getContext(inputCodecPar->width, inputCodecPar->height,
+  swsContext = sws_getCachedContext(swsContext, inputCodecPar->width, inputCodecPar->height,
                               (AVPixelFormat)inputCodecPar->format,
                               outputCodecPar->width, outputCodecPar->height,
                               (AVPixelFormat)outputCodecPar->format,
                               SWS_BICUBIC, nullptr, nullptr, nullptr);
-
+    if (!swsContext) {
+        throw avException("Impossible to create scale context for the conversion");
+    }
   /* imp: mp4 container or some advanced container file required header
    * information*/
   ret = avformat_write_header(outputFormatContext, &options);
@@ -300,13 +300,17 @@ int ScreenRecorder::CaptureVideoFrames() {
   if (!frame) {
     throw avException("Unable to release the avframe resources");
   }
-  frame->data[0] = nullptr;
-  frame->width = inputCodecPar->width;
-  frame->height = inputCodecPar->height;
-  frame->format = inputCodecPar->format;
+    frame->data[0] = nullptr;
+    frame->width = inputCodecPar->width;
+    frame->height = inputCodecPar->height;
+    frame->format = inputCodecPar->format;
 
-  av_image_alloc(frame->data, frame->linesize, inputCodecContext->width,
-                 inputCodecContext->height, (AVPixelFormat)frame->format, 32);
+//    if (av_frame_get_buffer(frame, 0) < 0) {
+//        fprintf(stderr, "Could not allocate the video frame data\n");
+//       exit(1);
+//   }
+//av_image_alloc(frame->data, frame->linesize, inputCodecContext->width,
+//             inputCodecContext->height, (AVPixelFormat)frame->format, 32);
 
   // encoder frame
   AVFrame *outputFrame = av_frame_alloc();
@@ -320,9 +324,13 @@ int ScreenRecorder::CaptureVideoFrames() {
   outputFrame->format = outputCodecPar->format;
   outputFrame->pts = 0;
 
-  av_image_alloc(outputFrame->data, outputFrame->linesize,
-                 outputCodecContext->width, outputCodecContext->height,
-                 (AVPixelFormat)outputFrame->format, 32);
+//    if (av_frame_get_buffer(outputFrame, 0) < 0) {
+//        fprintf(stderr, "Could not allocate the output video frame data\n");
+//        exit(1);
+//   }
+av_image_alloc(outputFrame->data, outputFrame->linesize,
+              outputCodecContext->width, outputCodecContext->height,
+              (AVPixelFormat)outputFrame->format, 32);
 
   //  int video_outbuf_size;
   //  int nbytes = av_image_get_buffer_size(outputCodecContext->pix_fmt,
@@ -375,7 +383,9 @@ int ScreenRecorder::CaptureVideoFrames() {
 
     if (packet->stream_index == videoStream->index) {
 //      avcodec_decode_video2(inputCodecContext, frame, &frameFinished, packet);
-
+        av_frame_get_buffer(frame,0);
+        if (int ret = av_frame_make_writable(frame) < 0)
+            exit(ret);
       auto ret = decode(inputCodecContext, frame, &frameFinished, packet);
 
 //      auto result = avcodec_send_packet(inputCodecContext, packet);
@@ -388,9 +398,9 @@ int ScreenRecorder::CaptureVideoFrames() {
         throw avException("Unable to decode");
       }
       if(frameFinished){
-        sws_scale(swsContext, frame->data, frame->linesize, 0,
-                  inputCodecContext->height, outputFrame->data,
-                  outputFrame->linesize);
+//        sws_scale(swsContext, frame->data, frame->linesize, 0,
+//                  inputCodecContext->height, outputFrame->data,
+//                 outputFrame->linesize);
 
         AVPacket outPacket;
         av_init_packet(&outPacket);
@@ -398,7 +408,7 @@ int ScreenRecorder::CaptureVideoFrames() {
         outPacket.data = nullptr;
         outPacket.size = 0;
 
-        encode(outputCodecContext, packet, &got_picture, outputFrame);
+        encode(outputCodecContext, packet, &got_picture, frame);
 
 //        got_picture = avcodec_encode_video2(outputCodecContext, &outPacket, outputFrame, &got_picture);
 //        ret = avcodec_send_frame(outputCodecContext, outputFrame);
