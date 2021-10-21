@@ -309,8 +309,8 @@ int ScreenRecorder::CaptureVideoFrames() {
 //        fprintf(stderr, "Could not allocate the video frame data\n");
 //       exit(1);
 //   }
-//av_image_alloc(frame->data, frame->linesize, inputCodecContext->width,
-//             inputCodecContext->height, (AVPixelFormat)frame->format, 32);
+av_image_alloc(frame->data, frame->linesize, inputCodecContext->width,
+             inputCodecContext->height, (AVPixelFormat)frame->format, 32);
 
   // encoder frame
   AVFrame *outputFrame = av_frame_alloc();
@@ -398,9 +398,9 @@ av_image_alloc(outputFrame->data, outputFrame->linesize,
         throw avException("Unable to decode");
       }
       if(frameFinished){
-//        sws_scale(swsContext, frame->data, frame->linesize, 0,
-//                  inputCodecContext->height, outputFrame->data,
-//                 outputFrame->linesize);
+        sws_scale(swsContext, frame->data, frame->linesize, 0,
+                  inputCodecContext->height, outputFrame->data,
+                 outputFrame->linesize);
 
         AVPacket outPacket;
         av_init_packet(&outPacket);
@@ -408,7 +408,7 @@ av_image_alloc(outputFrame->data, outputFrame->linesize,
         outPacket.data = nullptr;
         outPacket.size = 0;
 
-        encode(outputCodecContext, packet, &got_picture, frame);
+        encode(outputCodecContext, packet, &got_picture, outputFrame);
 
 //        got_picture = avcodec_encode_video2(outputCodecContext, &outPacket, outputFrame, &got_picture);
 //        ret = avcodec_send_frame(outputCodecContext, outputFrame);
