@@ -58,7 +58,24 @@
 using namespace std;
 
 
+static void fill_yuv_image(uint8_t *data[4], int linesize[4],
+                           int width, int height, int frame_index)
+{
+    int x, y;
 
+    /* Y */
+    for (y = 0; y < height; y++)
+        for (x = 0; x < width; x++)
+            data[0][y * linesize[0] + x] = x + y + frame_index * 3;
+
+    /* Cb and Cr */
+    for (y = 0; y < height / 2; y++) {
+        for (x = 0; x < width / 2; x++) {
+            data[1][y * linesize[1] + x] = 128 + y + frame_index * 2;
+            data[2][y * linesize[2] + x] = 64 + x + frame_index * 5;
+        }
+    }
+}
 
 int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacket *pkt)
 {
@@ -92,9 +109,9 @@ int encode(AVCodecContext *avctx, AVPacket *pkt, int *got_packet, AVFrame *frame
     if (ret < 0)
         return ret;
 
-    ret = avcodec_receive_packet(avctx, pkt);
+   ret = avcodec_receive_packet(avctx, pkt);
     if (!ret)
-        *got_packet = 1;
+       *got_packet = 1;
     if (ret == AVERROR(EAGAIN))
         return 0;
 
@@ -308,7 +325,16 @@ int ScreenRecorder::CaptureVideoFrames() {
   if (!frame) {
     throw avException("Unable to release the avframe resources");
   }
-
+    frame->data[0] = nullptr;
+    frame->width = inputCodecPar->width;
+    frame->height = inputCodecPar->height;
+    frame->format = inputCodecPar->format;
+    frame->pts = 0;
+    if (av_image_alloc(frame->data, frame->linesize,
+                       inputCodecContext->width, inputCodecContext->height,
+                       (AVPixelFormat)inputCodecPar->format, 32) < 0) {
+        throw avException("Error in allocating frame data");
+    }
   // encoder frame
   AVFrame *outputFrame = av_frame_alloc();
   if (!outputFrame) {
@@ -351,7 +377,7 @@ if (av_image_alloc(outputFrame->data, outputFrame->linesize,
   //      nullptr, nullptr, nullptr);
 
   int count = 0;
-  int frameCount = 200;
+  int frameCount = 300;
 
   int got_picture;
 
@@ -362,7 +388,10 @@ if (av_image_alloc(outputFrame->data, outputFrame->linesize,
   if (!packet) {
     throw avException("Error on packet initialization");
   }
-
+  AVPacket *outPacket= av_packet_alloc();
+  if (!outPacket) {
+      throw avException("Error on packet initialization");
+  }
   while (av_read_frame(inputFormatContext, packet) >= 0) {
     if (count++ == frameCount) {
     break;
@@ -370,29 +399,24 @@ if (av_image_alloc(outputFrame->data, outputFrame->linesize,
 
     if (packet->stream_index == videoStream->index) {
 //      avcodec_decode_video2(inputCodecContext, frame, &frameFinished, packet);
-      auto ret = decode(inputCodecContext, frame, &frameFinished, packet);
-
+        int ret;
+        //= decode(inputCodecContext, frame, &frameFinished, packet);
+        fill_yuv_image(frame->data, frame->linesize, inputCodecPar->width, inputCodecPar->height, count);
 //      auto result = avcodec_send_packet(inputCodecContext, packet);
 //      if (result == AVERROR(EAGAIN)) {}
 //      else{
 //        throw avException("Failed to send packet to decoder");
 //      }
 //      result = avcodec_receive_frame(inputCodecContext, frame);
-      if (ret < 0) {
-        throw avException("Unable to decode");
-      }
-      if(frameFinished){
+  //    if (ret < 0) {
+  //      throw avException("Unable to decode");
+  //    }
+      if(frameFinished=1){
         sws_scale(swsContext, frame->data, frame->linesize, 0,
-                  inputCodecContext->height, outputFrame->data,
+                  inputCodecContext->height, (uint8_t * const *)outputFrame->data,
                  outputFrame->linesize);
 
-        AVPacket outPacket;
-        av_init_packet(&outPacket);
-        // packet data will be allocated by the encoder
-        outPacket.data = nullptr;
-        outPacket.size = 0;
-
-        encode(outputCodecContext, packet, &got_picture, outputFrame);
+        encode(outputCodecContext, outPacket, &got_picture, outputFrame);
 
 //        got_picture = avcodec_encode_video2(outputCodecContext, &outPacket, outputFrame, &got_picture);
 //        ret = avcodec_send_frame(outputCodecContext, outputFrame);
@@ -410,24 +434,24 @@ if (av_image_alloc(outputFrame->data, outputFrame->linesize,
 //        }
 
         if(got_picture){
-          if (outPacket.pts != AV_NOPTS_VALUE) {
-            outPacket.pts =
-                av_rescale_q(outPacket.pts, outputCodecContext->time_base,videoStream->time_base);
+          if (outPacket->pts != AV_NOPTS_VALUE) {
+            outPacket->pts =
+                av_rescale_q(outPacket->pts, outputCodecContext->time_base,videoStream->time_base);
           }
-          if (outPacket.dts != AV_NOPTS_VALUE) {
-            outPacket.dts =
-                av_rescale_q(outPacket.dts, outputCodecContext->time_base,videoStream->time_base);
+          if (outPacket->dts != AV_NOPTS_VALUE) {
+            outPacket->dts =
+                av_rescale_q(outPacket->dts, outputCodecContext->time_base,videoStream->time_base);
           }
 
 //          cout << "Write frame " << j++ << " (size= " << outPacket.size / 1000 << ")" << endl;
 
-          ret = av_write_frame(outputFormatContext, &outPacket);
+          ret = av_write_frame(outputFormatContext, outPacket);
           if (ret != 0) {
             throw avException("Error in writing video frame");
           }
 
         } // got_picture
-        av_packet_unref(&outPacket);
+          av_packet_unref(outPacket);
 
       } // frameFinished
     }
