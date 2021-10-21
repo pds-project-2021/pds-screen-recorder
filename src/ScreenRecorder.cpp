@@ -1,9 +1,9 @@
 #include "ScreenRecorder.h"
 
 // ScreenRecorder::ScreenRecorder() {
-////  thread_exit = 0;
+//  thread_exit = 0;
 //
-////  avformat_network_init();
+//  avformat_network_init();
 //  pFormatCtx = avformat_alloc_context();
 //  // Open File
 //  // char filepath[]="src01_480x272_22.h265";
@@ -134,11 +134,19 @@ int ScreenRecorder::init() {
   av_dict_set(&options, "show_region", "1", 0);
 
 #ifdef _WIN32
+#if USE_DSHOW
+    options = nullptr;
+    inputFormat = av_find_input_format("dshow");
+    if (avformat_open_input(&inputFormatContext, "video=screen-capture-recorder", inputFormat, &options) != 0) {
+        throw avException("Couldn't open input stream");
+    }
+#else
     options = nullptr;
     inputFormat = av_find_input_format("gdigrab");
     if (avformat_open_input(&inputFormatContext, "desktop", inputFormat, &options) != 0) {
         throw avException("Couldn't open input stream");
         }
+#endif
 #elif defined linux
     options = nullptr;
     inputFormat = av_find_input_format("x11grab");
@@ -300,17 +308,6 @@ int ScreenRecorder::CaptureVideoFrames() {
   if (!frame) {
     throw avException("Unable to release the avframe resources");
   }
-    frame->data[0] = nullptr;
-    frame->width = inputCodecPar->width;
-    frame->height = inputCodecPar->height;
-    frame->format = inputCodecPar->format;
-
-//    if (av_frame_get_buffer(frame, 0) < 0) {
-//        fprintf(stderr, "Could not allocate the video frame data\n");
-//       exit(1);
-//   }
-av_image_alloc(frame->data, frame->linesize, inputCodecContext->width,
-             inputCodecContext->height, (AVPixelFormat)frame->format, 32);
 
   // encoder frame
   AVFrame *outputFrame = av_frame_alloc();
@@ -324,22 +321,12 @@ av_image_alloc(frame->data, frame->linesize, inputCodecContext->width,
   outputFrame->format = outputCodecPar->format;
   outputFrame->pts = 0;
 
-//    if (av_frame_get_buffer(outputFrame, 0) < 0) {
-//        fprintf(stderr, "Could not allocate the output video frame data\n");
-//        exit(1);
-//   }
-av_image_alloc(outputFrame->data, outputFrame->linesize,
-              outputCodecContext->width, outputCodecContext->height,
-              (AVPixelFormat)outputFrame->format, 32);
 
-  //  int video_outbuf_size;
-  //  int nbytes = av_image_get_buffer_size(outputCodecContext->pix_fmt,
-  //                                        outputCodecContext->width,
-  //                                        outputCodecContext->height, 32);
-  //  auto *video_outbuf = (uint8_t *)av_malloc(nbytes);
-  //  if (video_outbuf == nullptr) {
-  //    throw avException("Unable to allocate memory");
-  //  }
+if (av_image_alloc(outputFrame->data, outputFrame->linesize,
+                   outputCodecContext->width, outputCodecContext->height,
+                   (AVPixelFormat)outputFrame->format, 32) < 0) {
+    throw avException("Error in allocating frame data");
+}
 
   // Setup the data pointers and linesizes based on the specified image
   // parameters and the provided array.
@@ -383,9 +370,6 @@ av_image_alloc(outputFrame->data, outputFrame->linesize,
 
     if (packet->stream_index == videoStream->index) {
 //      avcodec_decode_video2(inputCodecContext, frame, &frameFinished, packet);
-        av_frame_get_buffer(frame,0);
-        if (int ret = av_frame_make_writable(frame) < 0)
-            exit(ret);
       auto ret = decode(inputCodecContext, frame, &frameFinished, packet);
 
 //      auto result = avcodec_send_packet(inputCodecContext, packet);
@@ -458,8 +442,18 @@ av_image_alloc(outputFrame->data, outputFrame->linesize,
 //    av_free(outBuffer);
   cout << "qua" << endl;
 
-  av_dump_format(outputFormatContext, 0,"../media/output.mp4", 1);
-  cout << "qua" << endl;
+  av_dump_format(outputFormatContext, 0,"../output.txt", 1);
+/*
+    cout << "qua" << endl;
+    FILE * f = fopen("../output.mp4", "a+");
+    uint8_t outbuf[4];
+    outbuf[0] = 0x00;
+    outbuf[1] = 0x00;
+    outbuf[2] = 0x01;
+    outbuf[3] = 0xb7;
+    fwrite(outbuf, 1, 4, f);
+    fclose(f);
+*/
 
 }
 

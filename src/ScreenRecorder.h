@@ -20,7 +20,6 @@ extern "C" {
 #ifdef _WIN32
 // Windows
 extern "C" {
-#include "SDL2/SDL.h"
 #include "libavcodec/avcodec.h"
 #include "libavdevice/avdevice.h"
 #include "libavformat/avformat.h"
@@ -31,7 +30,6 @@ extern "C" {
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <SDL2/SDL.h>
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
 #include <libavformat/avformat.h>
@@ -65,9 +63,7 @@ extern "C" {
 #endif
 
 // Refresh Event
-#define SFM_REFRESH_EVENT (SDL_USEREVENT + 1)
 
-#define SFM_BREAK_EVENT (SDL_USEREVENT + 2)
 
 class ScreenRecorder {
 private:
