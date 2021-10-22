@@ -192,8 +192,8 @@ int ScreenRecorder::init_outputfile() {
   if (!outputCodecContext) {
     throw avException("Error in allocating the codec context");
   }
-  outputCodecContext->gop_size = 1;
-  outputCodecContext->max_b_frames = 1;
+  outputCodecContext->gop_size = 10;
+  outputCodecContext->max_b_frames = 5;
   outputCodecContext->time_base = videoStream->time_base;
 
   /* set property of the video file */
@@ -201,7 +201,7 @@ int ScreenRecorder::init_outputfile() {
   outputCodecPar->codec_id = AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; AV_CODEC_ID_MPEG1VIDEO;
   outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
   outputCodecPar->format = AV_PIX_FMT_YUV420P;
-  outputCodecPar->bit_rate = 800000; // 2500000
+  outputCodecPar->bit_rate = 2400000; // 2500000
   outputCodecPar->width = inputCodecPar->width;
   outputCodecPar->height = inputCodecPar->height;
 
@@ -336,7 +336,7 @@ int ScreenRecorder::CaptureVideoFrames() {
                           inputCodecContext->height, outputFrame->data,
                           outputFrame->linesize);
                 //Send converted frame to encoder
-                outputFrame->pts=count;
+                outputFrame->pts=count-1;
                 result = avcodec_send_frame(outputCodecContext, outputFrame);
                 if(result >=0) result = avcodec_receive_packet(outputCodecContext, outPacket);//Try to receive packet
                 else if(result == AVERROR(EAGAIN))  {//Buffer is full
@@ -353,7 +353,7 @@ int ScreenRecorder::CaptureVideoFrames() {
                     }
                     if (outPacket->dts != AV_NOPTS_VALUE) {
                         outPacket->dts =
-                                av_rescale_q(outPacket->dts-1, outputCodecContext->time_base,videoStream->time_base);
+                                av_rescale_q(outPacket->dts, outputCodecContext->time_base,videoStream->time_base);
                     }
                     //Write packet to file
                     result = av_write_frame(outputFormatContext, outPacket);
@@ -370,7 +370,7 @@ int ScreenRecorder::CaptureVideoFrames() {
   } // End of while-loop
     //Handle delayed frames
     for (int result;;) {
-        avcodec_send_frame(outputCodecContext, NULL);
+        //avcodec_send_frame(outputCodecContext, NULL);
         if (avcodec_receive_packet(outputCodecContext, outPacket) == 0) {//Try to get packet
             if (outPacket->pts != AV_NOPTS_VALUE) {
                 outPacket->pts =
