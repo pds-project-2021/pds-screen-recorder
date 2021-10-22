@@ -281,7 +281,7 @@ int ScreenRecorder::CaptureVideoFrames() {
     }
 
   int count = 0;
-  int frameCount = 300;
+  int frameCount = 301;
 
 
   AVPacket *packet = av_packet_alloc();
