@@ -93,7 +93,6 @@ int main(int argc, char **argv) {
 
   s.init();
   std::cout << "111111" << std::endl;
-
   s.init_outputfile();
   std::cout << "2222222" << std::endl;
   s.CaptureVideoFrames();

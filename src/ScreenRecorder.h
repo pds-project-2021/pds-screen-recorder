@@ -14,7 +14,7 @@ extern "C" {
 #include "exceptions/avException.h"
 #include "exceptions/dataException.h"
 #include "exceptions/fsException.h"
-
+#include<thread>
 #define __STDC_CONSTANT_MACROS
 
 #ifdef _WIN32
