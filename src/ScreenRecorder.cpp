@@ -367,12 +367,11 @@
 	  }
         AVFrame *audioFrame = av_frame_alloc();
         if (!audioFrame) {
-            throw avException("Unable to release the avframe resources");
+            throw avException("Unable to release the audio avframe resources");
         }
         audioFrame->nb_samples     = audioInputCodecContext->frame_size;
         audioFrame->format         = audioInputCodecContext->sample_fmt;
         audioFrame->channel_layout = audioInputCodecContext->channel_layout;
-        // encoder frame
         if (av_frame_get_buffer(audioFrame, 0) < 0) {
             fprintf(stderr, "Could not allocate audio data buffers\n");
             exit(1);
@@ -380,7 +379,14 @@
         AVFrame *audioOutputFrame = av_frame_alloc();
         if (!audioOutputFrame) {
             throw avException(
-                    "Unable to release the avframe resources for outputFrame");
+                    "Unable to release the audio avframe resources for outputFrame");
+        }
+        audioOutputFrame->nb_samples     = audioOutputCodecContext->frame_size;
+        audioOutputFrame->format         = audioOutputCodecContext->sample_fmt;
+        audioOutputFrame->channel_layout = audioOutputCodecContext->channel_layout;
+        if (av_frame_get_buffer(audioOutputFrame, 0) < 0) {
+            fprintf(stderr, "Could not allocate audio data buffers\n");
+            exit(1);
         }
         AVPacket *audioPacket = av_packet_alloc();
         if (!audioPacket) {
@@ -462,10 +468,14 @@
             if (result != AVERROR(EAGAIN)) {//check if decoded frame is ready
                 if(result>=0) {//frame is ready
                     //Convert frame picture format
-//                    swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples,
- //                               (const uint8_t **)audioFrame->data, audioFrame->nb_samples);
+                    int got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples,
+                                (const uint8_t **)audioFrame->data, audioFrame->nb_samples);
+                    if (got_samples < 0) {
+                        fprintf(stderr, "error: swr_convert()\n");
+                        exit(1);
+                    }
                     //Send converted frame to encoder
-//                    outputFrame->pts = count - 1;
+                    outputFrame->pts = count - 1;
                     result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
                     if (result >= 0)
                         result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
