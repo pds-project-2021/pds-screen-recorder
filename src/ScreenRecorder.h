@@ -11,6 +11,7 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavutil/pixdesc.h>
 #include <libswresample/swresample.h>
+#include <libavutil/audio_fifo.h>
 }
 #include "exceptions/avException.h"
 #include "exceptions/dataException.h"

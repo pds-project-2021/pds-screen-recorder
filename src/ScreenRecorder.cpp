@@ -73,7 +73,7 @@
         CoInitializeEx(NULL, COINIT_MULTITHREADED);//Set COM to multithreaded model
         av_dict_set(&options, "rtbufsize", "10M", 0);
 		audioInputFormat = av_find_input_format("dshow");
-		if (avformat_open_input(&audioInputFormatContext, "audio=Analogue 1 + 2 (Focusrite Usb Audio)", audioInputFormat, &options) != 0) {
+		if (avformat_open_input(&audioInputFormatContext, "audio=Microfono (GENERAL WEBCAM)", audioInputFormat, &options) != 0) {
 			throw avException("Couldn't open input stream");
 		}
 		options = nullptr;
@@ -296,12 +296,16 @@
         if (!swsContext) {
             throw avException("Impossible to create scale context for video conversion");
         }
-        swrContext = swr_alloc_set_opts(swrContext, outputCodecContext->channel_layout, outputCodecContext->sample_fmt,
-                                        outputCodecContext->sample_rate, inputCodecContext->channel_layout,
-                                        inputCodecContext->sample_fmt, inputCodecContext->sample_rate,
+        swrContext = swr_alloc();
+        swrContext = swr_alloc_set_opts(swrContext, audioOutputCodecContext->channel_layout, audioOutputCodecContext->sample_fmt,
+                                        audioOutputCodecContext->sample_rate, audioInputCodecContext->channel_layout,
+                                        audioInputCodecContext->sample_fmt, audioInputCodecContext->sample_rate,
                                         0, NULL);
         if (!swrContext) {
             throw avException("Impossible to create resample context for audio conversion");
+        }
+        if(swr_init(swrContext)<0) {
+            throw avException("Impossible to initialize resample context for audio conversion");
         }
 	  /* imp: mp4 container or some advanced container file required header
 	   * information*/
@@ -353,8 +357,9 @@
 			throw avException("Error in allocating frame data");
 		}
 
-	  int count = 0;
-	  int frameCount = 301;
+        int count = 0;
+        int audioCount = 0;
+        int frameCount = 61;
 
 
 	  AVPacket *packet = av_packet_alloc();
@@ -462,9 +467,7 @@
                     result = avcodec_receive_frame(audioInputCodecContext, audioFrame); //Try to get a decoded frame
                 }
             }
-            else{
-                throw avException("Failed to send packet to decoder");//Decoder error
-            }
+            else throw avException("Failed to send packet to decoder");//Decoder error
             if (result != AVERROR(EAGAIN)) {//check if decoded frame is ready
                 if(result>=0) {//frame is ready
                     //Convert frame picture format
@@ -474,8 +477,8 @@
                         fprintf(stderr, "error: swr_convert()\n");
                         exit(1);
                     }
-                    //Send converted frame to encoder
-                    outputFrame->pts = count - 1;
+                    audioCount++;
+                    audioOutputFrame->pts= audioCount-1;
                     result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
                     if (result >= 0)
                         result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
@@ -489,19 +492,55 @@
                     if (result >= 0) {//Packet received successfully
                         if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
                             audioOutputPacket->pts =
-                                    av_rescale_q(audioOutputPacket->pts, audioOutputCodecContext->time_base, audioStream->time_base);
+                                    av_rescale_q(audioOutputPacket->pts, {1, 30*audioInputCodecContext->frame_size/audioOutputCodecContext->frame_size}, videoStream->time_base);
                         }
                         if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
                             audioOutputPacket->dts =
-                                    av_rescale_q(audioOutputPacket->dts, audioOutputCodecContext->time_base, audioStream->time_base);
+                                    av_rescale_q(audioOutputPacket->dts, {1, 30*audioInputCodecContext->frame_size/audioOutputCodecContext->frame_size}, videoStream->time_base);
                         }
                         //Write packet to file
-                        result = av_write_frame(outputFormatContext, outPacket);
+                        audioOutputPacket->stream_index=1;
+                        result = av_write_frame(outputFormatContext, audioOutputPacket);
                         if (result != 0) {
                             throw avException("Error in writing video frame");
                         }
                     } else if (result != AVERROR(EAGAIN)) throw avException("Failed to encode frame");
                     av_packet_unref(audioOutputPacket);
+                    while(got_samples > 0) {
+                        got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples,
+                                                  0, 0);
+                        audioCount++;
+                      audioOutputFrame->pts=audioCount-1;
+                        result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
+                        if (result >= 0)
+                            result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
+                        else if (result == AVERROR(EAGAIN)) {//Buffer is full
+                            while (result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame) ==
+                                            AVERROR(EAGAIN)) {//while encoder buffer is full
+                                result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
+                            }
+                        } else throw avException("Failed to send frame to encoder");//Error ending frame to encoder
+                        //Frame was sent successfully
+                        if (result >= 0) {//Packet received successfully
+                            if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
+                                audioOutputPacket->pts =
+                                        av_rescale_q(audioOutputPacket->pts, {1, 30*audioInputCodecContext->frame_size/audioOutputCodecContext->frame_size}, videoStream->time_base);
+                            }
+                            if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
+                                audioOutputPacket->dts =
+                                        av_rescale_q(audioOutputPacket->dts, {1, 30*audioInputCodecContext->frame_size/audioOutputCodecContext->frame_size}, videoStream->time_base);
+                            }
+                            //Write packet to file
+                            audioOutputPacket->stream_index=1;
+                            result = av_write_frame(outputFormatContext, audioOutputPacket);
+                            if (result != 0) {
+                                throw avException("Error in writing video frame");
+                            }
+                        } else if (result != AVERROR(EAGAIN)) throw avException("Failed to encode frame");
+                        av_packet_unref(audioOutputPacket);
+                    }
+                    //Send converted frame to encoder
+
                 } else throw avException("Failed to decode packet");
             }
         }
