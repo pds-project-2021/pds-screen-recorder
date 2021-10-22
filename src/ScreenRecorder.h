@@ -10,6 +10,7 @@
 extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavutil/pixdesc.h>
+#include <libswresample/swresample.h>
 }
 #include "exceptions/avException.h"
 #include "exceptions/dataException.h"
@@ -104,6 +105,7 @@ private:
     AVStream *videoStream = nullptr;
     AVStream *audioStream = nullptr;
     SwsContext* swsContext = nullptr;
+    SwrContext* swrContext = nullptr;
 
     const char *output_file = nullptr;
 
