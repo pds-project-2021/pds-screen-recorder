@@ -373,8 +373,39 @@ int ScreenRecorder::CaptureVideoFrames() {
         }
     }
   } // End of while-loop
+    //Handle delayed frames
+    for (int result;;) {
+        avcodec_send_frame(outputCodecContext, NULL);
+        if (avcodec_receive_packet(outputCodecContext, outPacket) == 0) {//Try to get packet
+            if (outPacket->pts != AV_NOPTS_VALUE) {
+                outPacket->pts =
+                        av_rescale_q(outPacket->pts, outputCodecContext->time_base,videoStream->time_base);
+            }
+            if (outPacket->dts != AV_NOPTS_VALUE) {
+                outPacket->dts =
+                        av_rescale_q(outPacket->dts, outputCodecContext->time_base,videoStream->time_base);
+            }
+            result = av_write_frame(outputFormatContext, outPacket);//Write packet to file
+            if (result != 0) {
+                throw avException("Error in writing video frame");
+            }
+            av_packet_unref(outPacket);
+        }
+        else {//No remaining frames to handle
+            break;
+        }
+    }
 
-  auto ret = av_write_trailer(outputFormatContext);
+    auto ret = av_write_trailer(outputFormatContext);
+    if (ret < 0) {
+        throw avException("Error in writing av trailer");
+    }
+    if (!(outputFormatContext->flags & AVFMT_NOFILE)) {
+        int err = avio_close(outputFormatContext->pb);
+        if (err < 0) {
+            throw exception("Failed to close file", err);
+        }
+    }
   if (ret < 0) {
     throw avException("Error in writing av trailer");
   }
