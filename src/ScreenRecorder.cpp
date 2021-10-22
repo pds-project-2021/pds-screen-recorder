@@ -1,60 +1,4 @@
 #include "ScreenRecorder.h"
-
-// ScreenRecorder::ScreenRecorder() {
-//  thread_exit = 0;
-//
-//  avformat_network_init();
-//  pFormatCtx = avformat_alloc_context();
-//  // Open File
-//  // char filepath[]="src01_480x272_22.h265";
-//  // avformat_open_input(&pFormatCtx,filepath,nullptr,nullptr)
-//
-//  // Register Device
-//  avdevice_register_all();
-//
-//  // Windows
-//#ifdef _WIN32
-//  // Use gdigrab
-//  options = nullptr;
-//  // Set some options
-//  // grabbing frame rate
-//  // av_dict_set(&options,"framerate","5",0);
-//  // The distance from the left edge of the screen or desktop
-//  // av_dict_set(&options,"offset_x","20",0);
-//  // The distance from the top edge of the screen or desktop
-//  // av_dict_set(&options,"offset_y","40",0);
-//  // Video frame size. The default is to capture the full screen
-//  // av_dict_set(&options,"video_size","640x480",0);
-//  ifmt = av_find_input_format("gdigrab");
-//  if (avformat_open_input(&pFormatCtx, "desktop", ifmt, &options) != 0) {
-//    throw avException("Couldn't open input stream");
-//  }
-//#elif defined linux
-//  // Linux
-//  options = nullptr;
-//  // Set some options
-//  // grabbing frame rate
-//  // av_dict_set(&options,"framerate","5",0);
-//  // Make the grabbed area follow the mouse
-//  // av_dict_set(&options,"follow_mouse","centered",0);
-//  // Video frame size. The default is to capture the full screen
-//  // av_dict_set(&options,"video_size","640x480",0);
-//  ifmt = av_find_input_format("x11grab");
-//  // Grab at position 10,20
-//  if (avformat_open_input(&pFormatCtx, ":0.0+0.0", ifmt, &options) != 0) {
-//    throw avException("Couldn't open input stream");
-//  }
-//#else
-//  show_avfoundation_device();
-//  // Mac
-//  ifmt = av_find_input_format("avfoundation");
-//  // Avfoundation
-//  //[video]:[audio]
-//  if (avformat_open_input(&pFormatCtx, "1", ifmt, nullptr) != 0) {
-//    throw avException("Couldn't open input stream");
-//  }
-//#endif
-//}
 using namespace std;
 
 
@@ -189,7 +133,7 @@ int ScreenRecorder::init() {
   }
 
   inputCodecPar = inputFormatContext->streams[index]->codecpar;
-  inputCodecPar->format = AV_PIX_FMT_YUV444P;
+  inputCodecPar->format = AV_PIX_FMT_RGB32;
 
   inputCodec = avcodec_find_decoder(inputCodecPar->codec_id);
   if (inputCodec == nullptr) {
@@ -234,7 +178,6 @@ int ScreenRecorder::init_outputfile() {
     throw avException("Error in creating a av format new stream");
   }
   videoStream->time_base = {1, 30};
-
   /* Returns the output format in the list of registered output formats which
    * best matches the provided parameters, or returns nullptr if there is no
    * match.
@@ -249,8 +192,8 @@ int ScreenRecorder::init_outputfile() {
   if (!outputCodecContext) {
     throw avException("Error in allocating the codec context");
   }
-  outputCodecContext->gop_size = 3;
-  outputCodecContext->max_b_frames = 2;
+  outputCodecContext->gop_size = 1;
+  outputCodecContext->max_b_frames = 1;
   outputCodecContext->time_base = videoStream->time_base;
 
   /* set property of the video file */
@@ -330,6 +273,8 @@ int ScreenRecorder::CaptureVideoFrames() {
     frame->height = inputCodecPar->height;
     frame->format = inputCodecPar->format;
     frame->pts = 0;
+    // Setup the data pointers and linesizes based on the specified image
+    // parameters and the provided array.
     if (av_image_alloc(frame->data, frame->linesize,
                        inputCodecContext->width, inputCodecContext->height,
                        (AVPixelFormat)inputCodecPar->format, 32) < 0) {
@@ -346,35 +291,13 @@ int ScreenRecorder::CaptureVideoFrames() {
   outputFrame->height = outputCodecPar->height;
   outputFrame->format = outputCodecPar->format;
   outputFrame->pts = 0;
-
-
-if (av_image_alloc(outputFrame->data, outputFrame->linesize,
-                   outputCodecContext->width, outputCodecContext->height,
-                   (AVPixelFormat)outputFrame->format, 32) < 0) {
-    throw avException("Error in allocating frame data");
-}
-
-  // Setup the data pointers and linesizes based on the specified image
-  // parameters and the provided array.
-  //  value = av_image_fill_arrays(
-  //      outputFrame->data, outputFrame->linesize, video_outbuf,
-  //      AV_PIX_FMT_YUV420P, outputCodecContext->width,
-  //      outputCodecContext->height, 1); // returns : the size in bytes
-  //      required for src
-  //  if (value < 0) {
-  //    throw avException("Error in filling image array");
-  //  }
-
-  //  SwsContext *swsCtx_;
-
-  // Allocate and return swsContext.
-  // a pointer to an allocated context, or nullptr in case of error
-  // Deprecated : Use sws_getCachedContext() instead.
-  //  swsCtx_ = sws_getContext(
-  //      inputCodecContext->width, inputCodecContext->height,
-  //      inputCodecContext->pix_fmt, outputCodecContext->width,
-  //      outputCodecContext->height, outputCodecContext->pix_fmt, SWS_BICUBIC,
-  //      nullptr, nullptr, nullptr);
+    // Setup the data pointers and linesizes based on the specified image
+    // parameters and the provided array.
+    if (av_image_alloc(outputFrame->data, outputFrame->linesize,
+                       outputCodecContext->width, outputCodecContext->height,
+                       (AVPixelFormat)outputFrame->format, 32) < 0) {
+        throw avException("Error in allocating frame data");
+    }
 
   int count = 0;
   int frameCount = 300;
@@ -392,68 +315,62 @@ if (av_image_alloc(outputFrame->data, outputFrame->linesize,
   if (!outPacket) {
       throw avException("Error on packet initialization");
   }
-  while (av_read_frame(inputFormatContext, packet) >= 0) {
+  while (av_read_frame(inputFormatContext, packet) >= 0) {//Try to extract packet from input stream
     if (count++ == frameCount) {
     break;
     }
 
     if (packet->stream_index == videoStream->index) {
-//      avcodec_decode_video2(inputCodecContext, frame, &frameFinished, packet);
-        int ret;
-        //= decode(inputCodecContext, frame, &frameFinished, packet);
-        fill_yuv_image(frame->data, frame->linesize, inputCodecPar->width, inputCodecPar->height, count);
-//      auto result = avcodec_send_packet(inputCodecContext, packet);
-//      if (result == AVERROR(EAGAIN)) {}
-//      else{
-//        throw avException("Failed to send packet to decoder");
-//      }
-//      result = avcodec_receive_frame(inputCodecContext, frame);
-  //    if (ret < 0) {
-  //      throw avException("Unable to decode");
-  //    }
-      if(frameFinished=1){
-        sws_scale(swsContext, frame->data, frame->linesize, 0,
-                  inputCodecContext->height, (uint8_t * const *)outputFrame->data,
-                 outputFrame->linesize);
-
-        encode(outputCodecContext, outPacket, &got_picture, outputFrame);
-
-//        got_picture = avcodec_encode_video2(outputCodecContext, &outPacket, outputFrame, &got_picture);
-//        ret = avcodec_send_frame(outputCodecContext, outputFrame);
-//        if (ret < 0) {
-//          cout << ret << endl;
-//          throw avException("Failed to send frame from encoder");
-//        }
-//
-//        ret = avcodec_receive_packet(outputCodecContext, &outPacket);
-//        if (ret < 0) {
-//          char buff[100];
-//          av_strerror(ret, buff, 100);
-//          cout << buff << endl;
-//          throw avException("Failed to receive packet from encoder");
-//        }
-
-        if(got_picture){
-          if (outPacket->pts != AV_NOPTS_VALUE) {
-            outPacket->pts =
-                av_rescale_q(outPacket->pts, outputCodecContext->time_base,videoStream->time_base);
+        //Send packet to decoder
+         auto result = avcodec_send_packet(inputCodecContext, packet);
+         //Check result
+         if (result >=0) result = avcodec_receive_frame(inputCodecContext, frame); //Try to get a decoded frame
+         if (result == AVERROR(EAGAIN)) {//Buffer is full, cannot send new packet
+             while(avcodec_send_packet(inputCodecContext, packet)== AVERROR(EAGAIN)){ //While decoder buffer is full
+                 result = avcodec_receive_frame(inputCodecContext, frame); //Try to get a decoded frame
+             }
+         }
+         else{
+            throw avException("Failed to send packet to decoder");//Decoder error
           }
-          if (outPacket->dts != AV_NOPTS_VALUE) {
-            outPacket->dts =
-                av_rescale_q(outPacket->dts, outputCodecContext->time_base,videoStream->time_base);
-          }
-
-//          cout << "Write frame " << j++ << " (size= " << outPacket.size / 1000 << ")" << endl;
-
-          ret = av_write_frame(outputFormatContext, outPacket);
-          if (ret != 0) {
-            throw avException("Error in writing video frame");
-          }
-
-        } // got_picture
-          av_packet_unref(outPacket);
-
-      } // frameFinished
+         //Try to get a decoded frame
+        result = avcodec_receive_frame(inputCodecContext, frame);
+        if (result != AVERROR(EAGAIN)) {//check if decoded frame is ready
+            if(result>=0) {//frame is ready
+                //Convert frame picture format
+                sws_scale(swsContext, frame->data, frame->linesize, 0,
+                          inputCodecContext->height, outputFrame->data,
+                          outputFrame->linesize);
+                //Send converted frame to encoder
+                result = avcodec_send_frame(outputCodecContext, outputFrame);
+                if(result >=0) result = avcodec_receive_packet(outputCodecContext, outPacket);//Try to receive packet
+                else if(result == AVERROR(EAGAIN))  {//Buffer is full
+                    while(result = avcodec_send_frame(outputCodecContext, outputFrame) == AVERROR(EAGAIN)){//while encoder buffer is full
+                        result = avcodec_receive_packet(outputCodecContext, outPacket);//Try to receive packet
+                    }
+                }
+                else throw avException("Failed to send frame to encoder");//Error ending frame to encoder
+                //Frame was sent successfully
+                if(result>=0) {//Packet received successfully
+                    if (outPacket->pts != AV_NOPTS_VALUE) {
+                        outPacket->pts =
+                                av_rescale_q(outPacket->pts, outputCodecContext->time_base,videoStream->time_base);
+                    }
+                    if (outPacket->dts != AV_NOPTS_VALUE) {
+                        outPacket->dts =
+                                av_rescale_q(outPacket->dts, outputCodecContext->time_base,videoStream->time_base);
+                    }
+                    //Write packet to file
+                    result = av_write_frame(outputFormatContext, outPacket);
+                    if (result != 0) {
+                        throw avException("Error in writing video frame");
+                    }
+                }
+                else if(result != AVERROR(EAGAIN))  throw avException("Failed to encode frame");
+                av_packet_unref(outPacket);
+            }
+            else throw avException("Failed to decode packet");
+        }
     }
   } // End of while-loop
 
@@ -482,164 +399,3 @@ if (av_image_alloc(outputFrame->data, outputFrame->linesize,
 }
 
 
-// ------------------------------------
-
-// int ScreenRecorder::sfp_refresh_thread(void *opaque) {
-//   thread_exit = 0;
-//   while (1) {
-//     SDL_Event event;
-//     event.type = SFM_REFRESH_EVENT;
-//     SDL_PushEvent(&event);
-//     SDL_Delay(40);
-//   }
-//   thread_exit = 0;
-//  Break
-//   SDL_Event event;
-//   event.type = SFM_BREAK_EVENT;
-//   SDL_PushEvent(&event);
-//
-//   return 0;
-//}
-
-// Show AVFoundation Device
-// void ScreenRecorder::show_avfoundation_device() {
-//  pFormatCtx = avformat_alloc_context();
-//  options = nullptr;
-//  av_dict_set(&options, "list_devices", "true", 0);
-//  AVInputFormat *iformat = av_find_input_format("avfoundation");
-//  printf("==AVFoundation Device Info===\n");
-//  avformat_open_input(&pFormatCtx, "", iformat, &options);
-//  printf("=============================\n");
-//}
-//
-// int ScreenRecorder::start_recording() {
-//  if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
-//    throw avException("Couldn't find stream information");
-//  }
-//  video_index = -1;
-//  for (i = 0; i < pFormatCtx->nb_streams; i++)
-//    if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-//      video_index = i;
-//      break;
-//    }
-//  if (video_index == -1) {
-//    throw avException("Didn't find a video stream");
-//  }
-//  pCodecPar = pFormatCtx->streams[video_index]->codecpar;
-//  pCodec = avcodec_find_decoder(pCodecPar->codec_id);
-//  auto pCodecCtx = pFormatCtx->streams[video_index]->codec;
-//  if (pCodec == nullptr) {
-//    throw avException("Codec not found");
-//  }
-//  if (avcodec_open2(pCodecCtx, pCodec, nullptr) < 0) {
-//    throw avException("Could not open codec");
-//  }
-//  AVFrame *pFrame, *pFrameYUV;
-//  pFrame = av_frame_alloc();
-//  pFrameYUV = av_frame_alloc();
-//  // unsigned char *out_buffer=(unsigned char
-//  // *)av_malloc(avpicture_get_size(AV_PIX_FMT_YUV420P, pCodecCtx->width,
-//  // pCodecCtx->height)); avpicture_fill((AVPicture *)pFrameYUV, out_buffer,
-//  // AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height);
-//  // SDL----------------------------
-//  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER)) {
-//    throw avException(std::string("Could not initialize SDL - ") +
-//                          SDL_GetError());
-//  }
-//
-//  int screen_w = 640, screen_h = 360;
-//  SDL_DisplayMode *dm;
-//  SDL_GetCurrentDisplayMode(0, dm);
-//  // Half of the Desktop's width and height.
-//  screen_w = dm->w / 2;
-//  screen_h = dm->h / 2;
-//  SDL_Window *screen;
-//  screen = SDL_CreateWindow("Video Recording", 0, 0, screen_w, screen_h, 0);
-//
-//  if (!screen) {
-//    throw avException(
-//        std::string("SDL: could not set video mode - exiting:") +
-//        SDL_GetError());
-//  }
-//  SDL_Renderer *renderer = SDL_CreateRenderer(screen, -1, 0);
-//  if (!renderer) {
-//    throw avException(
-//        std::string("SDL: could not create renderer - exiting:") +
-//        SDL_GetError());
-//  }
-//
-//  SDL_Texture *txr = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
-//                                       SDL_TEXTUREACCESS_STREAMING,
-//                                       pCodecCtx->width, pCodecCtx->height);
-//  SDL_Rect rect;
-//  rect.x = 0;
-//  rect.y = 0;
-//  rect.w = screen_w;
-//  rect.h = screen_h;
-//  // SDL End------------------------
-//  int ret, got_picture;
-//
-//  AVPacket *packet = (AVPacket *)av_malloc(sizeof(AVPacket));
-//
-//  struct SwsContext *img_convert_ctx;
-//  img_convert_ctx =
-//      sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt,
-//                     pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_YUV420P,
-//                     SWS_BICUBIC, nullptr, nullptr, nullptr);
-//  //------------------------------
-//  SDL_Thread *video_tid =
-//      SDL_CreateThread(sfp_refresh_thread, "video", nullptr);
-//  // Event Loop
-//  SDL_Event event;
-//
-//  for (;;) {
-//    // Wait
-//    SDL_WaitEvent(&event);
-//    if (event.type == SFM_REFRESH_EVENT) {
-//      //------------------------------
-//      if (av_read_frame(pFormatCtx, packet) >= 0) {
-//        if (packet->stream_index == video_index) {
-//          // TODO update deprecated call
-//          ret = avcodec_decode_video2(pCodecCtx, pFrame, &got_picture,
-//          packet); if (ret < 0) {
-//            throw avException("Decode Error");
-//          }
-//          if (got_picture) {
-//            //            SDL_LockYUVOverlay(bmp);
-//            //            pFrameYUV->data[0] = bmp->pixels[0];
-//            //            pFrameYUV->data[1] = bmp->pixels[2];
-//            //            pFrameYUV->data[2] = bmp->pixels[1];
-//            //            pFrameYUV->linesize[0] = bmp->pitches[0];
-//            //            pFrameYUV->linesize[1] = bmp->pitches[2];
-//            //            pFrameYUV->linesize[2] = bmp->pitches[1];
-//            //            sws_scale(img_convert_ctx,
-//            //                      (const unsigned char *const
-//            *)pFrame->data,
-//            //                      pFrame->linesize, 0, pCodecCtx->height,
-//            //                      pFrameYUV->data, pFrameYUV->linesize);
-//            //
-//            //            SDL_UnlockYUVOverlay(bmp);
-//            //
-//            //            SDL_DisplayYUVOverlay(bmp, &rect);
-//          }
-//        }
-//        av_packet_unref(packet);
-//      } else {
-//        // Exit Thread
-//        //        thread_exit = 1;
-//      }
-//    } else if (event.type == SDL_QUIT) {
-//      //      thread_exit = 1;
-//    } else if (event.type == SFM_BREAK_EVENT) {
-//      break;
-//    }
-//  }
-//
-//  sws_freeContext(img_convert_ctx);
-//  SDL_Quit();
-//
-//  av_free(pFrameYUV);
-//  avcodec_close(pCodecCtx);
-//  avformat_close_input(&pFormatCtx);
-//  return 0;
-//}
