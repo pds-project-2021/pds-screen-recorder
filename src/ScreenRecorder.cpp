@@ -325,7 +325,7 @@ int ScreenRecorder::CaptureVideoFrames() {
          auto result = avcodec_send_packet(inputCodecContext, packet);
          //Check result
          if (result >=0) result = avcodec_receive_frame(inputCodecContext, frame); //Try to get a decoded frame
-         if (result == AVERROR(EAGAIN)) {//Buffer is full, cannot send new packet
+         else if (result == AVERROR(EAGAIN)) {//Buffer is full, cannot send new packet
              while(avcodec_send_packet(inputCodecContext, packet)== AVERROR(EAGAIN)){ //While decoder buffer is full
                  result = avcodec_receive_frame(inputCodecContext, frame); //Try to get a decoded frame
              }
@@ -333,8 +333,6 @@ int ScreenRecorder::CaptureVideoFrames() {
          else{
             throw avException("Failed to send packet to decoder");//Decoder error
           }
-         //Try to get a decoded frame
-        result = avcodec_receive_frame(inputCodecContext, frame);
         if (result != AVERROR(EAGAIN)) {//check if decoded frame is ready
             if(result>=0) {//frame is ready
                 //Convert frame picture format
@@ -395,7 +393,7 @@ int ScreenRecorder::CaptureVideoFrames() {
             break;
         }
     }
-
+    //Write video file trailer data
     auto ret = av_write_trailer(outputFormatContext);
     if (ret < 0) {
         throw avException("Error in writing av trailer");
@@ -406,26 +404,13 @@ int ScreenRecorder::CaptureVideoFrames() {
             throw exception("Failed to close file", err);
         }
     }
-  if (ret < 0) {
-    throw avException("Error in writing av trailer");
-  }
 
   // THIS WAS ADDED LATER
 //    av_free(outBuffer);
   cout << "qua" << endl;
 
   av_dump_format(outputFormatContext, 0,"../output.txt", 1);
-/*
-    cout << "qua" << endl;
-    FILE * f = fopen("../output.mp4", "a+");
-    uint8_t outbuf[4];
-    outbuf[0] = 0x00;
-    outbuf[1] = 0x00;
-    outbuf[2] = 0x01;
-    outbuf[3] = 0xb7;
-    fwrite(outbuf, 1, 4, f);
-    fclose(f);
-*/
+
 
 }
 
