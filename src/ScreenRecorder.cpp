@@ -76,19 +76,12 @@ int ScreenRecorder::init() {
   av_dict_set(&options, "show_region", "1", 0);
 
 #ifdef _WIN32
-#if USE_DSHOW
-    options = nullptr;
-    inputFormat = av_find_input_format("dshow");
-    if (avformat_open_input(&inputFormatContext, "video=screen-capture-recorder", inputFormat, &options) != 0) {
-        throw avException("Couldn't open input stream");
-    }
-#else
+
     options = nullptr;
     inputFormat = av_find_input_format("gdigrab");
     if (avformat_open_input(&inputFormatContext, "desktop", inputFormat, &options) != 0) {
         throw avException("Couldn't open input stream");
         }
-#endif
 #elif defined linux
     options = nullptr;
     inputFormat = av_find_input_format("x11grab");
@@ -195,8 +188,8 @@ int ScreenRecorder::init_outputfile() {
     outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
     outputCodecPar->format = AV_PIX_FMT_YUV420P;
     outputCodecPar->bit_rate = 2400000; // 2500000
-    outputCodecPar->width = 2560;
-    outputCodecPar->height = 1080;
+    outputCodecPar->width = inputCodecContext->width;
+    outputCodecPar->height = inputCodecContext->height;
 
     audioOutputCodecPar = audioStream->codecpar;
     audioOutputCodecPar->codec_id = AV_CODEC_ID_AAC;
