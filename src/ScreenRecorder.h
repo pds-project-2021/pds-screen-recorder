@@ -8,8 +8,8 @@
 #include <math.h>
 #include <string.h>
 extern "C" {
-    #include <libavutil/imgutils.h>
-    #include <libavutil/pixdesc.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/pixdesc.h>
 }
 #include "exceptions/avException.h"
 #include "exceptions/dataException.h"
@@ -19,6 +19,7 @@ extern "C" {
 
 #ifdef _WIN32
 // Windows
+#include <dshow.h>
 extern "C" {
 #include "libavcodec/avcodec.h"
 #include "libavdevice/avdevice.h"
@@ -72,44 +73,55 @@ private:
 //  AVCodecParameters *pCodecPar;
 //  AVCodec *pCodec;
 //  AVInputFormat *ifmt;
-  //  AVDictionary *options;
+    //  AVDictionary *options;
 
 //  int i, video_index;
 
-  //  -----------------------
-  AVInputFormat *inputFormat = nullptr;
-  AVOutputFormat *outputFormat = nullptr;
-  AVCodecContext *inputCodecContext = nullptr;
-  AVCodecContext *outputCodecContext = nullptr;
-  AVFormatContext *inputFormatContext = nullptr;
-  AVFormatContext *outputFormatContext = nullptr;
-  AVCodecParameters *inputCodecPar = nullptr;
-  AVCodecParameters *outputCodecPar = nullptr;
+    //  -----------------------
+    AVInputFormat *inputFormat = nullptr;
+    AVInputFormat *audioInputFormat = nullptr;
+    AVOutputFormat *outputFormat = nullptr;
+    AVOutputFormat *audioOutputFormat = nullptr;
+    AVCodecContext *inputCodecContext = nullptr;
+    AVCodecContext *audioInputCodecContext = nullptr;
+    AVCodecContext *outputCodecContext = nullptr;
+    AVCodecContext *audioOutputCodecContext = nullptr;
+    AVFormatContext *inputFormatContext = nullptr;
+    AVFormatContext *audioInputFormatContext = nullptr;
+    AVFormatContext *outputFormatContext = nullptr;
+    AVFormatContext *audioOutputFormatContext = nullptr;
+    AVCodecParameters *inputCodecPar = nullptr;
+    AVCodecParameters *audioInputCodecPar = nullptr;
+    AVCodecParameters *outputCodecPar = nullptr;
+    AVCodecParameters *audioOutputCodecPar = nullptr;
 
-  AVCodec *inputCodec = nullptr;
-  AVCodec *outputCodec = nullptr;
-  AVDictionary *options = nullptr;
+    AVCodec *inputCodec = nullptr;
+    AVCodec *audioInputCodec = nullptr;
+    AVCodec *outputCodec = nullptr;
+    AVCodec *audioOutputCodec = nullptr;
+    AVDictionary *options = nullptr;
 
-  AVStream *videoStream = nullptr;
-  SwsContext* swsContext = nullptr;
+    AVStream *videoStream = nullptr;
+    AVStream *audioStream = nullptr;
+    SwsContext* swsContext = nullptr;
 
-  const char *output_file = nullptr;
+    const char *output_file = nullptr;
 
-  double video_pts;
+    double video_pts;
 
-  int out_size;
-  int codec_id;
+    int out_size;
+    int codec_id;
 
 public:
-  ScreenRecorder();
-  ~ScreenRecorder();
+    ScreenRecorder();
+    ~ScreenRecorder();
 
-  /* function to initiate communication with display library */
-  int init();
-  int init_outputfile();
-  int CaptureVideoFrames();
+    /* function to initiate communication with display library */
+    int init();
+    int init_outputfile();
+    int CaptureVideoFrames();
 
-  //  ----------------
+    //  ----------------
 
 //  static int sfp_refresh_thread(void *opaque);
 //  void show_avfoundation_device();

@@ -141,71 +141,100 @@ int ScreenRecorder::init() {
 }
 
 int ScreenRecorder::init_outputfile() {
-  output_file = "../output.mp4";
+    output_file = "../output.mp4";
 
-  outputCodec = avcodec_find_encoder(AV_CODEC_ID_H264);
-  if (!outputCodec) {
-    throw avException(
-        "Error in finding the av codecs. try again with correct codec");
-  }
+    outputCodec = avcodec_find_encoder(AV_CODEC_ID_H264);
+    if (!outputCodec) {
+        throw avException(
+                "Error in finding the video av codecs. try again with correct codec");
+    }
+    audioOutputCodec = avcodec_find_encoder(AV_CODEC_ID_AAC);
+    if (!audioOutputCodec) {
+        throw avException(
+                "Error in finding the audio av codecs. try again with correct codec");
+    }
+    avformat_alloc_output_context2(&outputFormatContext, nullptr, nullptr, output_file);
+    if (!outputFormatContext) {
+        throw avException("Error in allocating av format output context");
+    }
 
-  avformat_alloc_output_context2(&outputFormatContext, nullptr, nullptr, output_file);
-  if (!outputFormatContext) {
-    throw avException("Error in allocating av format output context");
-  }
+    videoStream = avformat_new_stream(outputFormatContext, outputCodec);
+    if (!videoStream) {
+        throw avException("Error in creating a av format new video stream");
+    }
+    audioStream  = avformat_new_stream(outputFormatContext, audioOutputCodec);
+    if (!audioStream) {
+        throw avException("Error in creating a av format new audio stream");
+    }
+    videoStream->time_base = {1, 30};
+    /* Returns the output format in the list of registered output formats which
+     * best matches the provided parameters, or returns nullptr if there is no
+     * match.
+     */
+    outputFormat = av_guess_format(nullptr, output_file, nullptr);
+    if (!outputFormat) {
+        throw avException(
+                "Error in guessing the video format. try with correct format");
+    }
 
-  videoStream = avformat_new_stream(outputFormatContext, outputCodec);
-  if (!videoStream) {
-    throw avException("Error in creating a av format new stream");
-  }
-  videoStream->time_base = {1, 30};
-  /* Returns the output format in the list of registered output formats which
-   * best matches the provided parameters, or returns nullptr if there is no
-   * match.
-   */
-  outputFormat = av_guess_format(nullptr, output_file, nullptr);
-  if (!outputFormat) {
-    throw avException(
-        "Error in guessing the video format. try with correct format");
-  }
+    outputCodecContext = avcodec_alloc_context3(outputCodec);
+    if (!outputCodecContext) {
+        throw avException("Error in allocating the video codec context");
+    }
+    audioOutputCodecContext = avcodec_alloc_context3(audioOutputCodec);
+    if (!audioOutputCodecContext) {
+        throw avException("Error in allocating the audio codec context");
+    }
+    outputCodecContext->gop_size = 10;
+    outputCodecContext->max_b_frames = 5;
+    outputCodecContext->time_base = videoStream->time_base;
 
-  outputCodecContext = avcodec_alloc_context3(outputCodec);
-  if (!outputCodecContext) {
-    throw avException("Error in allocating the codec context");
-  }
-  outputCodecContext->gop_size = 10;
-  outputCodecContext->max_b_frames = 5;
-  outputCodecContext->time_base = videoStream->time_base;
+    /* set property of the video file */
+    outputCodecPar = videoStream->codecpar;
+    outputCodecPar->codec_id = AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; AV_CODEC_ID_MPEG1VIDEO;
+    outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
+    outputCodecPar->format = AV_PIX_FMT_YUV420P;
+    outputCodecPar->bit_rate = 2400000; // 2500000
+    outputCodecPar->width = 2560;
+    outputCodecPar->height = 1080;
 
-  /* set property of the video file */
-  outputCodecPar = videoStream->codecpar;
-  outputCodecPar->codec_id = AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; AV_CODEC_ID_MPEG1VIDEO;
-  outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
-  outputCodecPar->format = AV_PIX_FMT_YUV420P;
-  outputCodecPar->bit_rate = 2400000; // 2500000
-  outputCodecPar->width = inputCodecPar->width;
-  outputCodecPar->height = inputCodecPar->height;
+    audioOutputCodecPar = audioStream->codecpar;
+    audioOutputCodecPar->codec_id = AV_CODEC_ID_AAC;
+    audioOutputCodecPar->codec_type = AVMEDIA_TYPE_AUDIO;
+    audioOutputCodecPar->bit_rate = 128000;
+    audioOutputCodecPar->channels = 2;
+    audioOutputCodecPar->channel_layout = AV_CH_LAYOUT_STEREO;
+    audioOutputCodecPar->sample_rate = 44100;
+    audioOutputCodecPar->format = audioOutputCodec->sample_fmts[0];
 
-  auto ret = avcodec_parameters_to_context(outputCodecContext,outputCodecPar);
-  if (ret < 0) {
-    throw avException("Unable to get output codec context");
-  }
+    auto ret = avcodec_parameters_to_context(outputCodecContext,outputCodecPar);
+    if (ret < 0) {
+        throw avException("Unable to get output codec context");
+    }
+    ret = avcodec_parameters_to_context(audioOutputCodecContext,audioOutputCodecPar);
+    if (ret < 0) {
+        throw avException("Unable to get output codec context");
+    }
 
-  /* Some container formats (like MP4) require global headers to be present
- Mark the encoder so that it behaves accordingly. */
+    /* Some container formats (like MP4) require global headers to be present
+   Mark the encoder so that it behaves accordingly. */
 
-  if (outputFormatContext->oformat->flags & AVFMT_GLOBALHEADER) {
-    outputCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-  }
+    if (outputFormatContext->oformat->flags & AVFMT_GLOBALHEADER) {
+        outputCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    }
 
-  if (codec_id == AV_CODEC_ID_H264) {
-    av_opt_set(outputCodecContext->priv_data, "preset", "slow", 0);
-  }
+    if (codec_id == AV_CODEC_ID_H264) {
+        av_opt_set(outputCodecContext->priv_data, "preset", "slow", 0);
+    }
 
-  ret = avcodec_open2(outputCodecContext, outputCodec, nullptr);
-  if (ret < 0) {
-    throw avException("Error in opening the avcodec");
-  }
+    ret = avcodec_open2(outputCodecContext, outputCodec, nullptr);
+    if (ret < 0) {
+        throw avException("Error in opening the video avcodec");
+    }
+    ret = avcodec_open2(audioOutputCodecContext, audioOutputCodec, nullptr);
+    if (ret < 0) {
+        throw avException("Error in opening the audio avcodec");
+    }
 
   /* create empty video file */
   if (!(outputFormatContext->flags & AVFMT_NOFILE)) {
