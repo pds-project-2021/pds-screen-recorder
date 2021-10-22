@@ -302,10 +302,6 @@ int ScreenRecorder::CaptureVideoFrames() {
   int count = 0;
   int frameCount = 300;
 
-  int got_picture;
-
-  int j = 0;
-  int frameFinished;
 
   AVPacket *packet = av_packet_alloc();
   if (!packet) {
@@ -340,6 +336,7 @@ int ScreenRecorder::CaptureVideoFrames() {
                           inputCodecContext->height, outputFrame->data,
                           outputFrame->linesize);
                 //Send converted frame to encoder
+                outputFrame->pts=count;
                 result = avcodec_send_frame(outputCodecContext, outputFrame);
                 if(result >=0) result = avcodec_receive_packet(outputCodecContext, outPacket);//Try to receive packet
                 else if(result == AVERROR(EAGAIN))  {//Buffer is full
@@ -356,7 +353,7 @@ int ScreenRecorder::CaptureVideoFrames() {
                     }
                     if (outPacket->dts != AV_NOPTS_VALUE) {
                         outPacket->dts =
-                                av_rescale_q(outPacket->dts, outputCodecContext->time_base,videoStream->time_base);
+                                av_rescale_q(outPacket->dts-1, outputCodecContext->time_base,videoStream->time_base);
                     }
                     //Write packet to file
                     result = av_write_frame(outputFormatContext, outPacket);
