@@ -68,26 +68,33 @@
         inputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
         audioInputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
         options = nullptr;
+
+	#ifdef _WIN32
+        CoInitializeEx(NULL, COINIT_MULTITHREADED);//Set COM to multithreaded model
+        av_dict_set(&options, "rtbufsize", "10M", 0);
+		audioInputFormat = av_find_input_format("dshow");
+		if (avformat_open_input(&audioInputFormatContext, "audio=Analogue 1 + 2 (Focusrite Usb Audio)", audioInputFormat, &options) != 0) {
+			throw avException("Couldn't open input stream");
+		}
+		options = nullptr;
         av_dict_set(&options, "framerate", "30", 0);
         av_dict_set(&options, "preset", "medium", 0);
         av_dict_set(&options, "offset_x", "0", 0);
         av_dict_set(&options, "offset_y", "0", 0);
         //av_dict_set(&options, "video_size", "1920x1080", 0);
         av_dict_set(&options, "show_region", "1", 0);
-
-	#ifdef _WIN32
-        CoInitializeEx(NULL, COINIT_MULTITHREADED);//Set COM to multithreaded model
-		audioInputFormat = av_find_input_format("dshow");
-		if (avformat_open_input(&audioInputFormatContext, "audio=Analogue 1 + 2 (Focusrite Usb Audio)", audioInputFormat, NULL) != 0) {
-			throw avException("Couldn't open input stream");
-		}
-		options = nullptr;
 		inputFormat = av_find_input_format("gdigrab");
 		if (avformat_open_input(&inputFormatContext, "desktop", inputFormat, &options) != 0) {
 			throw avException("Couldn't open input stream");
 			}
 	#elif defined linux
 		options = nullptr;
+        av_dict_set(&options, "framerate", "30", 0);
+        av_dict_set(&options, "preset", "medium", 0);
+        av_dict_set(&options, "offset_x", "0", 0);
+        av_dict_set(&options, "offset_y", "0", 0);
+        //av_dict_set(&options, "video_size", "1920x1080", 0);
+        av_dict_set(&options, "show_region", "1", 0);
 		inputFormat = av_find_input_format("x11grab");
 		if (avformat_open_input(&inputFormatContext, ":0.0+0,0", inputFormat, &options) != 0) {
 			throw avException("Couldn't open input stream");
