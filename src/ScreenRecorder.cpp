@@ -360,7 +360,7 @@
         int count = 0;
         int frameNum = 0; //frame number in a second
         int audioCount = 0;
-        int frameCount = 61;
+        int frameCount = 121;
         int audioCycle = 0;
 
 	  AVPacket *packet = av_packet_alloc();
@@ -480,40 +480,9 @@
                         fprintf(stderr, "error: swr_convert()\n");
                         exit(1);
                     }
-                    audioCount++;
-                    audioOutputFrame->pts= audioCount-1;
-                    result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
-                    if (result >= 0)
-                        result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
-                    else if (result == AVERROR(EAGAIN)) {//Buffer is full
-                        while (result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame) ==
-                                        AVERROR(EAGAIN)) {//while encoder buffer is full
-                            result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
-                        }
-                    } else throw avException("Failed to send frame to encoder");//Error ending frame to encoder
-                    //Frame was sent successfully
-                    if (result >= 0) {//Packet received successfully
-                        if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
-                            audioOutputPacket->pts =
-                                    av_rescale_q(audioOutputPacket->pts, {audioOutputFrame->nb_samples, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, videoStream->time_base);
-                        }
-                        if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
-                            audioOutputPacket->dts =
-                                    av_rescale_q(audioOutputPacket->dts, {audioOutputFrame->nb_samples, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, videoStream->time_base);
-                        }
-                        //Write packet to file
-                        audioOutputPacket->stream_index=1;
-                        result = av_write_frame(outputFormatContext, audioOutputPacket);
-                        if (result != 0) {
-                            throw avException("Error in writing video frame");
-                        }
-                    } else if (result != AVERROR(EAGAIN)) throw avException("Failed to encode frame");
-                    av_packet_unref(audioOutputPacket);
-                    while(got_samples > 0) {
-                        got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples,
-                                                  0, 0);
+                    else if (got_samples >= audioOutputCodecContext->frame_size) {
                         audioCount++;
-                        audioOutputFrame->pts=audioCount-1;
+                        audioOutputFrame->pts= audioCount-1;
                         result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
                         if (result >= 0)
                             result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
@@ -527,11 +496,45 @@
                         if (result >= 0) {//Packet received successfully
                             if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
                                 audioOutputPacket->pts =
-                                        av_rescale_q(audioOutputPacket->pts, {audioOutputFrame->nb_samples, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, videoStream->time_base);
+                                        av_rescale_q(audioOutputPacket->pts, {audioOutputCodecContext->frame_size, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, audioStream->time_base);
                             }
                             if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
                                 audioOutputPacket->dts =
-                                        av_rescale_q(audioOutputPacket->dts, {audioOutputFrame->nb_samples, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, videoStream->time_base);
+                                        av_rescale_q(audioOutputPacket->dts, {audioOutputCodecContext->frame_size, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, audioStream->time_base);
+                            }
+                            //Write packet to file
+                            audioOutputPacket->stream_index=1;
+                            result = av_write_frame(outputFormatContext, audioOutputPacket);
+                            if (result != 0) {
+                                throw avException("Error in writing video frame");
+                            }
+                        } else if (result != AVERROR(EAGAIN)) throw avException("Failed to encode frame");
+                        av_packet_unref(audioOutputPacket);
+                    }
+                    while(got_samples >= audioOutputCodecContext->frame_size) {
+                        got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples,
+                                                  0, 0);
+                        audioCount++;
+                        audioOutputFrame->pts=audioCount-1;
+                        result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
+                        if (result >= 0) {
+                            result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
+                        }
+                        else if (result == AVERROR(EAGAIN)) {//Buffer is full
+                            while (result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame) ==
+                                            AVERROR(EAGAIN)) {//while encoder buffer is full
+                                result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
+                            }
+                        } else throw avException("Failed to send frame to encoder");//Error ending frame to encoder
+                        //Frame was sent successfully
+                        if (result >= 0) {//Packet received successfully
+                            if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
+                                audioOutputPacket->pts =
+                                        av_rescale_q(audioOutputPacket->pts, {audioOutputCodecContext->frame_size, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, audioStream->time_base);
+                            }
+                            if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
+                                audioOutputPacket->dts =
+                                        av_rescale_q(audioOutputPacket->dts, {audioOutputCodecContext->frame_size, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, audioStream->time_base);
                             }
                             //Write packet to file
                             audioOutputPacket->stream_index=1;
