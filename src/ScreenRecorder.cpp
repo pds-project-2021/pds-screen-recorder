@@ -495,11 +495,11 @@
                     if (result >= 0) {//Packet received successfully
                         if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
                             audioOutputPacket->pts =
-                                    av_rescale_q(audioOutputPacket->pts, {1, audioInputCodecContext->sample_rate*audioInputCodecContext->channels/audioOutputFrame->nb_samples}, videoStream->time_base);
+                                    av_rescale_q(audioOutputPacket->pts, {audioOutputFrame->nb_samples, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, videoStream->time_base);
                         }
                         if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
                             audioOutputPacket->dts =
-                                    av_rescale_q(audioOutputPacket->dts, {1, audioInputCodecContext->sample_rate*audioInputCodecContext->channels/audioOutputFrame->nb_samples}, videoStream->time_base);
+                                    av_rescale_q(audioOutputPacket->dts, {audioOutputFrame->nb_samples, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, videoStream->time_base);
                         }
                         //Write packet to file
                         audioOutputPacket->stream_index=1;
@@ -527,11 +527,11 @@
                         if (result >= 0) {//Packet received successfully
                             if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
                                 audioOutputPacket->pts =
-                                        av_rescale_q(audioOutputPacket->pts, {1, audioInputCodecContext->sample_rate*audioInputCodecContext->channels/audioOutputFrame->nb_samples}, videoStream->time_base);
+                                        av_rescale_q(audioOutputPacket->pts, {audioOutputFrame->nb_samples, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, videoStream->time_base);
                             }
                             if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
                                 audioOutputPacket->dts =
-                                        av_rescale_q(audioOutputPacket->dts, {1, audioInputCodecContext->sample_rate*audioInputCodecContext->channels/audioOutputFrame->nb_samples}, videoStream->time_base);
+                                        av_rescale_q(audioOutputPacket->dts, {audioOutputFrame->nb_samples, audioInputCodecContext->sample_rate*audioInputCodecContext->channels}, videoStream->time_base);
                             }
                             //Write packet to file
                             audioOutputPacket->stream_index=1;
