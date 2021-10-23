@@ -97,6 +97,6 @@ int main(int argc, char **argv) {
   std::cout << "2222222" << std::endl;
   s.CaptureVideoFrames();
   std::cout << "3333333" << std::endl;
-
+  s. CloseMediaFile();
   return 0;
 }

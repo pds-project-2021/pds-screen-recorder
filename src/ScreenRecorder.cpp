@@ -320,43 +320,47 @@
 
 	/* function to capture and store data in frames by allocating required memory
 	 * and auto deallocating the memory.   */
+    int ScreenRecorder:: CloseMediaFile() {
+        //Write video file trailer data
+        auto ret = av_write_trailer(outputFormatContext);
+        if (ret < 0) {
+            throw avException("Error in writing av trailer");
+        }
+        if (!(outputFormatContext->flags & AVFMT_NOFILE)) {
+            int err = avio_close(outputFormatContext->pb);
+            if (err < 0) {
+                throw "Failed to close file";
+            }
+        }
+    }
+    void alloc_video_frame(AVFrame *frame, int width, int height, int format, int align) {
+        frame = av_frame_alloc();//allocate memory for frame structure
+        if (!frame) {
+            throw avException("Unable to release the avframe resources");
+        }
+        //fill frame fields
+        frame->data[0] = nullptr;
+        frame->width = width ? width : 0;
+        frame->height = height ? height : 0;
+        frame->format = format ? format : AV_PIX_FMT_NONE;
+        frame->pts = 0;
+        // Setup the data pointers and linesizes based on the specified image
+        // parameters and the provided array.
+        //allocate data fields
+        if (av_image_alloc(frame->data, frame->linesize,
+                           width, height, (AVPixelFormat) format,
+                           align ? align : 0) < 0) {
+            throw avException("Error in allocating frame data");
+        }
+    }
 	int ScreenRecorder::CaptureVideoFrames() {
-	  // decoder frame
-	  AVFrame *frame = av_frame_alloc();
-	  if (!frame) {
-		throw avException("Unable to release the avframe resources");
-	  }
-		frame->data[0] = nullptr;
-		frame->width = inputCodecPar->width;
-		frame->height = inputCodecPar->height;
-		frame->format = inputCodecPar->format;
-		frame->pts = 0;
-		// Setup the data pointers and linesizes based on the specified image
-		// parameters and the provided array.
-		if (av_image_alloc(frame->data, frame->linesize,
-						   inputCodecContext->width, inputCodecContext->height,
-						   (AVPixelFormat)inputCodecPar->format, 32) < 0) {
-			throw avException("Error in allocating frame data");
-		}
-	  // encoder frame
-	  AVFrame *outputFrame = av_frame_alloc();
-	  if (!outputFrame) {
-		throw avException(
-			"Unable to release the avframe resources for outputFrame");
-	  }
-	  outputFrame->data[0] = nullptr;
-	  outputFrame->width = outputCodecPar->width;
-	  outputFrame->height = outputCodecPar->height;
-	  outputFrame->format = outputCodecPar->format;
-	  outputFrame->pts = 0;
-		// Setup the data pointers and linesizes based on the specified image
-		// parameters and the provided array.
-		if (av_image_alloc(outputFrame->data, outputFrame->linesize,
-						   outputCodecContext->width, outputCodecContext->height,
-						   (AVPixelFormat)outputFrame->format, 32) < 0) {
-			throw avException("Error in allocating frame data");
-		}
-
+        // decoder frame
+        AVFrame *frame;
+        alloc_video_frame(frame, inputCodecPar->width, inputCodecPar->height, inputCodecPar->format, 32);
+        // encoder frame
+        AVFrame *outputFrame;
+        alloc_video_frame(frame, outputCodecPar->width, outputCodecPar->height, outputCodecPar->format, 32);
+        //init cycle variables
         int count = 0;
         int frameNum = 0; //frame number in a second
         int audioCount = 0;
@@ -573,17 +577,7 @@
 				break;
 			}
 		}
-		//Write video file trailer data
-		auto ret = av_write_trailer(outputFormatContext);
-		if (ret < 0) {
-			throw avException("Error in writing av trailer");
-		}
-		if (!(outputFormatContext->flags & AVFMT_NOFILE)) {
-			int err = avio_close(outputFormatContext->pb);
-			if (err < 0) {
-				throw "Failed to close file";
-			}
-		}
+
 
 	  // THIS WAS ADDED LATER
 	//    av_free(outBuffer);

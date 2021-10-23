@@ -122,6 +122,7 @@ public:
     /* function to initiate communication with display library */
     int init();
     int init_outputfile();
+    int CloseMediaFile();
     int CaptureVideoFrames();
 
     //  ----------------
