@@ -133,7 +133,7 @@
         audioInputCodecPar->channels = 2;
         audioInputCodecPar->codec_id = AV_CODEC_ID_PCM_S16LE;
         audioInputCodecPar->codec_type = AVMEDIA_TYPE_AUDIO;
-        audioInputCodecPar->frame_size = audioInputCodecPar->bit_rate/(30*8);// set number of audio samples in each frame
+        //audioInputCodecPar->frame_size = audioInputCodecPar->bit_rate/(30*8);// set number of audio samples in each frame
 
 
         inputCodec = avcodec_find_decoder(inputCodecPar->codec_id);
@@ -287,7 +287,7 @@
 	//  if (!outputFormatContext->nb_streams) {
 	//    throw avException("Output file dose not contain any stream");
 	//  }
-
+        //audioInputCodecContext->frame_size=audioOutputCodecContext->frame_size;
         swsContext = sws_getCachedContext(swsContext, inputCodecPar->width, inputCodecPar->height,
                                         (AVPixelFormat)inputCodecPar->format,
                                         outputCodecPar->width, outputCodecPar->height,
@@ -358,9 +358,10 @@
 		}
 
         int count = 0;
+        int frameNum = 0; //frame number in a second
         int audioCount = 0;
         int frameCount = 61;
-
+        int audioCycle = 0;
 
 	  AVPacket *packet = av_packet_alloc();
 	  if (!packet) {
@@ -374,7 +375,7 @@
         if (!audioFrame) {
             throw avException("Unable to release the audio avframe resources");
         }
-        audioFrame->nb_samples     = audioInputCodecContext->frame_size;
+        audioFrame->nb_samples     = 22050;
         audioFrame->format         = audioInputCodecContext->sample_fmt;
         audioFrame->channel_layout = audioInputCodecContext->channel_layout;
         if (av_frame_get_buffer(audioFrame, 0) < 0) {
@@ -401,11 +402,11 @@
         if (!audioOutputPacket) {
             throw avException("Error on packet initialization");
         }
-	  while (av_read_frame(inputFormatContext, packet) >= 0) {//Try to extract packet from input stream
-		if (count++ == frameCount) {
-		break;
-		}
-
+    while (av_read_frame(inputFormatContext, packet) >= 0) {//Try to extract packet from input stream
+        if (count++ == frameCount) {
+        break;
+        }
+        if (frameNum++ == 30) frameNum=0; //reset every fps frames
 		if (packet->stream_index == videoStream->index) {
             //Send packet to decoder
             auto result = avcodec_send_packet(inputCodecContext, packet);
@@ -457,7 +458,9 @@
             }
         }
 		//Handle audio input stream packets
-        if (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+        int sync = ((int) frameNum/7) - audioCycle;
+        if (sync==1 && av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+            if(audioCycle++ == 3) audioCycle=0;
             //Send packet to decoder
             auto result = avcodec_send_packet(audioInputCodecContext, audioPacket);
             //Check result
@@ -492,11 +495,11 @@
                     if (result >= 0) {//Packet received successfully
                         if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
                             audioOutputPacket->pts =
-                                    av_rescale_q(audioOutputPacket->pts, {1, 30*audioInputCodecContext->frame_size/audioOutputCodecContext->frame_size}, videoStream->time_base);
+                                    av_rescale_q(audioOutputPacket->pts, {1, audioInputCodecContext->sample_rate*audioInputCodecContext->channels/audioOutputFrame->nb_samples}, videoStream->time_base);
                         }
                         if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
                             audioOutputPacket->dts =
-                                    av_rescale_q(audioOutputPacket->dts, {1, 30*audioInputCodecContext->frame_size/audioOutputCodecContext->frame_size}, videoStream->time_base);
+                                    av_rescale_q(audioOutputPacket->dts, {1, audioInputCodecContext->sample_rate*audioInputCodecContext->channels/audioOutputFrame->nb_samples}, videoStream->time_base);
                         }
                         //Write packet to file
                         audioOutputPacket->stream_index=1;
@@ -510,7 +513,7 @@
                         got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples,
                                                   0, 0);
                         audioCount++;
-                      audioOutputFrame->pts=audioCount-1;
+                        audioOutputFrame->pts=audioCount-1;
                         result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
                         if (result >= 0)
                             result = avcodec_receive_packet(audioOutputCodecContext, audioOutputPacket);//Try to receive packet
@@ -524,11 +527,11 @@
                         if (result >= 0) {//Packet received successfully
                             if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
                                 audioOutputPacket->pts =
-                                        av_rescale_q(audioOutputPacket->pts, {1, 30*audioInputCodecContext->frame_size/audioOutputCodecContext->frame_size}, videoStream->time_base);
+                                        av_rescale_q(audioOutputPacket->pts, {1, audioInputCodecContext->sample_rate*audioInputCodecContext->channels/audioOutputFrame->nb_samples}, videoStream->time_base);
                             }
                             if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
                                 audioOutputPacket->dts =
-                                        av_rescale_q(audioOutputPacket->dts, {1, 30*audioInputCodecContext->frame_size/audioOutputCodecContext->frame_size}, videoStream->time_base);
+                                        av_rescale_q(audioOutputPacket->dts, {1, audioInputCodecContext->sample_rate*audioInputCodecContext->channels/audioOutputFrame->nb_samples}, videoStream->time_base);
                             }
                             //Write packet to file
                             audioOutputPacket->stream_index=1;
