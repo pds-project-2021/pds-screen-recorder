@@ -366,21 +366,35 @@
     }
 
     int encode(AVCodecContext *avctx, AVPacket *pkt, int *got_packet, AVFrame *frame) {
-        int ret;
-
+        int result;
         *got_packet = 0;
-
-        ret = avcodec_send_frame(avctx, frame);
-        if (ret < 0)
-            return ret;
-
-        ret = avcodec_receive_packet(avctx, pkt);
-        if (!ret)
+        //Send frame to encoder
+        result = avcodec_send_frame(avctx, frame);
+        if (result < 0) {
+            if (result == AVERROR(EAGAIN)) {//Buffer is full
+                while (result = avcodec_send_frame(avctx, frame) ==
+                        AVERROR(EAGAIN)) {//while encoder buffer is full
+                    result = avcodec_receive_packet(avctx, pkt);//Try to receive packet
+                }
+            }
+            else {
+                throw avException("Failed to send frame to encoder");//Error ending frame to encoder
+                return result;
+            }
+        }
+        else {
+            result = avcodec_receive_packet(avctx, pkt);//Try to receive packet
+        }
+        if (result >= 0) {
             *got_packet = 1;
-        if (ret == AVERROR(EAGAIN))
+            return result;
+        }
+        else if (result == AVERROR(EAGAIN))
             return 0;
-
-        return ret;
+        else {
+            throw avException("Failed to receive frame from encoder");//Error ending frame to encoder
+            return result;
+        }
     }
 
 	int ScreenRecorder::CaptureVideoFrames() {
