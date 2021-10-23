@@ -22,7 +22,15 @@
 
 	  cout << "clean all" << endl;
 	}
-
+	void show_avfoundation_device(){
+	    AVFormatContext *pFormatCtx = avformat_alloc_context();
+	    AVDictionary* options = NULL;
+	    av_dict_set(&options,"list_devices","true",0);
+	    AVInputFormat *iformat = av_find_input_format("avfoundation");
+	    printf("==AVFoundation Device Info===\n");
+	    avformat_open_input(&pFormatCtx,"",iformat,&options);
+	    printf("=============================\n");
+	}
 	int ScreenRecorder::init() {
         inputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
         audioInputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
@@ -294,25 +302,10 @@
         }
     }
 
-    AVFrame * alloc_video_frame(int width, int height, AVPixelFormat format, int align) {
+    AVFrame * alloc_video_frame() {
         AVFrame * frame = av_frame_alloc();//allocate memory for frame structure
         if (!frame) {
             throw avException("Unable to release the avframe resources");
-        }
-        //fill frame fields
-        frame->data[0] = nullptr;
-        frame->width = width ? width : 0;
-        frame->height = height ? height : 0;
-        frame->format = format != NULL ? format : AV_PIX_FMT_NONE;
-        frame->pts = 0;
-        // Setup the data pointers and linesizes based on the specified image
-        // parameters and the provided array.
-        //allocate data fields
-        if (av_image_alloc(frame->data, frame->linesize,
-                           width ? width : 0, height ? height : 0,
-                           format != NULL  ? format : AV_PIX_FMT_NONE,
-                           align ? align : 0) < 0) {
-            throw avException("Error in allocating frame data");
         }
         return frame;
     }
@@ -402,11 +395,39 @@
 
 	int ScreenRecorder::CaptureVideoFrames() {
         //Create decoder frame
-        AVFrame *frame = alloc_video_frame(inputCodecPar->width, inputCodecPar->height,
-                                           (AVPixelFormat) inputCodecPar->format, 32);
+        AVFrame *frame = alloc_video_frame();
+        //fill frame fields
+        frame->data[0] = nullptr;
+        frame->width = inputCodecPar->width;
+        frame->height = inputCodecPar->height;
+        frame->format = inputCodecPar->format;
+        frame->pts = 0;
+        // Setup the data pointers and linesizes based on the specified image
+        // parameters and the provided array.
+        //allocate data fields
+        if (av_image_alloc(frame->data, frame->linesize,
+                           inputCodecPar->width, inputCodecPar->height,
+                           (AVPixelFormat) inputCodecPar->format,
+                           32) < 0) {
+            throw avException("Error in allocating frame data");
+        }
         //Create encoder frame
-        AVFrame *outputFrame = alloc_video_frame(outputCodecPar->width, outputCodecPar->height,
-                                                 (AVPixelFormat) outputCodecPar->format, 32);
+        AVFrame *outputFrame = alloc_video_frame();
+        //fill frame fields
+        frame->data[0] = nullptr;
+        frame->width = outputCodecPar->width;
+        frame->height = outputCodecPar->height;
+        frame->format = outputCodecPar->format;
+        frame->pts = 0;
+        // Setup the data pointers and linesizes based on the specified image
+        // parameters and the provided array.
+        //allocate data fields
+        if (av_image_alloc(frame->data, frame->linesize,
+                           outputCodecPar->width, outputCodecPar->height,
+                           (AVPixelFormat) outputCodecPar->format,
+                           32) < 0) {
+            throw avException("Error in allocating frame data");
+        };
         //init cycle variables
         int count = 0;
         int frameNum = 0; //frame number in a second

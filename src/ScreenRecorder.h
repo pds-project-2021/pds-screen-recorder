@@ -39,9 +39,6 @@ extern "C" {
 #include <libswscale/swscale.h>
 #include "libavcodec/avcodec.h"
 #include "libavcodec/avfft.h"
-
-#include "libavdevice/avdevice.h"
-
 #include "libavfilter/avfilter.h"
 #include "libavfilter/buffersink.h"
 #include "libavfilter/buffersrc.h"
