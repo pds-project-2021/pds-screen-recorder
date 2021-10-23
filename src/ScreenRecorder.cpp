@@ -395,10 +395,7 @@
 
 	int ScreenRecorder::CaptureVideoFrames() {
         //Create decoder frame
-        AVFrame * frame = av_frame_alloc();//allocate memory for frame structure
-        if (!frame) {
-            throw avException("Unable to release the avframe resources");
-        }
+        AVFrame * frame = alloc_video_frame();
         //fill frame fields
         frame->data[0] = nullptr;
         frame->width = inputCodecPar->width;
@@ -415,10 +412,7 @@
             throw avException("Error in allocating frame data");
         }
         //Create encoder frame
-        AVFrame *outputFrame = av_frame_alloc();//allocate memory for frame structure
-        if (!outputFrame) {
-            throw avException("Unable to release the avframe resources");
-        }
+        AVFrame *outputFrame = alloc_video_frame();
         //fill frame fields
         outputFrame->data[0] = nullptr;
         outputFrame->width = outputCodecPar->width;
