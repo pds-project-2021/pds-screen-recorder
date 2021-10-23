@@ -395,7 +395,10 @@
 
 	int ScreenRecorder::CaptureVideoFrames() {
         //Create decoder frame
-        AVFrame *frame = alloc_video_frame();
+        AVFrame * frame = av_frame_alloc();//allocate memory for frame structure
+        if (!frame) {
+            throw avException("Unable to release the avframe resources");
+        }
         //fill frame fields
         frame->data[0] = nullptr;
         frame->width = inputCodecPar->width;
@@ -412,17 +415,20 @@
             throw avException("Error in allocating frame data");
         }
         //Create encoder frame
-        AVFrame *outputFrame = alloc_video_frame();
+        AVFrame *outputFrame = av_frame_alloc();//allocate memory for frame structure
+        if (!outputFrame) {
+            throw avException("Unable to release the avframe resources");
+        }
         //fill frame fields
-        frame->data[0] = nullptr;
-        frame->width = outputCodecPar->width;
-        frame->height = outputCodecPar->height;
-        frame->format = outputCodecPar->format;
-        frame->pts = 0;
+        outputFrame->data[0] = nullptr;
+        outputFrame->width = outputCodecPar->width;
+        outputFrame->height = outputCodecPar->height;
+        outputFrame->format = outputCodecPar->format;
+        outputFrame->pts = 0;
         // Setup the data pointers and linesizes based on the specified image
         // parameters and the provided array.
         //allocate data fields
-        if (av_image_alloc(frame->data, frame->linesize,
+        if (av_image_alloc(outputFrame->data, outputFrame->linesize,
                            outputCodecPar->width, outputCodecPar->height,
                            (AVPixelFormat) outputCodecPar->format,
                            32) < 0) {
@@ -467,9 +473,9 @@
                               outputFrame->linesize);
                     //Send converted frame to encoder
                     outputFrame->pts = count - 1;
-                    encode(outputCodecContext, packet, &got_packet, outputFrame);
+                    encode(outputCodecContext, outPacket, &got_packet, outputFrame);
                     //Frame was sent successfully
-                    if (got_packet >= 0) {//Packet received successfully
+                    if (got_packet > 0) {//Packet received successfully
                         if (outPacket->pts != AV_NOPTS_VALUE) {
                             outPacket->pts =
                                     av_rescale_q(outPacket->pts, outputCodecContext->time_base, videoStream->time_base);
