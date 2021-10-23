@@ -487,7 +487,7 @@
                             fprintf(stderr, "error: swr_convert()\n");
                             exit(1);
                         }
-                        else if (got_samples >= audioOutputCodecContext->frame_size) {
+                        else if (got_samples > 0) {
                             audioCount++;
                             audioOutputFrame->pts= audioCount-1;
                             encode(audioOutputCodecContext, audioOutputPacket, &got_packet, audioOutputFrame);
@@ -510,7 +510,7 @@
                             }
                             av_packet_unref(audioOutputPacket);
                         }
-                        while(got_samples >= audioOutputCodecContext->frame_size) {
+                        while(got_samples > 0) {
                             got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples,
                                                       0, 0);
                             audioCount++;
