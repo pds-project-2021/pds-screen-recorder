@@ -294,7 +294,7 @@
         }
     }
 
-    AVFrame * alloc_video_frame(int width, int height, int format, int align) {
+    AVFrame * alloc_video_frame(int width, int height, AVPixelFormat format, int align) {
         AVFrame * frame = av_frame_alloc();//allocate memory for frame structure
         if (!frame) {
             throw avException("Unable to release the avframe resources");
@@ -303,13 +303,14 @@
         frame->data[0] = nullptr;
         frame->width = width ? width : 0;
         frame->height = height ? height : 0;
-        frame->format = format ? format : AV_PIX_FMT_NONE;
+        frame->format = format != NULL ? format : AV_PIX_FMT_NONE;
         frame->pts = 0;
         // Setup the data pointers and linesizes based on the specified image
         // parameters and the provided array.
         //allocate data fields
         if (av_image_alloc(frame->data, frame->linesize,
-                           width, height, (AVPixelFormat) format,
+                           width ? width : 0, height ? height : 0,
+                           format != NULL  ? format : AV_PIX_FMT_NONE,
                            align ? align : 0) < 0) {
             throw avException("Error in allocating frame data");
         }
@@ -372,10 +373,12 @@
         result = avcodec_send_frame(avctx, frame);
         if (result < 0) {
             if (result == AVERROR(EAGAIN)) {//Buffer is full
-                while (result = avcodec_send_frame(avctx, frame) ==
-                        AVERROR(EAGAIN)) {//while encoder buffer is full
-                    result = avcodec_receive_packet(avctx, pkt);//Try to receive packet
+                int ret;
+                while (result == AVERROR(EAGAIN)) {//while encoder buffer is full
+                    ret = avcodec_receive_packet(avctx, pkt);//Try to receive packet
+                    result = avcodec_send_frame(avctx, frame);
                 }
+                result = ret;
             }
             else {
                 throw avException("Failed to send frame to encoder");//Error ending frame to encoder
@@ -400,10 +403,10 @@
 	int ScreenRecorder::CaptureVideoFrames() {
         //Create decoder frame
         AVFrame *frame = alloc_video_frame(inputCodecPar->width, inputCodecPar->height,
-                                           inputCodecPar->format, 32);
+                                           (AVPixelFormat) inputCodecPar->format, 32);
         //Create encoder frame
         AVFrame *outputFrame = alloc_video_frame(outputCodecPar->width, outputCodecPar->height,
-                                                 outputCodecPar->format, 32);
+                                                 (AVPixelFormat) outputCodecPar->format, 32);
         //init cycle variables
         int count = 0;
         int frameNum = 0; //frame number in a second
@@ -411,6 +414,7 @@
         int frameCount = 121;
         int audioCycle = 0;
         int got_frame = 0;
+        int got_packet = 0;
         //Create decoder packet
         AVPacket *packet = alloc_packet();
         //Create encoder packet
@@ -435,40 +439,32 @@
                 //Send packet to decoder
                 decode(inputCodecContext, frame, &got_frame, packet);
                 //check if decoded frame is ready
-                    if (got_frame) {//frame is ready
-                        //Convert frame picture format
-                        sws_scale(swsContext, frame->data, frame->linesize, 0,
-                                  inputCodecContext->height, outputFrame->data,
-                                  outputFrame->linesize);
-                        //Send converted frame to encoder
-                        outputFrame->pts = count - 1;
-                        auto result = avcodec_send_frame(outputCodecContext, outputFrame);
-                        if (result >= 0)
-                            result = avcodec_receive_packet(outputCodecContext, outPacket);//Try to receive packet
-                        else if (result == AVERROR(EAGAIN)) {//Buffer is full
-                            while (result = avcodec_send_frame(outputCodecContext, outputFrame) ==
-                                            AVERROR(EAGAIN)) {//while encoder buffer is full
-                                result = avcodec_receive_packet(outputCodecContext, outPacket);//Try to receive packet
-                            }
-                        } else throw avException("Failed to send frame to encoder");//Error ending frame to encoder
-                        //Frame was sent successfully
-                        if (result >= 0) {//Packet received successfully
-                            if (outPacket->pts != AV_NOPTS_VALUE) {
-                                outPacket->pts =
-                                        av_rescale_q(outPacket->pts, outputCodecContext->time_base, videoStream->time_base);
-                            }
-                            if (outPacket->dts != AV_NOPTS_VALUE) {
-                                outPacket->dts =
-                                        av_rescale_q(outPacket->dts, outputCodecContext->time_base, videoStream->time_base);
-                            }
-                            //Write packet to file
-                            result = av_write_frame(outputFormatContext, outPacket);
-                            if (result != 0) {
-                                throw avException("Error in writing video frame");
-                            }
-                        } else if (result != AVERROR(EAGAIN)) throw avException("Failed to encode frame");
-                        av_packet_unref(outPacket);
-                    } else throw avException("Failed to decode packet");
+                if (got_frame) {//frame is ready
+                    //Convert frame picture format
+                    sws_scale(swsContext, frame->data, frame->linesize, 0,
+                              inputCodecContext->height, outputFrame->data,
+                              outputFrame->linesize);
+                    //Send converted frame to encoder
+                    outputFrame->pts = count - 1;
+                    encode(outputCodecContext, packet, &got_packet, outputFrame);
+                    //Frame was sent successfully
+                    if (got_packet >= 0) {//Packet received successfully
+                        if (outPacket->pts != AV_NOPTS_VALUE) {
+                            outPacket->pts =
+                                    av_rescale_q(outPacket->pts, outputCodecContext->time_base, videoStream->time_base);
+                        }
+                        if (outPacket->dts != AV_NOPTS_VALUE) {
+                            outPacket->dts =
+                                    av_rescale_q(outPacket->dts, outputCodecContext->time_base, videoStream->time_base);
+                        }
+                        //Write packet to file
+                        auto result = av_write_frame(outputFormatContext, outPacket);
+                        if (result != 0) {
+                            throw avException("Error in writing video frame");
+                        }
+                    }
+                    av_packet_unref(outPacket);
+                }
             }
             //Handle audio input stream packets
             int sync = ((int) frameNum/7) - audioCycle;
