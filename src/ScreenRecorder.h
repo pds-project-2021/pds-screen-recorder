@@ -113,6 +113,7 @@ private:
     int out_size;
     int codec_id;
     void VideoDemuxing();
+    int initThreads();
 public:
     ScreenRecorder();
     ~ScreenRecorder();
@@ -120,7 +121,6 @@ public:
     /* function to initiate communication with display library */
     int init();
     int init_outputfile();
-    int initThreads();
     int CloseMediaFile();
     void CaptureVideoFrames();
     void CaptureAudioFrames();

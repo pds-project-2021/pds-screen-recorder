@@ -91,11 +91,11 @@ int main(int argc, char **argv) {
 
   auto s = ScreenRecorder();
   s.init();
-  std::cout << "111111" << std::endl;
+  std::cout << "Initialized input streams" << std::endl;
   s.init_outputfile();
-  std::cout << "2222222" << std::endl;
+  std::cout << "Initialized output streams and file" << std::endl;
   s.CaptureStart();
-  std::cout << "3333333" << std::endl;
   s. CloseMediaFile();
+    std::cout << "Capture complete" << std::endl;
   return 0;
 }
