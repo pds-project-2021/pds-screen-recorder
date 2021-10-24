@@ -7,6 +7,8 @@
 	  av_register_all();
 	  avcodec_register_all();
 	  avdevice_register_all();
+      recordAudio=false;
+      recordVideo=false;
 	}
 
 	ScreenRecorder::~ScreenRecorder() {
@@ -100,7 +102,7 @@
         audioInputCodecPar->channels = 2;
         audioInputCodecPar->codec_id = AV_CODEC_ID_PCM_S16LE;
         audioInputCodecPar->codec_type = AVMEDIA_TYPE_AUDIO;
-        //audioInputCodecPar->frame_size = audioInputCodecPar->bit_rate/(30*8);// set number of audio samples in each frame
+        audioInputCodecPar->frame_size = 22050;// set number of audio samples in each frame
 
 
         inputCodec = avcodec_find_decoder(inputCodecPar->codec_id);
@@ -289,8 +291,8 @@
 	 * and auto deallocating the memory.   */
 
     int ScreenRecorder:: CloseMediaFile() {
-        video->join();
-        audio->join();
+        if(recordVideo) video->join();
+        if(recordAudio) audio->join();
         //Write video file trailer data
         auto ret = av_write_trailer(outputFormatContext);
         if (ret < 0) {
@@ -425,6 +427,8 @@
     }
 
 	void ScreenRecorder::CaptureVideoFrames() {
+        //video thread started
+        recordVideo=true;
         //Create decoder frame
         AVFrame * frame = alloc_video_frame(inputCodecPar->width, inputCodecPar->height, (AVPixelFormat) inputCodecPar->format, 32);
         //Create encoder frame
@@ -502,6 +506,8 @@
 	}
 
     void ScreenRecorder::CaptureAudioFrames() {
+        //audio thread started
+        recordAudio=true;
         //Create decoder audio frame
         AVFrame *audioFrame = alloc_audio_frame(22050, audioInputCodecContext->sample_fmt,
                                                 audioInputCodecContext->channel_layout, 0);

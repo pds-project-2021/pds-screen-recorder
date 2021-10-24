@@ -106,6 +106,8 @@ private:
     SwrContext* swrContext = nullptr;
     std::thread* video;
     std::thread* audio;
+    bool recordAudio;
+    bool recordVideo;
     const char *output_file = nullptr;
 
     double video_pts;
