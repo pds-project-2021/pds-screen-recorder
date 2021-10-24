@@ -104,14 +104,15 @@ private:
     AVStream *audioStream = nullptr;
     SwsContext* swsContext = nullptr;
     SwrContext* swrContext = nullptr;
-
+    std::thread* video;
+    std::thread* audio;
     const char *output_file = nullptr;
 
     double video_pts;
 
     int out_size;
     int codec_id;
-
+    void VideoDemuxing();
 public:
     ScreenRecorder();
     ~ScreenRecorder();
@@ -119,8 +120,11 @@ public:
     /* function to initiate communication with display library */
     int init();
     int init_outputfile();
+    int initThreads();
     int CloseMediaFile();
-    int CaptureVideoFrames();
+    void CaptureVideoFrames();
+    void CaptureAudioFrames();
+    int CaptureStart();
 
     //  ----------------
 
