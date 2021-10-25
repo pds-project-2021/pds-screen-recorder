@@ -8,6 +8,7 @@ ScreenRecorder::ScreenRecorder() {
 	avdevice_register_all();
 	recordAudio = false;
 	recordVideo = false;
+    frameCount = 0;
 }
 
 ScreenRecorder::~ScreenRecorder() {
@@ -45,7 +46,7 @@ int ScreenRecorder::init() {
 	audioInputFormat = av_find_input_format("dshow");
 	auto ret = avformat_open_input(&audioInputFormatContext,
 							"audio=Microfono (GENERAL WEBCAM)", audioInputFormat,
-							&options)
+							&options);
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
 	}
@@ -172,6 +173,7 @@ int ScreenRecorder::init() {
 
 int ScreenRecorder::init_outputfile() {
 	output_file = "../media/output.mp4";
+    frameCount = 250;
 
 	outputCodec = avcodec_find_encoder(AV_CODEC_ID_H264);
 	if (!outputCodec) {
@@ -462,7 +464,6 @@ void ScreenRecorder::CaptureVideoFrames() {
 	// init cycle variables
 	int count = 0;
 	int frameNum = 0; // frame number in a second
-	int frameCount = 250;
 	int got_frame = 0;
 	int got_packet = 0;
 
@@ -547,7 +548,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 	recordAudio = true;
 	// Create decoder audio frame
 	AVFrame *audioFrame =
-		alloc_audio_frame(22050, audioInputCodecContext->sample_fmt,
+		alloc_audio_frame( 22050, audioInputCodecContext->sample_fmt,
 		                  audioInputCodecContext->channel_layout, 0);
 	// Create encoder audio frame
 	AVFrame *audioOutputFrame = alloc_audio_frame(
@@ -558,10 +559,12 @@ void ScreenRecorder::CaptureAudioFrames() {
 	// Create encoder audio packet
 	AVPacket *audioOutputPacket = alloc_packet();
 	int count = 0;
-	int audioCount = 17;
+	int audioCount = ((int) frameCount/30*4)+1;
 	int audioFrameNum = 0;
 	int got_frame = 0;
 	int got_packet = 0;
+    int pts = 0;
+    int dts = 0;
 	// Handle audio input stream packets
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
 		if (count++ == audioCount) {
@@ -610,7 +613,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 				}
 				av_packet_unref(audioOutputPacket);
 			}
-			while (got_samples > 0) {
+			while (got_samples > 0 ) {
 				got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
 				audioFrameNum++;
 				audioOutputFrame->pts = audioFrameNum - 1;

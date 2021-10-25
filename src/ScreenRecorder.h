@@ -107,6 +107,7 @@ class ScreenRecorder {
 	bool recordAudio;
 	bool recordVideo;
 	const char *output_file = nullptr;
+    int frameCount;
 
 	double video_pts;
 
