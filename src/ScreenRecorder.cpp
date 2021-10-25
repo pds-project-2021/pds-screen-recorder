@@ -291,8 +291,8 @@
 	 * and auto deallocating the memory.   */
 
     int ScreenRecorder:: CloseMediaFile() {
-        if(recordVideo) video->join();
-        if(recordAudio) audio->join();
+        video->join();
+        audio->join();
         //Write video file trailer data
         auto ret = av_write_trailer(outputFormatContext);
         if (ret < 0) {

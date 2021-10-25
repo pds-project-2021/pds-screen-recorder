@@ -12,17 +12,22 @@ if(UNIX)
     link_directories(${GTK4_LIBRARY_DIRS})
     add_definitions(${GTK4_CFLAGS_OTHER})
     # ffmpeg
-    pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
-        libavdevice
-        libavfilter
-        libavformat
-        libavcodec
-        libswresample
-        libswscale
-        libavutil
-        )
-endif()
-if(WIN32)
+    pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+            libavdevice
+            libavfilter
+            libavformat
+            libavcodec
+            libswresample
+            libswscale
+            libavutil
+            )
+    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+    set(CMAKE_HAVE_THREADS_LIBRARY 1)
+    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+    set(CMAKE_USE_PTHREADS_INIT 1)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+elseif(WIN32)
     find_package(GTK REQUIRED)
     set(VCPKG_INCLUDE_PATH C:/src/vcpkg/installed/x64-windows)
     set(GTK4_INCLUDE_DIRS "${VCPKG_INCLUDE_PATH}/include/gtk-4.0"
@@ -59,9 +64,4 @@ if(WIN32)
 endif()
 
 add_executable(pds_screen_recorder src/main.cpp src/ScreenRecorder.cpp src/ScreenRecorder.h src/exceptions/fsException.h src/exceptions/dataException.h src/exceptions/avException.h src/ffmpeg/ffmpeg.h src/ffmpeg/ffmpegcpp.h)
-if(UNIX)
-    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV)
-endif()
-if(WIN32)
-    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES})
-endif()
+target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES})
