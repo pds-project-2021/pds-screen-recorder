@@ -4,7 +4,7 @@ project(pds_screen_recorder)
 set(CMAKE_CXX_STANDARD 14)
 
 
-if(UNIX)
+if (UNIX)
     find_package(PkgConfig REQUIRED)
     # GTK4
     pkg_check_modules(GTK4 REQUIRED gtk4)
@@ -27,7 +27,7 @@ if(UNIX)
     set(CMAKE_USE_WIN32_THREADS_INIT 0)
     set(CMAKE_USE_PTHREADS_INIT 1)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
-elseif(WIN32)
+elseif (WIN32)
     find_package(GTK REQUIRED)
     set(VCPKG_INCLUDE_PATH C:/src/vcpkg/installed/x64-windows)
     set(GTK4_INCLUDE_DIRS "${VCPKG_INCLUDE_PATH}/include/gtk-4.0"
@@ -61,7 +61,7 @@ elseif(WIN32)
     link_directories("${VCPKG_INCLUDE_PATH}/lib" "${VCPKG_INCLUDE_PATH}/bin")
     find_package(FFMPEG REQUIRED)
     include_directories(${FFMPEG_INCLUDE_DIRS})
-endif()
+endif ()
 
 add_executable(pds_screen_recorder src/main.cpp src/ScreenRecorder.cpp src/ScreenRecorder.h src/exceptions/fsException.h src/exceptions/dataException.h src/exceptions/avException.h src/ffmpeg/ffmpeg.h src/ffmpeg/ffmpegcpp.h)
 target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES})
