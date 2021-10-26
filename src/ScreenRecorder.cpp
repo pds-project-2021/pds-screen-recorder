@@ -119,7 +119,7 @@ int ScreenRecorder::init() {
 	}
 
 	inputCodecPar = inputFormatContext->streams[index]->codecpar;
-	inputCodecPar->format = AV_PIX_FMT_RGB32;
+	inputCodecPar->format = AV_PIX_FMT_BGR0;
 
 	audioInputCodecPar = audioInputFormatContext->streams[audioIndex]->codecpar;
 	audioInputCodecPar->format = AV_SAMPLE_FMT_S16;
@@ -519,7 +519,6 @@ void ScreenRecorder::CaptureVideoFrames() {
 				av_packet_unref(outPacket);
 			}
 		}
-
 	} // End of while-loop
 
 	// Handle delayed frames
@@ -546,6 +545,10 @@ void ScreenRecorder::CaptureVideoFrames() {
 			break;
 		}
 	}
+    av_free(frame);
+    av_free(outputFrame);
+    av_free(packet);
+    av_free(outPacket);
 }
 
 void ScreenRecorder::CaptureAudioFrames() {
@@ -655,4 +658,8 @@ void ScreenRecorder::CaptureAudioFrames() {
 		} else
 			throw avException("Failed to decode packet");
 	}
+    av_free(audioFrame);
+    av_free(audioOutputFrame);
+    av_free(audioPacket);
+    av_free(audioOutputPacket);
 }
