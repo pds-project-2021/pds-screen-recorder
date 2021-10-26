@@ -81,8 +81,8 @@ int ScreenRecorder::init() {
 	inputFormat = av_find_input_format("x11grab");
 	ret = avformat_open_input(&inputFormatContext, ":0.0+0,0", inputFormat, &options);
 #else
-    inputFormat = av_find_input_format("video4linux2");
-    ret = avformat_open_input(&inputFormatContext, "/dev/video0", inputFormat, &options);
+    inputFormat = av_find_input_format("kmsgrab");
+    ret = avformat_open_input(&inputFormatContext, "", inputFormat, &options);
 #endif
     if (ret != 0) {
         throw avException("Couldn't open input stream");
