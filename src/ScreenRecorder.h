@@ -5,6 +5,9 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <mutex>
+#include <condition_variable>
+#include<string>
 #include <math.h>
 #include <string.h>
 extern "C" {
@@ -104,6 +107,9 @@ class ScreenRecorder {
 	SwrContext *swrContext = nullptr;
 	std::thread *video;
 	std::thread *audio;
+    std::thread *audioDemux;
+    std::thread *audioConvert;
+    std::thread *audioWrite;
 	bool recordAudio;
 	bool recordVideo;
 	const char *output_file = nullptr;
@@ -126,6 +132,9 @@ class ScreenRecorder {
 	int CloseMediaFile();
 	void CaptureVideoFrames();
 	void CaptureAudioFrames();
+    void DemuxAudioInput();
+    void ConvertAudioFrames();
+    void WriteAudioOutput();
 	int CaptureStart();
 
 	//  ----------------
