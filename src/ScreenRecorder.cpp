@@ -100,10 +100,16 @@ int ScreenRecorder::init() {
 #else
 	show_avfoundation_device();
 	inputFormat = av_find_input_format("avfoundation");
-	auto ret = avformat_open_input(&inputFormatContext, "1", inputFormat, nullptr)
+	auto ret = avformat_open_input(&inputFormatContext, "1", inputFormat, nullptr);
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
 	}
+	audioInputFormat = av_find_input_format("avfoundation");
+	ret = avformat_open_input(&inputFormatContext, ":0", inputFormat, nullptr);
+	if (ret != 0) {
+	    throw avException("Couldn't open input stream");
+	}
+
 #endif
 
 	ret = avformat_find_stream_info(inputFormatContext, &options);
