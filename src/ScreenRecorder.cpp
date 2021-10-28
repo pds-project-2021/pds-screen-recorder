@@ -444,7 +444,7 @@ void ScreenRecorder::VideoDemuxing() {}
 
 int ScreenRecorder::CloseMediaFile() {
     video->join();
-    audio->join();
+    //audio->join();
     //audioDemux->join();
     //audioConvert->join();
     //audioWrite->join();
@@ -463,7 +463,7 @@ int ScreenRecorder::CloseMediaFile() {
 
 int ScreenRecorder::initThreads() {
 	video = new thread(&ScreenRecorder::CaptureVideoFrames, this);
-    audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
+    //audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
     //audioDemux = new thread(&ScreenRecorder::DemuxAudioInput, this);
    // audioConvert = new thread(&ScreenRecorder::ConvertAudioFrames, this);
    // audioWrite = new thread(&ScreenRecorder::WriteAudioOutput, this);
