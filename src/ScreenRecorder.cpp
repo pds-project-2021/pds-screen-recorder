@@ -73,7 +73,7 @@ int ScreenRecorder::init() {
 	  throw avException("Couldn't open input stream");
 	}
 #elif defined linux
-	av_dict_set(&options, "rtbufsize", "10M", 0);
+	//av_dict_set(&options, "rtbufsize", "10M", 0);
 	audioInputFormat = av_find_input_format("pulse");
 	auto ret = avformat_open_input(&audioInputFormatContext, "default", audioInputFormat, &options);
 	if (ret != 0) {
@@ -87,13 +87,8 @@ int ScreenRecorder::init() {
 //	av_dict_set(&options, "video_size", "1920x1080", 0);
 	av_dict_set(&options, "show_region", "1", 0);
 
-#ifdef X11
 	inputFormat = av_find_input_format("x11grab");
-	ret = avformat_open_input(&inputFormatContext, ":0.0+0,0", inputFormat, &options);
-#else
-    inputFormat = av_find_input_format("kmsgrab");
-    ret = avformat_open_input(&inputFormatContext, "", inputFormat, &options);
-#endif
+	ret = avformat_open_input(&inputFormatContext, ":0.0", inputFormat, &options);
     if (ret != 0) {
         throw avException("Couldn't open input stream");
     }
@@ -135,7 +130,7 @@ int ScreenRecorder::init() {
 	}
 
 	inputCodecPar = inputFormatContext->streams[index]->codecpar;
-	inputCodecPar->format = AV_PIX_FMT_BGR0;
+	//inputCodecPar->format = AV_PIX_FMT_BGR0;
 
 	audioInputCodecPar = audioInputFormatContext->streams[audioIndex]->codecpar;
 	audioInputCodecPar->format = AV_SAMPLE_FMT_S16;
@@ -196,7 +191,7 @@ int ScreenRecorder::init_outputfile() {
 	output_file = "../media/output.mp4";
     frameCount = 250;
 
-	outputCodec = avcodec_find_encoder(AV_CODEC_ID_H264);
+	outputCodec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
 	if (!outputCodec) {
 		throw avException(
 			"Error in finding the video av codecs. try again with correct codec");
@@ -240,13 +235,13 @@ int ScreenRecorder::init_outputfile() {
 	if (!audioOutputCodecContext) {
 		throw avException("Error in allocating the audio codec context");
 	}
-	outputCodecContext->gop_size = 10;
-	outputCodecContext->max_b_frames = 5;
+	outputCodecContext->gop_size = 1;
+	outputCodecContext->max_b_frames = 0;
 	outputCodecContext->time_base = videoStream->time_base;
 
 	/* set property of the video file */
 	outputCodecPar = videoStream->codecpar;
-	outputCodecPar->codec_id = AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO;
+	outputCodecPar->codec_id = AV_CODEC_ID_MPEG4; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO;
 	outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
 	outputCodecPar->format = AV_PIX_FMT_YUV420P;
 	outputCodecPar->bit_rate = 2400000; // 2500000
@@ -347,25 +342,6 @@ int ScreenRecorder::init_outputfile() {
 /* function to capture and store data in frames by allocating required memory
  * and auto deallocating the memory.   */
 
-int ScreenRecorder::CloseMediaFile() {
-	video->join();
-	audio->join();
-    //audioDemux->join();
-    //audioConvert->join();
-    //audioWrite->join();
-	//Write video file trailer data
-	auto ret = av_write_trailer(outputFormatContext);
-	if (ret < 0) {
-		throw avException("Error in writing av trailer");
-	}
-	if (!(outputFormatContext->flags & AVFMT_NOFILE)) {
-		int err = avio_close(outputFormatContext->pb);
-		if (err < 0) {
-			throw fsException("Failed to close file");
-		}
-	}
-}
-
 AVFrame *alloc_video_frame(int width, int height, AVPixelFormat format, int align) {
 	AVFrame *frame = av_frame_alloc(); // allocate memory for frame structure
 	if (!frame) {
@@ -380,7 +356,7 @@ AVFrame *alloc_video_frame(int width, int height, AVPixelFormat format, int alig
 	// Setup the data pointers and linesizes based on the specified image
 	// parameters and the provided array.
 	// allocate data fields
-	if (av_image_alloc(frame->data, frame->linesize, width, height, format, align) < 0) {
+	if (av_image_alloc(frame->data, frame->linesize, width, height,(AVPixelFormat) format, align) < 0) {
 		throw avException("Error in allocating frame data");
 	}
 	return frame;
@@ -465,6 +441,25 @@ int encode(AVCodecContext *avctx, AVPacket *pkt, int *got_packet, AVFrame *frame
 }
 
 void ScreenRecorder::VideoDemuxing() {}
+
+int ScreenRecorder::CloseMediaFile() {
+    video->join();
+    audio->join();
+    //audioDemux->join();
+    //audioConvert->join();
+    //audioWrite->join();
+    //Write video file trailer data
+    auto ret = av_write_trailer(outputFormatContext);
+    if (ret < 0) {
+        throw avException("Error in writing av trailer");
+    }
+    if (!(outputFormatContext->flags & AVFMT_NOFILE)) {
+        int err = avio_close(outputFormatContext->pb);
+        if (err < 0) {
+            throw fsException("Failed to close file");
+        }
+    }
+}
 
 int ScreenRecorder::initThreads() {
 	video = new thread(&ScreenRecorder::CaptureVideoFrames, this);
