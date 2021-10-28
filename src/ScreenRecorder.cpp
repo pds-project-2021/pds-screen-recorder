@@ -191,7 +191,7 @@ int ScreenRecorder::init_outputfile() {
 	output_file = "../media/output.mp4";
     frameCount = 250;
 
-	outputCodec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
+	outputCodec = avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO);
 	if (!outputCodec) {
 		throw avException(
 			"Error in finding the video av codecs. try again with correct codec");
@@ -241,7 +241,7 @@ int ScreenRecorder::init_outputfile() {
 
 	/* set property of the video file */
 	outputCodecPar = videoStream->codecpar;
-	outputCodecPar->codec_id = AV_CODEC_ID_MPEG4; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO;
+	outputCodecPar->codec_id = AV_CODEC_ID_MPEG2VIDEO; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
 	outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
 	outputCodecPar->format = AV_PIX_FMT_YUV420P;
 	outputCodecPar->bit_rate = 4000000; // 2500000
@@ -273,7 +273,7 @@ int ScreenRecorder::init_outputfile() {
 		outputCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 	}
 
-	if (codec_id == AV_CODEC_ID_H264) {
+	if (codec_id == AV_CODEC_ID_MPEG2VIDEO) {
 		av_opt_set(outputCodecContext->priv_data, "preset", "slow", 0);
 	}
 
@@ -445,9 +445,9 @@ void ScreenRecorder::VideoDemuxing() {}
 int ScreenRecorder::CloseMediaFile() {
     video->join();
     //audio->join();
-    //audioDemux->join();
-    //audioConvert->join();
-    //audioWrite->join();
+   // audioDemux->join();
+  //  audioConvert->join();
+  //  audioWrite->join();
     //Write video file trailer data
     auto ret = av_write_trailer(outputFormatContext);
     if (ret < 0) {
@@ -462,11 +462,12 @@ int ScreenRecorder::CloseMediaFile() {
 }
 
 int ScreenRecorder::initThreads() {
+    AVRational audiobq={audioOutputCodecContext->frame_size, audioInputCodecContext->sample_rate * audioInputCodecContext->channels};
 	video = new thread(&ScreenRecorder::CaptureVideoFrames, this);
     //audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
-    //audioDemux = new thread(&ScreenRecorder::DemuxAudioInput, this);
+  //  audioDemux = new thread(&ScreenRecorder::DemuxAudioInput, this);
    // audioConvert = new thread(&ScreenRecorder::ConvertAudioFrames, this);
-   // audioWrite = new thread(&ScreenRecorder::WriteAudioOutput, this);
+   // audioWrite = new thread(&ScreenRecorder::WriteAudioOutput, this, outputFormatContext, audiobq, audioStream->time_base);
 	return 0;
 }
 
@@ -696,6 +697,7 @@ void ScreenRecorder::DemuxAudioInput(){
     // Create decoder audio packet
     AVPacket *audioPacket = alloc_packet();
     int count = 0;
+    int result = 0;
     int audioCount = ((int) frameCount/30*4)+1;
     while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
         //audioCnv.notify_one(); //signal converting thread to start if needed
@@ -703,13 +705,24 @@ void ScreenRecorder::DemuxAudioInput(){
             break;
         }
         // Send packet to decoder
-        auto result = avcodec_send_packet(audioInputCodecContext, audioPacket);
+        if(aW.try_lock()) {
+            result = avcodec_send_packet(audioInputCodecContext, audioPacket);
+            aW.unlock();
+            audioWrt.notify_one();
+        }
+        else {
+            unique_lock<mutex> lg(aW);
+            audioWrt.wait(lg);
+            result = avcodec_send_packet(audioInputCodecContext, audioPacket);
+            audioWrt.notify_one();
+        }
         // Check result
         if(result == AVERROR(EAGAIN)) {//buffer is full, wait and retry
-            std::unique_lock<std::mutex> ul(aC);
             audioCnv.notify_one();
-            audioCnv.wait(ul);
+            unique_lock<mutex> lg(aW);
+            audioWrt.wait(lg);
             result = avcodec_send_packet(audioInputCodecContext, audioPacket);
+            audioWrt.notify_one();
         }
         else if (result < 0 && result != AVERROR_EOF) {
             // Decoder error
@@ -743,13 +756,22 @@ void ScreenRecorder::ConvertAudioFrames() {
             else if (got_samples > 0) {
                 audioFrameNum++;
                 audioOutputFrame->pts = audioFrameNum - 1;
-                result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
-                if (result >= 0) audioWrt.notify_one();
-                else if (result == AVERROR(EAGAIN)) { // while encoder buffer is full
-                    audioWrt.notify_one();
+                if(aW.try_lock()) {
+                    result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
+                    aW.unlock();
+                }
+                else {
                     unique_lock<mutex> lg(aW);
                     audioWrt.wait(lg);
                     result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);// retry
+                }
+                if (result >= 0) audioWrt.notify_one();
+                else if (result == AVERROR(EAGAIN)) { // while encoder buffer is full
+                    audioWrt.notify_one();
+                        unique_lock<mutex> lg(aW);
+                        audioWrt.wait(lg);
+                        result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);// retry
+                        audioWrt.notify_one();
                 }
                 if (result < 0 && result !=AVERROR(EAGAIN)) {
                     throw avException("Failed to send frame to encoder"); // Error ending frame to encoder
@@ -760,13 +782,22 @@ void ScreenRecorder::ConvertAudioFrames() {
                     if(got_samples >= 0) {
                         audioFrameNum++;
                         audioOutputFrame->pts = audioFrameNum - 1;
-                        result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
-                        if (result >= 0) audioWrt.notify_one();
-                        else if (result == AVERROR(EAGAIN)) { // while encoder buffer is full
-                            audioWrt.notify_one();
+                        if(aW.try_lock()) {
+                            result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);
+                            aW.unlock();
+                        }
+                        else {
                             unique_lock<mutex> lg(aW);
                             audioWrt.wait(lg);
                             result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);// retry
+                        }
+                        if (result >= 0) audioWrt.notify_one();
+                        else if (result == AVERROR(EAGAIN)) { // while encoder buffer is full
+                            audioWrt.notify_one();
+                                unique_lock<mutex> lg(aW);
+                                audioWrt.wait(lg);
+                                result = avcodec_send_frame(audioOutputCodecContext, audioOutputFrame);// retry
+                                audioWrt.notify_one();
                         }
                         if (result < 0 && result !=AVERROR(EAGAIN)) {
                             throw avException("Failed to send frame to encoder"); // Error ending frame to encoder
@@ -775,21 +806,32 @@ void ScreenRecorder::ConvertAudioFrames() {
                     }
                 }
             }
-            result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame
-            audioWrt.notify_one();// signal demuxer thread to start if halted
+            if(aD.try_lock()) {
+                result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame without waiting
+                aD.unlock();
+                audioDmx.notify_one();// Signal demuxer thread to start if halted
+            }
+            else {
+                audioDmx.notify_one();
+                unique_lock<mutex> lg(aD);
+                audioDmx.wait(lg);
+                result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame
+                audioDmx.notify_one();// Signal demuxer thread to start if halted
+            }
         }
         if(result == AVERROR(EAGAIN)) {
             std::unique_lock<std::mutex> ul(aD);
-            audioCnv.wait(ul);//wait for audio demuxer thread signal
+            audioCnv.wait(ul);// Wait for audio demuxer thread signal
             result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame
+            audioCnv.notify_one();// Signal demuxer thread to start if halted
         }
         if(result < 0 && result != AVERROR(EAGAIN)) throw avException("Audio Converter/Writer threads syncronization error");
     }
     if (result < 0 && result != AVERROR_EOF) {
-        //Decoder error
+        // Decoder error
         throw avException("Failed to receive decoded packet");
     }
-    //Free allocated memory
+    // Free allocated memory
     free(audioFrame);
     free(audioOutputFrame);
 }
@@ -811,18 +853,27 @@ void ScreenRecorder::WriteAudioOutput(AVFormatContext *formatContext, AVRational
             outputPacket->stream_index = 1;
             result = av_write_frame(formatContext, outputPacket);
             if (result != 0) {
-                throw avException("Error in writing video frame");
+                throw avException("Error in writing audio frame");
             }
             av_packet_unref(outputPacket);
-            unique_lock<mutex> lg(aW);
-            audioWrt.wait(lg);
-//            result = avcodec_receive_packet(audioOutputCodecContext, outputPacket); // Try to receive a new packet
-            audioWrt.notify_one(); //notify converter thread if halted
+            if(aW.try_lock()) {
+                result = avcodec_receive_packet(audioOutputCodecContext, outputPacket); // Try to receive a new packet without waiting
+                aW.unlock();
+                audioWrt.notify_one(); //notify converter thread if halted
+            }
+            else {
+                audioWrt.notify_one(); //notify converter thread if halte
+                unique_lock<mutex> lg(aW);
+                audioWrt.wait(lg);
+                result = avcodec_receive_packet(audioOutputCodecContext, outputPacket); // Try to receive a new packet without waiting
+                audioWrt.notify_one(); //notify converter thread if halted
+            }
         }
-        if (result == AVERROR(EAGAIN)) {
+        if (result == AVERROR(EAGAIN) ) {// Packet not available
             unique_lock<mutex> lg(aW);
             audioWrt.wait(lg);
-    //        result = avcodec_receive_packet(audioOutputCodecContext, outputPacket); // Try to receive a new packet
+            result = avcodec_receive_packet(audioOutputCodecContext, outputPacket); // Try to receive a new packet
+            audioWrt.notify_one(); //notify converter thread if halted
         }
     }
     if(result < 0 && result != AVERROR_EOF) {
