@@ -4,11 +4,13 @@ using namespace std;
 #define AUDIO_CHANNELS 2
 #define AUDIO_SAMPLE_RATE 44100
 #ifdef WIN32
-#define VIDEO_CODEC 27
+#define VIDEO_CODEC 27 //H264
 #else
-#define VIDEO_CODEC 2
+#define VIDEO_CODEC 2 //MPEG2
 #endif
 #define VIDEO_BITRATE 8000000
+#define AUDIO_CODEC 86018
+#define AUDIO_BITRATE 128000
 std::mutex aD;
 std::mutex aC;
 std::mutex aW;
@@ -201,7 +203,7 @@ int ScreenRecorder::init_outputfile() {
 		throw avException(
 			"Error in finding the video av codecs. try again with correct codec");
 	}
-	audioOutputCodec = avcodec_find_encoder(AV_CODEC_ID_AAC);
+	audioOutputCodec = avcodec_find_encoder((AVCodecID) AUDIO_CODEC);
 	if (!audioOutputCodec) {
 		throw avException(
 			"Error in finding the audio av codecs. try again with correct codec");
@@ -254,9 +256,9 @@ int ScreenRecorder::init_outputfile() {
 	outputCodecPar->height = inputCodecContext->height;
 
 	audioOutputCodecPar = audioStream->codecpar;
-	audioOutputCodecPar->codec_id = AV_CODEC_ID_AAC;
+	audioOutputCodecPar->codec_id = (AVCodecID) AUDIO_CODEC;
 	audioOutputCodecPar->codec_type = AVMEDIA_TYPE_AUDIO;
-	audioOutputCodecPar->bit_rate = 128000;
+	audioOutputCodecPar->bit_rate = AUDIO_BITRATE;
 	audioOutputCodecPar->channels = audioInputCodecContext->channels;
 	audioOutputCodecPar->channel_layout = audioInputCodecContext->channel_layout;
 	audioOutputCodecPar->sample_rate = audioInputCodecContext->sample_rate;
