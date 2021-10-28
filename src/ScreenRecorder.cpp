@@ -62,7 +62,7 @@ int ScreenRecorder::init() {
 	}
 	options = nullptr;
 	av_dict_set(&options, "framerate", "30", 0);
-	av_dict_set(&options, "preset", "medium", 0);
+	//av_dict_set(&options, "preset", "medium", 0);
 	av_dict_set(&options, "offset_x", "0", 0);
 	av_dict_set(&options, "offset_y", "0", 0);
 	// av_dict_set(&options, "video_size", "1920x1080", 0);
@@ -244,7 +244,7 @@ int ScreenRecorder::init_outputfile() {
 	outputCodecPar->codec_id = AV_CODEC_ID_MPEG4; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO;
 	outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
 	outputCodecPar->format = AV_PIX_FMT_YUV420P;
-	outputCodecPar->bit_rate = 2400000; // 2500000
+	outputCodecPar->bit_rate = 4000000; // 2500000
 	outputCodecPar->width = inputCodecContext->width;
 	outputCodecPar->height = inputCodecContext->height;
 
@@ -528,8 +528,6 @@ void ScreenRecorder::CaptureVideoFrames() {
 							             videoStream->time_base);
 					}
 					// Write packet to file
-                    outPacket->duration = av_rescale_q(1, outputCodecContext->time_base,
-                                                       videoStream->time_base);
 					auto result = av_write_frame(outputFormatContext, outPacket);
 					if (result != 0) {
 						throw avException("Error in writing video frame");
@@ -654,7 +652,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 				encode(audioOutputCodecContext, audioOutputPacket, &got_packet,
 				       audioOutputFrame);
 				// Frame was sent successfully
-				if (got_frame > 0) { // Packet received successfully
+				if (got_packet > 0) { // Packet received successfully
 					if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
 						audioOutputPacket->pts =
 							av_rescale_q(audioOutputPacket->pts,
@@ -731,8 +729,6 @@ void ScreenRecorder::ConvertAudioFrames() {
     AVFrame *audioOutputFrame = alloc_audio_frame(
             audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
             audioOutputCodecContext->channel_layout, 0);
-    // Create encoder audio packet
-    AVPacket *audioOutputPacket = alloc_packet();
     int audioFrameNum = 0;
     int result = AVERROR(EAGAIN);
     // frame
@@ -798,7 +794,9 @@ void ScreenRecorder::ConvertAudioFrames() {
     free(audioOutputFrame);
 }
 
-void writeOutput(AVFormatContext *formatContext, AVPacket *outputPacket, AVRational bq, AVRational cq) {
+void ScreenRecorder::WriteAudioOutput(AVFormatContext *formatContext, AVRational bq, AVRational cq) {
+    // Create encoder audio packet
+    AVPacket *outputPacket = alloc_packet();
     int result = AVERROR(EAGAIN);
     while (result >= 0 || result == AVERROR(EAGAIN)) {
         if (result >= 0) {

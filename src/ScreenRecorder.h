@@ -134,7 +134,7 @@ class ScreenRecorder {
 	void CaptureAudioFrames();
     void DemuxAudioInput();
     void ConvertAudioFrames();
-    void WriteAudioOutput();
+    void WriteAudioOutput(AVFormatContext*, AVRational, AVRational);
 	int CaptureStart();
 
 	//  ----------------
