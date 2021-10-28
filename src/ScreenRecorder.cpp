@@ -3,6 +3,12 @@ using namespace std;
 
 #define AUDIO_CHANNELS 2
 #define AUDIO_SAMPLE_RATE 44100
+#ifdef WIN32
+#define VIDEO_CODEC 27
+#else
+#define VIDEO_CODEC 2
+#endif
+#define VIDEO_BITRATE 8000000
 std::mutex aD;
 std::mutex aC;
 std::mutex aW;
@@ -190,8 +196,7 @@ int ScreenRecorder::init() {
 int ScreenRecorder::init_outputfile() {
 	output_file = "../media/output.mp4";
     frameCount = 250;
-
-	outputCodec = avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO);
+	outputCodec = avcodec_find_encoder((AVCodecID) VIDEO_CODEC);
 	if (!outputCodec) {
 		throw avException(
 			"Error in finding the video av codecs. try again with correct codec");
@@ -241,10 +246,10 @@ int ScreenRecorder::init_outputfile() {
 
 	/* set property of the video file */
 	outputCodecPar = videoStream->codecpar;
-	outputCodecPar->codec_id = AV_CODEC_ID_MPEG2VIDEO; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
+	outputCodecPar->codec_id = (AVCodecID) VIDEO_CODEC; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
 	outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
 	outputCodecPar->format = AV_PIX_FMT_YUV420P;
-	outputCodecPar->bit_rate = 10000000; // 2500000
+	outputCodecPar->bit_rate = VIDEO_BITRATE; // 2500000
 	outputCodecPar->width = inputCodecContext->width;
 	outputCodecPar->height = inputCodecContext->height;
 
@@ -273,7 +278,7 @@ int ScreenRecorder::init_outputfile() {
 		outputCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 	}
 
-	if (codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+	if (codec_id == AV_CODEC_ID_H264) {
 		av_opt_set(outputCodecContext->priv_data, "preset", "slow", 0);
 	}
 
