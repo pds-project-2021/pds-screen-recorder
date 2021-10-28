@@ -235,8 +235,8 @@ int ScreenRecorder::init_outputfile() {
 	if (!audioOutputCodecContext) {
 		throw avException("Error in allocating the audio codec context");
 	}
-	outputCodecContext->gop_size = 1;
-	outputCodecContext->max_b_frames = 0;
+	outputCodecContext->gop_size = 10;
+	outputCodecContext->max_b_frames = 5;
 	outputCodecContext->time_base = videoStream->time_base;
 
 	/* set property of the video file */
@@ -244,7 +244,7 @@ int ScreenRecorder::init_outputfile() {
 	outputCodecPar->codec_id = AV_CODEC_ID_MPEG2VIDEO; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
 	outputCodecPar->codec_type = AVMEDIA_TYPE_VIDEO;
 	outputCodecPar->format = AV_PIX_FMT_YUV420P;
-	outputCodecPar->bit_rate = 4000000; // 2500000
+	outputCodecPar->bit_rate = 10000000; // 2500000
 	outputCodecPar->width = inputCodecContext->width;
 	outputCodecPar->height = inputCodecContext->height;
 
