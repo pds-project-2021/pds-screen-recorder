@@ -449,20 +449,20 @@ void ScreenRecorder::VideoDemuxing() {}
 
 int ScreenRecorder::CloseMediaFile() {
     video->join();
-    //audio->join();
-    audioDemux->join();
-    unique_lock<mutex> ulC(aD);
-    finishedAudioDemux = true;
-    audioCnv.notify_one();// Send sync signal to converter thread
-    audioCnv.wait(ulC);// Wait for resume signal
-    audioCnv.notify_one();// Send sync signal to converter thread
-    audioConvert->join();
-    unique_lock<mutex> ulW(aW);
-    finishedAudioConversion = true;
-    audioWrt.notify_one();// Send sync signal to output writer thread if necessary
-    audioWrt.wait(ulW);//Wait for writer thread signal
-    audioWrt.notify_one();// Send sync signal to output writer thread if necessary
-    audioWrite->join();
+    audio->join();
+//    audioDemux->join();
+//    unique_lock<mutex> ulC(aD);
+//    finishedAudioDemux = true;
+//    audioCnv.notify_one();// Send sync signal to converter thread
+//    audioCnv.wait(ulC);// Wait for resume signal
+//    audioCnv.notify_one();// Send sync signal to converter thread
+//    audioConvert->join();
+//    unique_lock<mutex> ulW(aW);
+//    finishedAudioConversion = true;
+//    audioWrt.notify_one();// Send sync signal to output writer thread if necessary
+//    audioWrt.wait(ulW);//Wait for writer thread signal
+//    audioWrt.notify_one();// Send sync signal to output writer thread if necessary
+//    audioWrite->join();
     //Write video file trailer data
     auto ret = av_write_trailer(outputFormatContext);
     if (ret < 0) {
@@ -478,13 +478,13 @@ int ScreenRecorder::CloseMediaFile() {
 
 int ScreenRecorder::initThreads() {
 	video = new thread(&ScreenRecorder::CaptureVideoFrames, this);
-    //audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
-    finishedAudioDemux = false;
-    audioDemux = new thread(&ScreenRecorder::DemuxAudioInput, this);
-    finishedAudioConversion = false;
-    audioConvert = new thread(&ScreenRecorder::ConvertAudioFrames, this);
-    AVRational audiobq = {audioOutputCodecContext->frame_size, audioInputCodecContext->sample_rate * audioInputCodecContext->channels};
-    audioWrite = new thread(&ScreenRecorder::WriteAudioOutput, this, outputFormatContext, audiobq, audioStream->time_base);
+    audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
+//    finishedAudioDemux = false;
+//    audioDemux = new thread(&ScreenRecorder::DemuxAudioInput, this);
+//    finishedAudioConversion = false;
+//    audioConvert = new thread(&ScreenRecorder::ConvertAudioFrames, this);
+//    AVRational audiobq = {audioOutputCodecContext->frame_size, audioInputCodecContext->sample_rate * audioInputCodecContext->channels};
+//    audioWrite = new thread(&ScreenRecorder::WriteAudioOutput, this, outputFormatContext, audiobq, audioStream->time_base);
 	return 0;
 }
 
@@ -607,7 +607,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 	int audioFrameNum = 0;
 	int got_frame = 0;
 	int got_packet = 0;
-    int pts = 0;
+    int64_t pts = 0;
     int dts = 0;
 	// Handle audio input stream packets
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
@@ -627,8 +627,8 @@ void ScreenRecorder::CaptureAudioFrames() {
 				exit(1);
 			}
             else if (got_samples > 0) {
-				audioFrameNum++;
-				audioOutputFrame->pts = audioFrameNum - 1;
+                pts += audioOutputFrame->nb_samples;
+				audioOutputFrame->pts = pts;
 				encode(audioOutputCodecContext, audioOutputPacket, &got_packet,
 				       audioOutputFrame);
 				// Frame was sent successfully
@@ -636,7 +636,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 					if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
 						audioOutputPacket->pts =
 							av_rescale_q(audioOutputPacket->pts,
-							             {audioOutputCodecContext->frame_size,
+							             {1,
 								             audioInputCodecContext->sample_rate *
 									             audioInputCodecContext->channels},
 							             audioStream->time_base);
@@ -644,15 +644,11 @@ void ScreenRecorder::CaptureAudioFrames() {
 					if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
 						audioOutputPacket->dts =
 							av_rescale_q(audioOutputPacket->dts,
-							             {audioOutputCodecContext->frame_size,
+							             {1,
 								             audioInputCodecContext->sample_rate *
 									             audioInputCodecContext->channels},
 							             audioStream->time_base);
 					}
-                    audioOutputPacket->duration = av_rescale_q(1, {audioOutputCodecContext->frame_size,
-                                                                   audioInputCodecContext->sample_rate *
-                                                                   audioInputCodecContext->channels},
-                                                               audioStream->time_base);
 					// Write packet to file
 					audioOutputPacket->stream_index = 1;
 					auto result = av_write_frame(outputFormatContext, audioOutputPacket);
@@ -664,8 +660,8 @@ void ScreenRecorder::CaptureAudioFrames() {
 			}
 			while (got_samples > 0 ) {
 				got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
-				audioFrameNum++;
-				audioOutputFrame->pts = audioFrameNum - 1;
+                pts += audioOutputFrame->nb_samples;
+                audioOutputFrame->pts = pts;
 				encode(audioOutputCodecContext, audioOutputPacket, &got_packet,
 				       audioOutputFrame);
 				// Frame was sent successfully
@@ -673,7 +669,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 					if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
 						audioOutputPacket->pts =
 							av_rescale_q(audioOutputPacket->pts,
-							             {audioOutputCodecContext->frame_size,
+							             {1,
 								             audioInputCodecContext->sample_rate *
 									             audioInputCodecContext->channels},
 							             audioStream->time_base);
@@ -681,15 +677,11 @@ void ScreenRecorder::CaptureAudioFrames() {
 					if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
 						audioOutputPacket->dts =
 							av_rescale_q(audioOutputPacket->dts,
-							             {audioOutputCodecContext->frame_size,
+							             {1,
 								             audioInputCodecContext->sample_rate *
 									             audioInputCodecContext->channels},
 							             audioStream->time_base);
 					}
-                    audioOutputPacket->duration = av_rescale_q(1, {audioOutputCodecContext->frame_size,
-                                                                   audioInputCodecContext->sample_rate *
-                                                                   audioInputCodecContext->channels},
-                                                               audioStream->time_base);
 					// Write packet to file
 					audioOutputPacket->stream_index = 1;
 					auto result = av_write_frame(outputFormatContext, audioOutputPacket);
@@ -903,7 +895,6 @@ void ScreenRecorder::WriteAudioOutput(AVFormatContext *formatContext, AVRational
             if (result != 0) {
                 throw avException("Error in writing audio frame");
             }
-            av_packet_unref(outputPacket.get());
             if(aW.try_lock()) {
                 result = avcodec_receive_packet(audioOutputCodecContext, outputPacket.get()); // Try to receive a new packet without waiting
                 if (result >= 0) audioWrt.notify_one();// Signal converter thread to resume if necessary
