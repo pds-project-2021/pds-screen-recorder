@@ -10,6 +10,7 @@
 #include<string>
 #include <math.h>
 #include <string.h>
+#include <memory>
 extern "C" {
 #include <libavutil/audio_fifo.h>
 #include <libavutil/imgutils.h>
@@ -110,7 +111,8 @@ class ScreenRecorder {
     std::thread *audioDemux;
     std::thread *audioConvert;
     std::thread *audioWrite;
-	bool recordAudio;
+	bool finishedAudioDemux;
+    bool finishedAudioConversion;
 	bool recordVideo;
 	const char *output_file = nullptr;
     int frameCount;
