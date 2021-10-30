@@ -1,9 +1,10 @@
 #include "ScreenRecorder.h"
 using namespace std;
 
+#define AUDIO 1
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
-#define AUDIO_MT 1
+#define AUDIO_MT 0
 #ifdef WIN32
 #define VIDEO_CODEC 27 //H264
 #else
@@ -486,6 +487,7 @@ void ScreenRecorder::VideoDemuxing() {}
 
 int ScreenRecorder::CloseMediaFile() {
     video->join();
+#if (AUDIO==1)
 #if (AUDIO_MT==1)
     audioDemux->join();
     unique_lock<mutex> ulC(aD);
@@ -496,6 +498,7 @@ int ScreenRecorder::CloseMediaFile() {
     audioConvert->join();
 #else
     audio->join();
+#endif
 #endif
 //    unique_lock<mutex> ulW(aW);
 //    finishedAudioConversion = true;
@@ -518,6 +521,7 @@ int ScreenRecorder::CloseMediaFile() {
 
 int ScreenRecorder::initThreads() {
 	video = new thread(&ScreenRecorder::CaptureVideoFrames, this);
+#if (AUDIO==1)
 #if (AUDIO_MT==1)
     finishedAudioDemux = false;
     audioDemux = new thread(&ScreenRecorder::DemuxAudioInput, this);
@@ -525,6 +529,7 @@ int ScreenRecorder::initThreads() {
     audioConvert = new thread(&ScreenRecorder::ConvertAudioFrames, this);
 #else
     audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
+#endif
 #endif
 //    AVRational audiobq = {1, audioInputCodecContext->sample_rate * audioInputCodecContext->channels};
 //    audioWrite = new thread(&ScreenRecorder::WriteAudioOutput, this, outputFormatContext, audiobq, audioStream->time_base);
