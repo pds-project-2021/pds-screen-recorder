@@ -10,7 +10,7 @@ using namespace std;
 #endif
 #define VIDEO_BITRATE 8000000
 #define FRAME_COUNT 120
-#define AUDIO_CODEC 86017 //86017 MP3; 86018 AAC;
+#define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE 128000
 std::mutex aD;
 std::mutex aW;
@@ -240,8 +240,8 @@ int ScreenRecorder::init_outputfile() {
 	if (!audioOutputCodecContext) {
 		throw avException("Error in allocating the audio codec context");
 	}
-	outputCodecContext->gop_size = 10;
-	outputCodecContext->max_b_frames = 5;
+	outputCodecContext->gop_size = 15;
+	outputCodecContext->max_b_frames = 10;
 	outputCodecContext->time_base = videoStream->time_base;
 
 	/* set property of the video file */
@@ -639,7 +639,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 	// Create encoder audio packet
 	AVPacket *audioOutputPacket = alloc_packet();
 	int count = 0;
-	int audioCount = ((int) frameCount/30);
+	int audioCount  = ((int) frameCount/30*AUDIO_CHANNELS*2);
 	int audioFrameNum = 0;
 	int got_frame = 0;
 	int got_packet = 0;
@@ -695,8 +695,8 @@ void ScreenRecorder::CaptureAudioFrames() {
 				}
 				av_packet_unref(audioOutputPacket);
 			}
+            got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
 			while (got_samples > 0 ) {
-				got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
                 pts += audioOutputFrame->nb_samples;
                 audioOutputFrame->pts = pts;
 				encode(audioOutputCodecContext, audioOutputPacket, &got_packet,
@@ -727,6 +727,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 					}
 				}
 				av_packet_unref(audioOutputPacket);
+                got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
 			}
 			// Send converted frame to encoder
 		} else
@@ -743,8 +744,8 @@ void ScreenRecorder::DemuxAudioInput(){
     auto audioPacket = make_unique<AVPacket>(*alloc_packet()) ;
     int count = 0;
     int result = 0;
-    double avsyncD = (frameCount+1.00)/30*4;
-    int avsyncI = (int) (frameCount+1.00)/30*4;
+    double avsyncD = (frameCount+1.00)/30*2;
+    int avsyncI = (int) (frameCount+1.00)/30*2;
     int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
     while (av_read_frame(audioInputFormatContext, audioPacket.get()) >= 0) {
