@@ -10,8 +10,8 @@ using namespace std;
 #endif
 #define VIDEO_BITRATE 8000000
 #define FRAME_COUNT 240
-#define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
-#define AUDIO_BITRATE 128000
+#define AUDIO_CODEC 86017 //86017 MP3; 86018 AAC;
+#define AUDIO_BITRATE 192000
 std::mutex aD;
 std::mutex aW;
 std::condition_variable audioCnv;
@@ -797,16 +797,9 @@ void ScreenRecorder::DemuxAudioInput(){
 
 void ScreenRecorder::ConvertAudioFrames() {
     // Create decoder audio frame
-//    AVFrame *audioFrame =
-//            alloc_audio_frame( 22050, audioInputCodecContext->sample_fmt,
-//                               audioInputCodecContext->channel_layout, 0);
     auto audioFrame = make_unique<AVFrame>(*alloc_audio_frame( audioInputCodecContext->frame_size, audioInputCodecContext->sample_fmt,
                                                       audioInputCodecContext->channel_layout, 0));
     // Create encoder audio frame
-//    auto audioOutputFrame = make_unique<AVFrame>(*alloc_audio_frame(
-//            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
-//            audioOutputCodecContext->channel_layout, 0));
-//    AVAudioFifo* audioFifo = av_audio_fifo_alloc(audioInputCodecContext->sample_fmt, audioInputCodecContext->channels, 22050);
     int audioFrameNum = 0;
     int64_t pts = 0;
     int result = AVERROR(EAGAIN);
