@@ -9,7 +9,7 @@ using namespace std;
 #define VIDEO_CODEC 2 //MPEG2
 #endif
 #define VIDEO_BITRATE 8000000
-#define FRAME_COUNT 60
+#define FRAME_COUNT 120
 #define AUDIO_CODEC 86017 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE 128000
 std::mutex aD;
@@ -594,7 +594,7 @@ void ScreenRecorder::CaptureVideoFrames() {
 
 	// Handle delayed frames
 	for (int result;;) {
-		// avcodec_send_frame(outputCodecContext, NULL);
+		 avcodec_send_frame(outputCodecContext, NULL);
 		if (avcodec_receive_packet(outputCodecContext, outPacket) == 0) { // Try to get packet
 			if (outPacket->pts != AV_NOPTS_VALUE) {
 				outPacket->pts =
@@ -639,7 +639,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 	// Create encoder audio packet
 	AVPacket *audioOutputPacket = alloc_packet();
 	int count = 0;
-	int audioCount = ((int) frameCount/30*4)+1;
+	int audioCount = ((int) frameCount/30);
 	int audioFrameNum = 0;
 	int got_frame = 0;
 	int got_packet = 0;
@@ -798,18 +798,18 @@ void ScreenRecorder::ConvertAudioFrames() {
     int audioFrameNum = 0;
     int64_t pts = 0;
     int result = AVERROR(EAGAIN);
-    if(aD.try_lock()) {
-        result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame without waiting
-        if(result>=0) audioCnv.notify_one();// Signal demuxer thread to resume if halted
-        aD.unlock();
-    }
-    else {
-        std::unique_lock<std::mutex> ul(aD);
-        audioCnv.notify_one();// Sync with demuxer thread if necessary
-        audioCnv.wait(ul);// Wait for audio demuxer thread sync signal
-        result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame
-        if(result>=0) audioCnv.notify_one();// Signal demuxer thread to resume if halted
-    }
+//    if(aD.try_lock()) {
+//        result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame without waiting
+//        if(result>=0) audioCnv.notify_one();// Signal demuxer thread to resume if halted
+//        aD.unlock();
+//    }
+//    else {
+//        std::unique_lock<std::mutex> ul(aD);
+//        audioCnv.notify_one();// Sync with demuxer thread if necessary
+//        audioCnv.wait(ul);// Wait for audio demuxer thread sync signal
+//        result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame
+//        if(result>=0) audioCnv.notify_one();// Signal demuxer thread to resume if halted
+//    }
     // frame
     while(result >= 0 || result == AVERROR(EAGAIN)) {
         if(result >= 0) {
@@ -913,18 +913,18 @@ void ScreenRecorder::WriteAudioOutput(AVFormatContext *formatContext, AVRational
     // Create encoder audio packet
     auto outputPacket = make_unique<AVPacket>(*alloc_packet());
     int result = AVERROR(EAGAIN);
-    if(aW.try_lock()) {
-        result = avcodec_receive_packet(audioOutputCodecContext, outputPacket.get()); // Try to receive a new packet without waiting
-        if (result >= 0) audioWrt.notify_one();// Signal converter thread to resume if necessary
-        aW.unlock();
-    }
-    else {
-        unique_lock<mutex> ul(aW);
-        audioWrt.notify_one();// Sync with converter thread if necessary
-        audioWrt.wait(ul);// Wait for sync signal from converter thread
-        result = avcodec_receive_packet(audioOutputCodecContext, outputPacket.get()); // Try to receive a new packet
-        if (result >= 0) audioWrt.notify_one();// Signal converter thread to resume if necessary
-    }
+//    if(aW.try_lock()) {
+//        result = avcodec_receive_packet(audioOutputCodecContext, outputPacket.get()); // Try to receive a new packet without waiting
+//        if (result >= 0) audioWrt.notify_one();// Signal converter thread to resume if necessary
+//        aW.unlock();
+//    }
+//    else {
+//        unique_lock<mutex> ul(aW);
+//        audioWrt.notify_one();// Sync with converter thread if necessary
+//        audioWrt.wait(ul);// Wait for sync signal from converter thread
+//        result = avcodec_receive_packet(audioOutputCodecContext, outputPacket.get()); // Try to receive a new packet
+//        if (result >= 0) audioWrt.notify_one();// Signal converter thread to resume if necessary
+//    }
     while (result >= 0 || result == AVERROR(EAGAIN)) {
         if (result >= 0) {
             if (outputPacket->pts != AV_NOPTS_VALUE) {
