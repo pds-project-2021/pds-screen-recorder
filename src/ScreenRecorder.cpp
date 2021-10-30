@@ -3,7 +3,7 @@ using namespace std;
 
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
-#define AUDIO_MT 0
+#define AUDIO_MT 1
 #ifdef WIN32
 #define VIDEO_CODEC 27 //H264
 #else
@@ -650,7 +650,8 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
         throw avException("error: swr_convert()");
     }
     else if (got_samples > 0) {
-        *pts_p += audioOutputFrame->nb_samples;
+        *pts_p += got_samples;
+        audioOutputFrame->nb_samples=got_samples;
         audioOutputFrame->pts = *pts_p;
         encode(audioOutputCodecContext, audioOutputPacket.get(), &got_packet,
                audioOutputFrame.get());
@@ -685,11 +686,13 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
                 throw avException("Error in writing video frame");
             }
         }
-        av_packet_unref(audioOutputPacket.get());
+//        got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
     }
-    got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
-    while (got_samples > 0 ) {
-        *pts_p += audioOutputFrame->nb_samples;
+    auto test = swr_get_out_samples(swrContext, 0);
+    while (swr_get_out_samples(swrContext, 0) >= audioOutputCodecContext->frame_size) {
+        got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
+        *pts_p += got_samples;
+        //audioOutputFrame->nb_samples=got_samples;
         audioOutputFrame->pts = *pts_p;
         encode(audioOutputCodecContext, audioOutputPacket.get(), &got_packet,
                audioOutputFrame.get());
@@ -724,11 +727,69 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
                 throw avException("Error in writing audio frame");
             }
         }
-        av_packet_unref(audioOutputPacket.get());
-        got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
     }
+    av_packet_unref(audioOutputPacket.get());
+    av_frame_unref(audioOutputFrame.get());
 //    av_free(audioOutputFrame);
 //    av_free(audioOutputPacket);
+    return 0;
+}
+static int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *audioOutputCodecContext, AVCodecContext *audioInputCodecContext, AVStream *audioStream, AVFormatContext *outputFormatContext, int64_t *pts_p) {
+    // Create encoder audio frame
+    auto audioOutputFrame = make_unique<AVFrame>(*alloc_audio_frame(
+            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
+            audioOutputCodecContext->channel_layout, 0));
+//    AVFrame *audioOutputFrame = alloc_audio_frame(
+//            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
+//            audioOutputCodecContext->channel_layout, 0);
+    // Create encoder audio packet
+    auto audioOutputPacket = make_unique<AVPacket>(*alloc_packet());
+//    AVPacket *audioOutputPacket = alloc_packet();
+    int got_packet = 0;
+    int got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
+    if (got_samples < 0) {
+        throw avException("error: swr_convert()");
+    }
+    else if (got_samples > 0) {
+        *pts_p += got_samples;
+        audioOutputFrame->nb_samples=got_samples;
+        audioOutputFrame->pts = *pts_p;
+        encode(audioOutputCodecContext, audioOutputPacket.get(), &got_packet,
+               audioOutputFrame.get());
+        // Frame was sent successfully
+        if (got_packet > 0) { // Packet received successfully
+            if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
+                audioOutputPacket->pts =
+                        av_rescale_q(audioOutputPacket->pts,
+                                     {1,
+                                      audioInputCodecContext->sample_rate *
+                                      audioInputCodecContext->channels},
+                                     audioStream->time_base);
+            }
+            if (audioOutputPacket->dts != AV_NOPTS_VALUE) {
+                audioOutputPacket->dts =
+                        av_rescale_q(audioOutputPacket->dts,
+                                     {1,
+                                      audioInputCodecContext->sample_rate *
+                                      audioInputCodecContext->channels},
+                                     audioStream->time_base);
+            }
+            audioOutputPacket->duration =
+                    av_rescale_q(audioOutputFrame->nb_samples,
+                                 {1,
+                                  audioInputCodecContext->sample_rate *
+                                  audioInputCodecContext->channels},
+                                 audioStream->time_base);
+            // Write packet to file
+            audioOutputPacket->stream_index = 1;
+            auto result = av_write_frame(outputFormatContext, audioOutputPacket.get());
+            if (result != 0) {
+                throw avException("Error in writing video frame");
+            }
+        }
+    }
+    av_packet_unref(audioOutputPacket.get());
+    av_frame_unref(audioOutputFrame.get());
     return 0;
 }
 
@@ -762,6 +823,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 		} else
 			throw avException("Failed to decode packet");
 	}
+    convertAndWriteLastAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, &pts);
     av_free(audioFrame);
     av_free(audioPacket);
 }
@@ -856,6 +918,7 @@ void ScreenRecorder::ConvertAudioFrames() {
             audioCnv.notify_one();// Sync with demuxer thread if necessary
             audioCnv.wait(ul);// Wait for audio demuxer thread sync signal
             if(finishedAudioDemux) {
+                convertAndWriteLastAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, &pts);
                 audioCnv.notify_one();// Sync with main thread if necessary
                 break;
             }
