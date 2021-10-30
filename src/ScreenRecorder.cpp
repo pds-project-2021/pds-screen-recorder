@@ -3,7 +3,7 @@ using namespace std;
 
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
-#define AUDIO_MT 1
+#define AUDIO_MT 0
 #ifdef WIN32
 #define VIDEO_CODEC 27 //H264
 #else
@@ -446,41 +446,41 @@ static int encode(AVCodecContext *avctx, AVPacket *pkt, int *got_packet, AVFrame
 	}
 }
 
-static int add_samples_to_fifo(AVAudioFifo *fifo, uint8_t **converted_input_samples, const int frame_size) {
-//  Make the FIFO as large as it needs to be to hold both the old and the new samples.
-    if (av_audio_fifo_realloc(fifo, av_audio_fifo_size(fifo) + frame_size) < 0) {
-        throw avException("Could not reallocate FIFO");
-    }
-
-    /* Store the new samples in the FIFO buffer. */
-    if (av_audio_fifo_write(fifo, (void **)converted_input_samples, frame_size) < frame_size) {
-        throw avException("Could not write data to FIFO");
-    }
-    return 0;
-}
-
-static int init_converted_samples(uint8_t ***converted_input_samples, AVCodecContext *output_codec_context, int frame_size)
-{
-    int error;
-    if (!(*converted_input_samples = static_cast<uint8_t **>(calloc(output_codec_context->channels,
-                                                                    sizeof(**converted_input_samples))))) {
-        throw avException("Could not allocate converted input sample pointers");
-        return AVERROR(ENOMEM);
-    }
-
-    /* Allocate memory for the samples of all channels in one consecutive
-     * block for convenience. */
-    if ((error = av_samples_alloc(*converted_input_samples, NULL,
-                                  output_codec_context->channels,
-                                  frame_size,
-                                  output_codec_context->sample_fmt, 0)) < 0) {
-        av_freep(&(*converted_input_samples)[0]);
-        free(*converted_input_samples);
-        throw avException("Could not allocate converted input samples (error '%s')");
-        return error;
-    }
-    return 0;
-}
+//static int add_samples_to_fifo(AVAudioFifo *fifo, uint8_t **converted_input_samples, const int frame_size) {
+////  Make the FIFO as large as it needs to be to hold both the old and the new samples.
+//    if (av_audio_fifo_realloc(fifo, av_audio_fifo_size(fifo) + frame_size) < 0) {
+//        throw avException("Could not reallocate FIFO");
+//    }
+//
+//    /* Store the new samples in the FIFO buffer. */
+//    if (av_audio_fifo_write(fifo, (void **)converted_input_samples, frame_size) < frame_size) {
+//        throw avException("Could not write data to FIFO");
+//    }
+//    return 0;
+//}
+//
+//static int init_converted_samples(uint8_t ***converted_input_samples, AVCodecContext *output_codec_context, int frame_size)
+//{
+//    int error;
+//    if (!(*converted_input_samples = static_cast<uint8_t **>(calloc(output_codec_context->channels,
+//                                                                    sizeof(**converted_input_samples))))) {
+//        throw avException("Could not allocate converted input sample pointers");
+//        return AVERROR(ENOMEM);
+//    }
+//
+//    /* Allocate memory for the samples of all channels in one consecutive
+//     * block for convenience. */
+//    if ((error = av_samples_alloc(*converted_input_samples, NULL,
+//                                  output_codec_context->channels,
+//                                  frame_size,
+//                                  output_codec_context->sample_fmt, 0)) < 0) {
+//        av_freep(&(*converted_input_samples)[0]);
+//        free(*converted_input_samples);
+//        throw avException("Could not allocate converted input samples (error '%s')");
+//        return error;
+//    }
+//    return 0;
+//}
 
 void ScreenRecorder::VideoDemuxing() {}
 
@@ -672,6 +672,12 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
                                       audioInputCodecContext->channels},
                                      audioStream->time_base);
             }
+            audioOutputPacket->duration =
+                    av_rescale_q(audioOutputFrame->nb_samples,
+                                 {1,
+                                  audioInputCodecContext->sample_rate *
+                                  audioInputCodecContext->channels},
+                                 audioStream->time_base);
             // Write packet to file
             audioOutputPacket->stream_index = 1;
             auto result = av_write_frame(outputFormatContext, audioOutputPacket.get());
@@ -705,6 +711,12 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
                                       audioInputCodecContext->channels},
                                      audioStream->time_base);
             }
+            audioOutputPacket->duration =
+                     av_rescale_q(got_samples,
+                                  {1,
+                                   audioInputCodecContext->sample_rate *
+                                   audioInputCodecContext->channels},
+                                  audioStream->time_base);
             // Write packet to file
             audioOutputPacket->stream_index = 1;
             auto result = av_write_frame(outputFormatContext, audioOutputPacket.get());
