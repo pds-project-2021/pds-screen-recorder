@@ -3,14 +3,15 @@ using namespace std;
 
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
+#define AUDIO_MT 1
 #ifdef WIN32
 #define VIDEO_CODEC 27 //H264
 #else
 #define VIDEO_CODEC 2 //MPEG2
 #endif
 #define VIDEO_BITRATE 8000000
-#define FRAME_COUNT 240
-#define AUDIO_CODEC 86017 //86017 MP3; 86018 AAC;
+#define FRAME_COUNT 350
+#define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE 192000
 std::mutex aD;
 std::mutex aW;
@@ -485,7 +486,7 @@ void ScreenRecorder::VideoDemuxing() {}
 
 int ScreenRecorder::CloseMediaFile() {
     video->join();
-//    audio->join();
+#if (AUDIO_MT==1)
     audioDemux->join();
     unique_lock<mutex> ulC(aD);
     finishedAudioDemux = true;
@@ -493,6 +494,9 @@ int ScreenRecorder::CloseMediaFile() {
     audioCnv.wait(ulC);// Wait for resume signal
     audioCnv.notify_one();// Send sync signal to converter thread
     audioConvert->join();
+#else
+    audio->join();
+#endif
 //    unique_lock<mutex> ulW(aW);
 //    finishedAudioConversion = true;
 //    audioWrt.notify_one();// Send sync signal to output writer thread if necessary
@@ -514,11 +518,14 @@ int ScreenRecorder::CloseMediaFile() {
 
 int ScreenRecorder::initThreads() {
 	video = new thread(&ScreenRecorder::CaptureVideoFrames, this);
-//    audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
+#if (AUDIO_MT==1)
     finishedAudioDemux = false;
     audioDemux = new thread(&ScreenRecorder::DemuxAudioInput, this);
     finishedAudioConversion = false;
     audioConvert = new thread(&ScreenRecorder::ConvertAudioFrames, this);
+#else
+    audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
+#endif
 //    AVRational audiobq = {1, audioInputCodecContext->sample_rate * audioInputCodecContext->channels};
 //    audioWrite = new thread(&ScreenRecorder::WriteAudioOutput, this, outputFormatContext, audiobq, audioStream->time_base);
 	return 0;
