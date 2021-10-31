@@ -59,5 +59,7 @@ class Recorder {
 	void convert_audio_frame();
 	void write_audio_output(...);
 	bool capture_starte();
+
+	void print_info();
 };
 

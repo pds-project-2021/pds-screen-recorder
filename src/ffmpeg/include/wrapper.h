@@ -28,8 +28,8 @@ class wrapper: public Tracker<wrapper<T>> {
 	void set_audio(shared_ptr<T*> ptr);
 	void set_video(shared_ptr<T*> ptr);
 
-	void set_audio(T* prt);
-	void set_video(T* prt);
+	void set_audio(T* ptr);
+	void set_video(T* ptr);
 
 };
 

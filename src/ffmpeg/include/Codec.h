@@ -5,8 +5,13 @@
 #pragma once
 
 #include "wrapper.h"
+#include "exceptions.h"
+#include "Format.h"
+#include "platform.h"
+
 
 class Codec {
+  public:
 //	AVCodec *inputCodec = nullptr;
 //	AVCodec *audioInputCodec = nullptr;
 
@@ -37,6 +42,8 @@ class Codec {
 //	AVCodecParameters *audioOutputCodecPar = nullptr;
 
 	wrapper<AVCodecParameters> outputPar;
+
+	void init_input(Format &format);
 };
 
 

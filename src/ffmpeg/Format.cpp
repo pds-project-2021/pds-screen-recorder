@@ -3,8 +3,6 @@
 //
 
 #include "include/Format.h"
-#include "platform.h"
-#include "exceptions.h"
 
 void Format::init_input() {
 	auto audio = av_find_input_format(AUDIO_INPUT_FORMAT);
@@ -26,14 +24,28 @@ void Format::init_input() {
 	if (ret != 0) {
 		throw avException("Couldn't open video input stream");
 	}
-}
-void Format::init_output() {
-	// todo
+
+	ret = avformat_find_stream_info(*videoCtx, &options);
+	if (ret < 0) {
+		throw avException("Unable to find the video stream information");
+	}
+
+	ret = avformat_find_stream_info(*audioCtx, nullptr);
+	if (ret < 0) {
+		throw avException("Unable to find the audio stream information");
+	}
+
+	videoStreamIndex = av_find_best_stream(*videoCtx, AVMEDIA_TYPE_VIDEO, -1,-1, nullptr, 0);
+	if (videoStreamIndex == -1) {
+		throw avException("Unable to find the video stream index. (-1)");
+	}
+
+	audioStreamIndex = av_find_best_stream(*audioCtx,AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+	if (audioStreamIndex == -1) {
+		throw avException("Unable to find the audio stream index. (-1)");
+	}
 }
 
-void Format::print_info() {
-	auto video = inputContext.get_video().get();
-	av_dump_format(*video, 0 , VIDEO_INPUT_FORMAT_CONTEXT, 0);
-	auto audio = inputContext.get_audio();
-	av_dump_format(*audio, 0, AUDIO_INPUT_FORMAT_CONTEXT, 0);
+void Format::init_output() {
+
 }

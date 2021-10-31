@@ -24,12 +24,12 @@ void prova(){
 }
 
 int main(int argc, char **argv) {
-//	prova();
-//	print_all_wrap();
+	prova();
+	print_all_wrap();
 
 
-	auto s = ScreenRecorder();
-	s.init();
+//	auto s = ScreenRecorder();
+//	s.init();
 //	std::cout << "Initialized input streams" << std::endl;
 //	s.init_outputfile();
 //	std::cout << "Initialized output streams and file" << std::endl;

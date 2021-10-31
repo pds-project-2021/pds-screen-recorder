@@ -9,6 +9,8 @@
 #pragma once
 
 #include "wrapper.h"
+#include "exceptions.h"
+#include "platform.h"
 
 class Format {
   public:
@@ -30,15 +32,14 @@ class Format {
 //	AVFormatContext *outputFormatContext = nullptr;
 //	AVFormatContext *audioOutputFormatContext = nullptr;
 
-
+	int videoStreamIndex = 0;
+	int audioStreamIndex = 0;
   public:
 	Format() = default;
 	~Format() = default;
 
 	void init_input();
 	void init_output();
-
-	void print_info();
 };
 
 

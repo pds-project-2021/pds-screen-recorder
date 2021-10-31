@@ -4,6 +4,17 @@
 #include "platform.h"
 
 #ifdef _WIN32
+AVDictionary* get_audio_options(){
+	AVDictionary* options = nullptr;
+
+	return options;
+}
+
+AVDictionary* get_video_options(){
+	AVDictionary* options = nullptr;
+
+	return options;
+}
 
 #elif defined linux
 
@@ -28,5 +39,17 @@ AVDictionary* get_video_options(){
 }
 
 #else
+
+AVDictionary* get_audio_options(){
+	AVDictionary* options = nullptr;
+
+	return options;
+}
+
+AVDictionary* get_video_options(){
+	AVDictionary* options = nullptr;
+
+	return options;
+}
 
 #endif
