@@ -157,6 +157,7 @@ int ScreenRecorder::init() {
 	audioInputCodecPar->codec_id = AV_CODEC_ID_PCM_S16LE;
 	audioInputCodecPar->codec_type = AVMEDIA_TYPE_AUDIO;
 	audioInputCodecPar->frame_size = 22050; // set number of audio samples in each frame
+    audioInputCodecPar->bit_rate = AUDIO_CHANNELS*705600;
 
 	inputCodec = avcodec_find_decoder(inputCodecPar->codec_id);
 	if (inputCodec == nullptr) {
