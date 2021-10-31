@@ -49,6 +49,7 @@ ScreenRecorder::~ScreenRecorder() {
     free(aD);
     free(videoCnv);
     free(audioCnv);
+    free(stopped);
 	cout << "clean all" << endl;
 }
 
