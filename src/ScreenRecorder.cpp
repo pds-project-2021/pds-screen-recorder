@@ -4,15 +4,15 @@ using namespace std;
 #define AUDIO 1
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
-#define VIDEO_MT 1
-#define AUDIO_MT 1
+#define VIDEO_MT 0
+#define AUDIO_MT 0
 #ifdef WIN32
 #define VIDEO_CODEC 27 //27 H264; 2 MPEG2;
 #else
 #define VIDEO_CODEC 2 //MPEG2, but H264 can be used if libx264-dev is installed
 #endif
 #define VIDEO_BITRATE 8000000
-#define FRAME_COUNT 350
+#define FRAME_COUNT 180
 #define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE 128000
 
@@ -29,6 +29,8 @@ ScreenRecorder::ScreenRecorder() {
     videoCnv = new condition_variable;
     audioCnv = new condition_variable;
 	recordVideo = false;
+    stopped = new atomic_bool;
+    *stopped = false;
     frameCount = 0;
 }
 
@@ -613,6 +615,7 @@ void ScreenRecorder::CaptureVideoFrames() {
 	// Try to extract packet from input stream
 	while (av_read_frame(inputFormatContext, packet) >= 0) {
 		if (count++ == frameCount) {
+            *stopped = true;
 			break;
 		}
 		if (frameNum++ == 30)
@@ -645,6 +648,7 @@ void ScreenRecorder::DemuxVideoInput() {
     while (av_read_frame(inputFormatContext, packet.get()) >= 0) {
         // Some computation here
         if (count++ == frameCount) {
+            *stopped = true;
             break;
         }
         if (frameNum == 30) {
@@ -899,16 +903,16 @@ void ScreenRecorder::CaptureAudioFrames() {
 	// Create decoder audio packet
 	AVPacket *audioPacket = alloc_packet();
 	int count = 0;
-	int audioCount  = ((int) frameCount/30*AUDIO_CHANNELS*2);
+	int audioCount  = 2;
 	int audioFrameNum = 0;
 	int got_frame = 0;
-	int got_packet = 0;
+	int set_audioCount = 0;
     uint8_t ** audio_samples = NULL;
     int64_t pts = 0;
     int dts = 0;
 	// Handle audio input stream packets
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
-		if (count++ == audioCount) {
+		if (*stopped) {
 			break;
 		}
 		// Send packet to decoder
@@ -916,6 +920,10 @@ void ScreenRecorder::CaptureAudioFrames() {
 		// check if decoded frame is ready
 		if (got_frame > 0) { // frame is ready
 			// Convert and write frames
+            if (set_audioCount == 0) {
+                audioCount  = ((int) frameCount/30*2*AUDIO_CHANNELS*AUDIO_SAMPLE_RATE/audioFrame->nb_samples);
+                set_audioCount = 1;
+            }
             convertAndWriteAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, audioFrame, &pts);
 		} else
 			throw avException("Failed to decode packet");
@@ -941,7 +949,7 @@ void ScreenRecorder::DemuxAudioInput(){
         std::chrono::duration<double> elapsed_seconds = end-start;
         std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
         //audioCnv.notify_one(); //signal converting thread to start if needed
-        if (count++ == audioCount) {
+        if (*stopped) {
             break;
         }
         // Send packet to decoder
