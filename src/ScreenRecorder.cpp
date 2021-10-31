@@ -4,8 +4,8 @@ using namespace std;
 #define AUDIO 1
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
-#define VIDEO_MT 0
-#define AUDIO_MT 0
+#define VIDEO_MT 1
+#define AUDIO_MT 1
 #ifdef WIN32
 #define VIDEO_CODEC 27 //27 H264; 2 MPEG2;
 #else
@@ -646,17 +646,16 @@ void ScreenRecorder::DemuxVideoInput() {
     int result = 0;
     auto start = std::chrono::system_clock::now();
     while (av_read_frame(inputFormatContext, packet.get()) >= 0) {
-        // Some computation here
-        if (count++ == frameCount) {
-            *stopped = true;
-            break;
-        }
         if (frameNum == 30) {
             frameNum = 0; // reset every fps frames
             auto end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end-start;
             std::cout << "Received 30 video packets in " << elapsed_seconds.count() << " s\n";
             start = std::chrono::system_clock::now();
+        }
+        if (count++ == frameCount) {
+            *stopped = true;
+            break;
         }
         // Send packet to decoder
         if(vD->try_lock()) {
@@ -943,15 +942,15 @@ void ScreenRecorder::DemuxAudioInput(){
     int avsyncI = (int) (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
     int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
+    auto end = start;
     while (av_read_frame(audioInputFormatContext, audioPacket.get()) >= 0) {
-        // Some computation here
-        auto end = std::chrono::system_clock::now();
-        std::chrono::duration<double> elapsed_seconds = end-start;
-        std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
-        //audioCnv.notify_one(); //signal converting thread to start if needed
         if (*stopped) {
             break;
         }
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end-start;
+        std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
+        //audioCnv.notify_one(); //signal converting thread to start if needed
         // Send packet to decoder
         if(aD->try_lock()) {
             result = avcodec_send_packet(audioInputCodecContext, audioPacket.get());// Try to send a packet without waiting
