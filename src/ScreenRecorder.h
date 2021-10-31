@@ -11,16 +11,17 @@
 #include <math.h>
 #include <string.h>
 #include <memory>
+
+#include "ffmpeg/include/exceptions.h"
+
 extern "C" {
 #include <libavutil/audio_fifo.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/pixdesc.h>
 #include <libswresample/swresample.h>
 }
-#include "exceptions/avException.h"
-#include "exceptions/dataException.h"
-#include "exceptions/fsException.h"
 #include <thread>
+
 #define __STDC_CONSTANT_MACROS
 
 #ifdef _WIN32
@@ -81,31 +82,45 @@ class ScreenRecorder {
 	//  -----------------------
 	AVInputFormat *inputFormat = nullptr;
 	AVInputFormat *audioInputFormat = nullptr;
+
 	AVOutputFormat *outputFormat = nullptr;
 	AVOutputFormat *audioOutputFormat = nullptr;
-	AVCodecContext *inputCodecContext = nullptr;
-	AVCodecContext *audioInputCodecContext = nullptr;
-	AVCodecContext *outputCodecContext = nullptr;
-	AVCodecContext *audioOutputCodecContext = nullptr;
+
 	AVFormatContext *inputFormatContext = nullptr;
 	AVFormatContext *audioInputFormatContext = nullptr;
+
 	AVFormatContext *outputFormatContext = nullptr;
 	AVFormatContext *audioOutputFormatContext = nullptr;
+
+// -----------------------------
+
+	AVCodecContext *inputCodecContext = nullptr;
+	AVCodecContext *audioInputCodecContext = nullptr;
+
+	AVCodecContext *outputCodecContext = nullptr;
+	AVCodecContext *audioOutputCodecContext = nullptr;
+
 	AVCodecParameters *inputCodecPar = nullptr;
 	AVCodecParameters *audioInputCodecPar = nullptr;
+
 	AVCodecParameters *outputCodecPar = nullptr;
 	AVCodecParameters *audioOutputCodecPar = nullptr;
 
 	AVCodec *inputCodec = nullptr;
 	AVCodec *audioInputCodec = nullptr;
+
 	AVCodec *outputCodec = nullptr;
 	AVCodec *audioOutputCodec = nullptr;
+//--------------
+
 	AVDictionary *options = nullptr;
 
 	AVStream *videoStream = nullptr;
 	AVStream *audioStream = nullptr;
+
 	SwsContext *swsContext = nullptr;
 	SwrContext *swrContext = nullptr;
+
 	std::thread *video;
 	std::thread *audio;
     std::thread *audioDemux;
