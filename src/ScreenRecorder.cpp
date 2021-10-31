@@ -16,7 +16,6 @@ using namespace std;
 #define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE 128000
 
-//variables for thread synchronization
 
 
 /* initialize the resources*/
@@ -24,6 +23,7 @@ ScreenRecorder::ScreenRecorder() {
 	av_register_all();
 	avcodec_register_all();
 	avdevice_register_all();
+//init variables for thread synchronization
     vD = new mutex;
     aD = new mutex;
     videoCnv = new condition_variable;
@@ -42,6 +42,7 @@ ScreenRecorder::~ScreenRecorder() {
 	if (inputFormatContext) {
 		throw avException("Unable to free avformat context");
 	}
+//free allocated memory of variables for thread synchronization
     free(vD);
     free(aD);
     free(videoCnv);
