@@ -668,7 +668,7 @@ void ScreenRecorder::DemuxVideoInput() {
             result = avcodec_send_packet(inputCodecContext, packet.get());
             if (result >= 0) videoCnv->notify_one(); // notify converter thread if halted
         }
-        if (result < 0 && result != AVERROR_EOF) {
+        if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
             // Decoder error
             throw avException("Failed to send packet to decoder");
         }
@@ -716,7 +716,7 @@ void ScreenRecorder::ConvertVideoFrames() {
             result = avcodec_receive_frame(inputCodecContext, frame.get()); // Try to get a decoded frame
             if(result>=0) videoCnv->notify_one();// Signal demuxer thread to resume if halted
         }
-        if(result < 0 && result != AVERROR(EAGAIN)) throw avException("Audio Converter/Writer threads syncronization error");
+        if(result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) throw avException("Audio Converter/Writer threads syncronization error");
     }
     if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
         // Decoder error
@@ -958,7 +958,7 @@ void ScreenRecorder::DemuxAudioInput(){
             result = avcodec_send_packet(audioInputCodecContext, audioPacket.get());
             if (result >= 0) audioCnv->notify_one(); // notify converter thread if halted
         }
-        if (result < 0 && result != AVERROR_EOF) {
+        if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
             // Decoder error
             throw avException("Failed to send packet to decoder");
         }
