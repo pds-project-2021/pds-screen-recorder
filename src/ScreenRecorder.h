@@ -108,9 +108,11 @@ class ScreenRecorder {
 	SwrContext *swrContext = nullptr;
 	std::thread *video;
 	std::thread *audio;
+    std::thread *videoDemux;
+    std::thread *videoConvert;
     std::thread *audioDemux;
     std::thread *audioConvert;
-    std::thread *audioWrite;
+    bool finishedVideoDemux;
 	bool finishedAudioDemux;
     bool finishedAudioConversion;
 	bool recordVideo;
@@ -121,7 +123,13 @@ class ScreenRecorder {
 
 	int out_size;
 	int codec_id;
-	void VideoDemuxing();
+	void DemuxVideoInput();
+    void ConvertVideoFrames();
+    void CaptureVideoFrames();
+    void CaptureAudioFrames();
+    void DemuxAudioInput();
+    void ConvertAudioFrames();
+    void WriteAudioOutput(AVFormatContext*, AVRational, AVRational);
 	int initThreads();
 
   public:
@@ -132,11 +140,6 @@ class ScreenRecorder {
 	int init();
 	int init_outputfile();
 	int CloseMediaFile();
-	void CaptureVideoFrames();
-	void CaptureAudioFrames();
-    void DemuxAudioInput();
-    void ConvertAudioFrames();
-    void WriteAudioOutput(AVFormatContext*, AVRational, AVRational);
 	int CaptureStart();
 
 	//  ----------------
