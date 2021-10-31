@@ -9,12 +9,12 @@ using namespace std;
 #ifdef WIN32
 #define VIDEO_CODEC 27 //H264
 #else
-#define VIDEO_CODEC 2 //MPEG2
+#define VIDEO_CODEC 2 //MPEG2, but H264 can be used if libx264-dev is installed
 #endif
 #define VIDEO_BITRATE 8000000
 #define FRAME_COUNT 350
 #define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
-#define AUDIO_BITRATE 192000
+#define AUDIO_BITRATE 128000
 std::mutex vD;
 std::mutex aD;
 std::condition_variable videoCnv;
@@ -59,7 +59,7 @@ int ScreenRecorder::init() {
 
 #ifdef _WIN32
 	CoInitializeEx(NULL, COINIT_MULTITHREADED); // Set COM to multithreaded model
-	av_dict_set(&options, "rtbufsize", "5M", 0);
+	av_dict_set(&options, "rtbufsize", "3M", 0);
 	audioInputFormat = av_find_input_format("dshow");
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
     av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
@@ -681,7 +681,7 @@ void ScreenRecorder::DemuxVideoInput() {
             frameNum = 0; // reset every fps frames
             auto end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end-start;
-            std::cout << "Received 30 video packets after " << elapsed_seconds.count() << "\n";
+            std::cout << "Received 30 video packets in " << elapsed_seconds.count() << " s\n";
             start = std::chrono::system_clock::now();
         }
         // Send packet to decoder
@@ -969,7 +969,7 @@ void ScreenRecorder::DemuxAudioInput(){
         // Some computation here
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end-start;
-        std::cout << "Received audio packet after " << elapsed_seconds.count() << "\n";
+        std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
         //audioCnv.notify_one(); //signal converting thread to start if needed
         if (count++ == audioCount) {
             break;
