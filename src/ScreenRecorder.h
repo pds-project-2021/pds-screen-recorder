@@ -112,6 +112,12 @@ class ScreenRecorder {
     std::thread *videoConvert;
     std::thread *audioDemux;
     std::thread *audioConvert;
+//    std::atomic_bool paused;
+//    std::atomic_bool stopped;
+    std::mutex *vD;
+    std::mutex *aD;
+    std::condition_variable *videoCnv;
+    std::condition_variable *audioCnv;
     bool finishedVideoDemux;
 	bool finishedAudioDemux;
     bool finishedAudioConversion;

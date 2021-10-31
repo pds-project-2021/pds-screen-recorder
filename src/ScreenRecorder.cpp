@@ -7,7 +7,7 @@ using namespace std;
 #define VIDEO_MT 1
 #define AUDIO_MT 1
 #ifdef WIN32
-#define VIDEO_CODEC 27 //H264
+#define VIDEO_CODEC 27 //27 H264; 2 MPEG2;
 #else
 #define VIDEO_CODEC 2 //MPEG2, but H264 can be used if libx264-dev is installed
 #endif
@@ -15,15 +15,19 @@ using namespace std;
 #define FRAME_COUNT 350
 #define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE 128000
-std::mutex vD;
-std::mutex aD;
-std::condition_variable videoCnv;
-std::condition_variable audioCnv;
+
+//variables for thread synchronization
+
+
 /* initialize the resources*/
 ScreenRecorder::ScreenRecorder() {
 	av_register_all();
 	avcodec_register_all();
 	avdevice_register_all();
+    vD = new mutex;
+    aD = new mutex;
+    videoCnv = new condition_variable;
+    audioCnv = new condition_variable;
 	recordVideo = false;
     frameCount = 0;
 }
@@ -38,7 +42,10 @@ ScreenRecorder::~ScreenRecorder() {
 	if (inputFormatContext) {
 		throw avException("Unable to free avformat context");
 	}
-
+    free(vD);
+    free(aD);
+    free(videoCnv);
+    free(audioCnv);
 	cout << "clean all" << endl;
 }
 
@@ -448,51 +455,14 @@ static int encode(AVCodecContext *avctx, AVPacket *pkt, int *got_packet, AVFrame
 	}
 }
 
-//static int add_samples_to_fifo(AVAudioFifo *fifo, uint8_t **converted_input_samples, const int frame_size) {
-////  Make the FIFO as large as it needs to be to hold both the old and the new samples.
-//    if (av_audio_fifo_realloc(fifo, av_audio_fifo_size(fifo) + frame_size) < 0) {
-//        throw avException("Could not reallocate FIFO");
-//    }
-//
-//    /* Store the new samples in the FIFO buffer. */
-//    if (av_audio_fifo_write(fifo, (void **)converted_input_samples, frame_size) < frame_size) {
-//        throw avException("Could not write data to FIFO");
-//    }
-//    return 0;
-//}
-//
-//static int init_converted_samples(uint8_t ***converted_input_samples, AVCodecContext *output_codec_context, int frame_size)
-//{
-//    int error;
-//    if (!(*converted_input_samples = static_cast<uint8_t **>(calloc(output_codec_context->channels,
-//                                                                    sizeof(**converted_input_samples))))) {
-//        throw avException("Could not allocate converted input sample pointers");
-//        return AVERROR(ENOMEM);
-//    }
-//
-//    /* Allocate memory for the samples of all channels in one consecutive
-//     * block for convenience. */
-//    if ((error = av_samples_alloc(*converted_input_samples, NULL,
-//                                  output_codec_context->channels,
-//                                  frame_size,
-//                                  output_codec_context->sample_fmt, 0)) < 0) {
-//        av_freep(&(*converted_input_samples)[0]);
-//        free(*converted_input_samples);
-//        throw avException("Could not allocate converted input samples (error '%s')");
-//        return error;
-//    }
-//    return 0;
-//}
-
-
 int ScreenRecorder::CloseMediaFile() {
 #if (VIDEO_MT==1)
     videoDemux->join();
-    unique_lock<mutex> ulvC(vD);
+    unique_lock<mutex> ulvC(*vD);
     finishedVideoDemux = true;
-    videoCnv.notify_one();// Send sync signal to video converter thread
-    videoCnv.wait(ulvC);// Wait for resume signal
-    videoCnv.notify_one();// Send sync signal to video converter thread
+    videoCnv->notify_one();// Send sync signal to video converter thread
+    videoCnv->wait(ulvC);// Wait for resume signal
+    videoCnv->notify_one();// Send sync signal to video converter thread
     videoConvert->join();
 #else
     video->join();
@@ -500,11 +470,11 @@ int ScreenRecorder::CloseMediaFile() {
 #if (AUDIO==1)
 #if (AUDIO_MT==1)
     audioDemux->join();
-    unique_lock<mutex> ulC(aD);
+    unique_lock<mutex> ulC(*aD);
     finishedAudioDemux = true;
-    audioCnv.notify_one();// Send sync signal to converter thread
-    audioCnv.wait(ulC);// Wait for resume signal
-    audioCnv.notify_one();// Send sync signal to converter thread
+    audioCnv->notify_one();// Send sync signal to converter thread
+    audioCnv->wait(ulC);// Wait for resume signal
+    audioCnv->notify_one();// Send sync signal to converter thread
     audioConvert->join();
 #else
     audio->join();
@@ -546,8 +516,6 @@ int ScreenRecorder::initThreads() {
     audio = new thread(&ScreenRecorder::CaptureAudioFrames, this);
 #endif
 #endif
-//    AVRational audiobq = {1, audioInputCodecContext->sample_rate * audioInputCodecContext->channels};
-//    audioWrite = new thread(&ScreenRecorder::WriteAudioOutput, this, outputFormatContext, audiobq, audioStream->time_base);
 	return 0;
 }
 
@@ -685,19 +653,19 @@ void ScreenRecorder::DemuxVideoInput() {
             start = std::chrono::system_clock::now();
         }
         // Send packet to decoder
-        if(vD.try_lock()) {
+        if(vD->try_lock()) {
             result = avcodec_send_packet(inputCodecContext, packet.get());// Try to send a packet without waiting
-            if (result >= 0) videoCnv.notify_one(); // notify converter thread if halted
-            vD.unlock();
+            if (result >= 0) videoCnv->notify_one(); // notify converter thread if halted
+            vD->unlock();
         }
         else result = AVERROR(EAGAIN);
         // Check result
         if(result == AVERROR(EAGAIN)) {//buffer is full or could not acquire lock, wait and retry
-            unique_lock<mutex> ul(vD);
-            videoCnv.notify_one();// Send sync signal to converter thread
-            videoCnv.wait(ul);// Wait for resume signal
+            unique_lock<mutex> ul(*vD);
+            videoCnv->notify_one();// Send sync signal to converter thread
+            videoCnv->wait(ul);// Wait for resume signal
             result = avcodec_send_packet(inputCodecContext, packet.get());
-            if (result >= 0) videoCnv.notify_one(); // notify converter thread if halted
+            if (result >= 0) videoCnv->notify_one(); // notify converter thread if halted
         }
         if (result < 0 && result != AVERROR_EOF) {
             // Decoder error
@@ -716,10 +684,10 @@ void ScreenRecorder::ConvertVideoFrames() {
     // Create encoder audio frame
     int64_t count = 0;
     int result = AVERROR(EAGAIN);
-    if(vD.try_lock()) {
+    if(vD->try_lock()) {
         result = avcodec_receive_frame(inputCodecContext, frame.get()); // Try to get a decoded frame without waiting
-        if(result>=0) videoCnv.notify_one();// Signal demuxer thread to resume if halted
-        vD.unlock();
+        if(result>=0) videoCnv->notify_one();// Signal demuxer thread to resume if halted
+        vD->unlock();
     }
     else result = AVERROR(EAGAIN);
     while(result >= 0 || result == AVERROR(EAGAIN)) {
@@ -728,24 +696,24 @@ void ScreenRecorder::ConvertVideoFrames() {
             count++;
             convertAndWriteVideoFrame(swsContext, outputCodecContext, inputCodecContext, videoStream, outputFormatContext, frame.get(), &count);
         }
-        if(vD.try_lock()) {
+        if(vD->try_lock()) {
             result = avcodec_receive_frame(inputCodecContext, frame.get()); // Try to get a decoded frame without waiting
-            if(result>=0) videoCnv.notify_one();// Signal demuxer thread to resume if halted
-            vD.unlock();
+            if(result>=0) videoCnv->notify_one();// Signal demuxer thread to resume if halted
+            vD->unlock();
         }
         else result = AVERROR(EAGAIN);
         if(result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
-            std::unique_lock<std::mutex> ul(vD);
-            videoCnv.notify_one();// Signal demuxer thread if necessary
-            videoCnv.wait(ul);// Wait for resume signal
+            std::unique_lock<std::mutex> ul(*vD);
+            videoCnv->notify_one();// Signal demuxer thread if necessary
+            videoCnv->wait(ul);// Wait for resume signal
             if(finishedVideoDemux) {
                 //Convert last frame and then write it to file
                 convertAndWriteDelayedVideoFrames(outputCodecContext, videoStream, outputFormatContext);
-                videoCnv.notify_one();// Sync with main thread if necessary
+                videoCnv->notify_one();// Sync with main thread if necessary
                 break;
             }
             result = avcodec_receive_frame(inputCodecContext, frame.get()); // Try to get a decoded frame
-            if(result>=0) videoCnv.notify_one();// Signal demuxer thread to resume if halted
+            if(result>=0) videoCnv->notify_one();// Signal demuxer thread to resume if halted
         }
         if(result < 0 && result != AVERROR(EAGAIN)) throw avException("Audio Converter/Writer threads syncronization error");
     }
@@ -975,19 +943,19 @@ void ScreenRecorder::DemuxAudioInput(){
             break;
         }
         // Send packet to decoder
-        if(aD.try_lock()) {
+        if(aD->try_lock()) {
             result = avcodec_send_packet(audioInputCodecContext, audioPacket.get());// Try to send a packet without waiting
-            if (result >= 0) audioCnv.notify_one(); // notify converter thread if halted
-            aD.unlock();
+            if (result >= 0) audioCnv->notify_one(); // notify converter thread if halted
+            aD->unlock();
         }
         else result = AVERROR(EAGAIN);
         // Check result
         if(result == AVERROR(EAGAIN)) {//buffer is full or could not acquire lock, wait and retry
-            unique_lock<mutex> ul(aD);
-            audioCnv.notify_one();// Send sync signal to converter thread
-            audioCnv.wait(ul);// Wait for resume signal
+            unique_lock<mutex> ul(*aD);
+            audioCnv->notify_one();// Send sync signal to converter thread
+            audioCnv->wait(ul);// Wait for resume signal
             result = avcodec_send_packet(audioInputCodecContext, audioPacket.get());
-            if (result >= 0) audioCnv.notify_one(); // notify converter thread if halted
+            if (result >= 0) audioCnv->notify_one(); // notify converter thread if halted
         }
         if (result < 0 && result != AVERROR_EOF) {
             // Decoder error
@@ -1004,13 +972,12 @@ void ScreenRecorder::ConvertAudioFrames() {
     auto audioFrame = make_unique<AVFrame>(*alloc_audio_frame( audioInputCodecContext->frame_size, audioInputCodecContext->sample_fmt,
                                                       audioInputCodecContext->channel_layout, 0));
     // Create encoder audio frame
-    int audioFrameNum = 0;
     int64_t pts = 0;
     int result = AVERROR(EAGAIN);
-    if(aD.try_lock()) {
+    if(aD->try_lock()) {
         result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame without waiting
-        if(result>=0) audioCnv.notify_one();// Signal demuxer thread to resume if halted
-        aD.unlock();
+        if(result>=0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
+        aD->unlock();
     }
     else result = AVERROR(EAGAIN);
     while(result >= 0 || result == AVERROR(EAGAIN)) {
@@ -1018,24 +985,24 @@ void ScreenRecorder::ConvertAudioFrames() {
             //Convert frames and then write them to file
             convertAndWriteAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, audioFrame.get(), &pts);
         }
-        if(aD.try_lock()) {
+        if(aD->try_lock()) {
             result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame without waiting
-            if(result>=0) audioCnv.notify_one();// Signal demuxer thread to resume if halted
-            aD.unlock();
+            if(result>=0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
+            aD->unlock();
         }
         else result = AVERROR(EAGAIN);
         if(result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
-            std::unique_lock<std::mutex> ul(aD);
-            audioCnv.notify_one();// Signal demuxer thread if necessary
-            audioCnv.wait(ul);// Wait for resume signal
+            std::unique_lock<std::mutex> ul(*aD);
+            audioCnv->notify_one();// Signal demuxer thread if necessary
+            audioCnv->wait(ul);// Wait for resume signal
             if(finishedAudioDemux) {
                 //Convert last frame and then write it to file
                 convertAndWriteLastAudioFrame(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, &pts);
-                audioCnv.notify_one();// Sync with main thread if necessary
+                audioCnv->notify_one();// Sync with main thread if necessary
                 break;
             }
             result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame
-            if(result>=0) audioCnv.notify_one();// Signal demuxer thread to resume if halted
+            if(result>=0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
         }
         if(result < 0 && result != AVERROR(EAGAIN)) throw avException("Audio Converter/Writer threads syncronization error");
     }
