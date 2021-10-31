@@ -157,7 +157,7 @@ int ScreenRecorder::init() {
 	audioInputCodecPar->codec_id = AV_CODEC_ID_PCM_S16LE;
 	audioInputCodecPar->codec_type = AVMEDIA_TYPE_AUDIO;
 	audioInputCodecPar->frame_size = 22050; // set number of audio samples in each frame
-    audioInputCodecPar->bit_rate = AUDIO_CHANNELS*705600;
+//    audioInputCodecPar->bit_rate = AUDIO_CHANNELS*705600;
 
 	inputCodec = avcodec_find_decoder(inputCodecPar->codec_id);
 	if (inputCodec == nullptr) {
@@ -931,8 +931,8 @@ void ScreenRecorder::DemuxAudioInput(){
     auto audioPacket = make_unique<AVPacket>(*alloc_packet()) ;
     int count = 0;
     int result = 0;
-    double avsyncD = (frameCount+1.00)/30*2;
-    int avsyncI = (int) (frameCount+1.00)/30*2;
+    double avsyncD = (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
+    int avsyncI = (int) (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
     int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
     while (av_read_frame(audioInputFormatContext, audioPacket.get()) >= 0) {

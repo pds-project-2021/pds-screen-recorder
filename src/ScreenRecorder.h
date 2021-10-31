@@ -11,6 +11,7 @@
 #include <math.h>
 #include <string.h>
 #include <memory>
+#include <atomic>
 extern "C" {
 #include <libavutil/audio_fifo.h>
 #include <libavutil/imgutils.h>
@@ -21,6 +22,7 @@ extern "C" {
 #include "exceptions/dataException.h"
 #include "exceptions/fsException.h"
 #include <thread>
+
 #define __STDC_CONSTANT_MACROS
 
 #ifdef _WIN32
