@@ -13,7 +13,7 @@ class Recorder {
 	Format format;
 	Codec codec;
 
-	wrapper<AVStream> stream;
+//	wrapper<AVStream> stream;
 
 //	AVStream *videoStream = nullptr;
 //	AVStream *audioStream = nullptr;

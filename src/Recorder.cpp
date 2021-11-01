@@ -20,14 +20,20 @@ Recorder::Recorder() {
 
 // todo: add params for recording: width, height, offsets
 void Recorder::init() {
-	format.init_input();
-	codec.init_input(format);
-//	format.init_output();
-	format.print_info();
+	format.setup();
+
+	auto audioPar = format.get_audio_codec();
+	auto videoPar = format.get_video_codec();
+
+	codec.set_audio_parameters(audioPar);
+	codec.set_video_parameters(videoPar);
+	codec.setup();
+
+	this->print_info();
 }
 
 void Recorder::print_info(){
-	av_dump_format(*format.inputContext.get_video(), 0 , VIDEO_INPUT_FORMAT_CONTEXT, 0);
-	av_dump_format(*format.inputContext.get_audio(), 0, AUDIO_INPUT_FORMAT_CONTEXT, 0);
+	av_dump_format(format.inputContext.get_video(), 0 , VIDEO_INPUT_FORMAT_CONTEXT, 0);
+	av_dump_format(format.inputContext.get_audio(), 0, AUDIO_INPUT_FORMAT_CONTEXT, 0);
 }
 

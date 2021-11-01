@@ -20,7 +20,7 @@ class Codec {
 //	AVCodec *outputCodec = nullptr;
 //	AVCodec *audioOutputCodec = nullptr;
 
-	wrapper<AVCodec> output;
+//	wrapper<AVCodec> output;
 
 
 //	AVCodecContext *inputCodecContext = nullptr;
@@ -31,7 +31,7 @@ class Codec {
 //	AVCodecContext *outputCodecContext = nullptr;
 //	AVCodecContext *audioOutputCodecContext = nullptr;
 
-	wrapper<AVCodecContext> outputContext;
+//	wrapper<AVCodecContext> outputContext;
 
 //	AVCodecParameters *inputCodecPar = nullptr;
 //	AVCodecParameters *audioInputCodecPar = nullptr;
@@ -41,9 +41,15 @@ class Codec {
 //	AVCodecParameters *outputCodecPar = nullptr;
 //	AVCodecParameters *audioOutputCodecPar = nullptr;
 
-	wrapper<AVCodecParameters> outputPar;
+//	wrapper<AVCodecParameters> outputPar;
+  private:
+	void init_audio_context();
+	void init_video_context();
 
-	void init_input(Format &format);
+  public:
+	void set_audio_parameters(AVCodecParameters *par);
+	void set_video_parameters(AVCodecParameters *par);
+	void setup();
 };
 
 

@@ -4,6 +4,8 @@
 #include "ScreenRecorder.h"
 
 void print_all_wrap(){
+	cout << "---------------" << endl;
+
 	wrapper<AVFormatContext>::print_count();
 	wrapper<AVInputFormat>::print_count();
 	wrapper<AVStream>::print_count();
@@ -11,8 +13,6 @@ void print_all_wrap(){
 	wrapper<AVCodecParameters>::print_count();
 	wrapper<AVCodecContext>::print_count();
 	wrapper<AVOutputFormat>::print_count();
-	wrapper<AVFormatContext>::print_count();
-	wrapper<AVFormatContext>::print_count();
 }
 
 void prova(){
