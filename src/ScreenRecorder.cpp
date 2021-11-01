@@ -20,8 +20,8 @@ using namespace std;
 
 /* initialize the resources*/
 ScreenRecorder::ScreenRecorder() {
-	av_register_all();
-	avcodec_register_all();
+//	av_register_all();
+//	avcodec_register_all();
 	avdevice_register_all();
 //init variables for thread synchronization
     vD = new mutex;
@@ -55,7 +55,7 @@ ScreenRecorder::~ScreenRecorder() {
 
 void show_avfoundation_device() {
 	AVFormatContext *pFormatCtx = avformat_alloc_context();
-	AVDictionary *options = NULL;
+	AVDictionary *options = nullptr;
 	av_dict_set(&options, "list_devices", "true", 0);
 	AVInputFormat *iformat = av_find_input_format("avfoundation");
 	printf("==AVFoundation Device Info===\n");
@@ -69,7 +69,7 @@ int ScreenRecorder::init() {
 	options = nullptr;
 
 #ifdef _WIN32
-	CoInitializeEx(NULL, COINIT_MULTITHREADED); // Set COM to multithreaded model
+	CoInitializeEx(nullptr, COINIT_MULTITHREADED); // Set COM to multithreaded model
 	av_dict_set(&options, "rtbufsize", "3M", 0);
 	audioInputFormat = av_find_input_format("dshow");
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
@@ -416,7 +416,7 @@ static int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacke
 		if (result < 0 && result != AVERROR_EOF) {
 			// Decoder error
 			throw avException("Failed to send packet to decoder");
-			return result;
+//			return result;
 		} else if (result >= 0) {
 			result = avcodec_receive_frame(avctx, frame); // Try to get a decoded
 			// frame
@@ -502,6 +502,7 @@ int ScreenRecorder::CloseMediaFile() {
             throw fsException("Failed to close file");
         }
     }
+    return ret;
 }
 
 int ScreenRecorder::initThreads() {
@@ -574,7 +575,7 @@ static int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
     // Create encoder audio packet
     auto outPacket = make_unique<AVPacket>(*alloc_packet());
     for (int result;;) {
-        avcodec_send_frame(outputCodecContext, NULL);
+        avcodec_send_frame(outputCodecContext, nullptr);
         if (avcodec_receive_packet(outputCodecContext, outPacket.get()) == 0) { // Try to get packet
             if (outPacket->pts != AV_NOPTS_VALUE) {
                 outPacket->pts =
@@ -598,6 +599,7 @@ static int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
             break;
         }
     }
+    return 0;
 }
 
 void ScreenRecorder::CaptureVideoFrames() {
@@ -644,7 +646,7 @@ void ScreenRecorder::DemuxVideoInput() {
     auto packet = make_unique<AVPacket>(*alloc_packet()) ;
     int count = 0;
     int frameNum = 0; // frame number in a second
-    int result = 0;
+    int result;
     auto start = std::chrono::system_clock::now();
     while (av_read_frame(inputFormatContext, packet.get()) >= 0) {
         if (frameNum == 30) {
@@ -788,7 +790,7 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
         }
 //        got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
     }
-    auto test = swr_get_out_samples(swrContext, 0);
+//    auto test = swr_get_out_samples(swrContext, 0);
     while (swr_get_out_samples(swrContext, 0) >= audioOutputCodecContext->frame_size) {
         got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
         *pts_p += got_samples;
@@ -902,14 +904,14 @@ void ScreenRecorder::CaptureAudioFrames() {
 		                  audioInputCodecContext->channel_layout, 0);
 	// Create decoder audio packet
 	AVPacket *audioPacket = alloc_packet();
-	int count = 0;
-	int audioCount  = 2;
-	int audioFrameNum = 0;
+//	int count = 0;
+//	int audioCount  = 2;
+//	int audioFrameNum = 0;
 	int got_frame = 0;
-	int set_audioCount = 0;
-    uint8_t ** audio_samples = NULL;
+//	int set_audioCount = 0;
+//    uint8_t ** audio_samples = NULL;
     int64_t pts = 0;
-    int dts = 0;
+//    int dts = 0;
 	// Handle audio input stream packets
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
 		if (*stopped) {
@@ -920,10 +922,10 @@ void ScreenRecorder::CaptureAudioFrames() {
 		// check if decoded frame is ready
 		if (got_frame > 0) { // frame is ready
 			// Convert and write frames
-            if (set_audioCount == 0) {
-                audioCount  = ((int) frameCount/30*2*AUDIO_CHANNELS*AUDIO_SAMPLE_RATE/audioFrame->nb_samples);
-                set_audioCount = 1;
-            }
+//            if (set_audioCount == 0) {
+//                audioCount  = ((int) frameCount/30*2*AUDIO_CHANNELS*AUDIO_SAMPLE_RATE/audioFrame->nb_samples);
+//                set_audioCount = 1;
+//            }
             convertAndWriteAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, audioFrame, &pts);
 		} else
 			throw avException("Failed to decode packet");
@@ -937,11 +939,11 @@ void ScreenRecorder::CaptureAudioFrames() {
 void ScreenRecorder::DemuxAudioInput(){
     // Create decoder audio packet
     auto audioPacket = make_unique<AVPacket>(*alloc_packet()) ;
-    int count = 0;
-    int result = 0;
-    double avsyncD = (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
-    int avsyncI = (int) (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
-    int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
+//    int count = 0;
+    int result;
+//    double avsyncD = (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
+//    int avsyncI = (int) (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
+//    int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
     auto end = start;
     while (av_read_frame(audioInputFormatContext, audioPacket.get()) >= 0) {
