@@ -1010,6 +1010,7 @@ void ScreenRecorder::ConvertAudioFrames() {
             if(finishedAudioDemux) {
                 //Convert last frame and then write it to file
                 convertAndWriteLastAudioFrame(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, &pts);
+                cout << "Final pts value is: " << pts << endl;
                 audioCnv->notify_one();// Sync with main thread if necessary
                 break;
             }
