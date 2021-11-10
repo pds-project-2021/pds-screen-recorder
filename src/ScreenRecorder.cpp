@@ -34,6 +34,7 @@ ScreenRecorder::ScreenRecorder() {
     stopped = new atomic_bool;
     *stopped = false;
     frameCount = 0;
+    audio_devices = new vector<string>;
 }
 
 ScreenRecorder::~ScreenRecorder() {
@@ -54,6 +55,7 @@ ScreenRecorder::~ScreenRecorder() {
     free(audioCnv);
     free(writeFrame);
     free(stopped);
+    free(audio_devices);
 	cout << "clean all" << endl;
 }
 
@@ -67,19 +69,92 @@ void show_avfoundation_device() {
 	printf("=============================\n");
 }
 
+HRESULT enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
+{
+    // Create the System Device Enumerator.
+    ICreateDevEnum *pDevEnum;
+    HRESULT hr = CoCreateInstance(CLSID_SystemDeviceEnum, nullptr,
+                                  CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pDevEnum));
+
+    if (SUCCEEDED(hr))
+    {
+        // Create an enumerator for the category.
+        hr = pDevEnum->CreateClassEnumerator(category, ppEnum, 0);
+        if (hr == S_FALSE)
+        {
+            hr = VFW_E_NOT_FOUND;  // The category is empty. Treat as an error.
+        }
+        pDevEnum->Release();
+    }
+    return hr;
+}
+
+void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *audioDevices) {
+    IMoniker *pMoniker = nullptr;
+    if (audioDevices == nullptr) throw avException("Devices names vector was not initialized");
+    while (pEnum->Next(1, &pMoniker, nullptr) == S_OK) {
+        IPropertyBag *pPropBag;
+        HRESULT hr = pMoniker->BindToStorage(nullptr, nullptr, IID_PPV_ARGS(&pPropBag));
+        if (FAILED(hr)) {
+            pMoniker->Release();
+            continue;
+        }
+        VARIANT var;
+        VariantInit(&var);
+        // Get description or friendly name.
+        hr = pPropBag->Read(L"Description", &var, nullptr);
+        if (FAILED(hr)) {
+            hr = pPropBag->Read(L"FriendlyName", &var, nullptr);
+        }
+        if (SUCCEEDED(hr)) {
+            printf("%S\n", var.bstrVal);
+            wstring ws(var.bstrVal);// Convert to wstring
+            string device_name(ws.begin(), ws.end());// Convert to string
+            audioDevices->push_back(device_name);// Add to device names vector
+            VariantClear(&var);
+        }
+        pPropBag->Release();
+        pMoniker->Release();
+    }
+}
+
+
 int ScreenRecorder::init() {
 	inputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
 	audioInputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
 	options = nullptr;
 
 #ifdef _WIN32
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    if (SUCCEEDED(hr))
+    {
+        IEnumMoniker *pEnum;
+        //Get device enumerator for audio devices
+        hr = enumerateDshowDevices(CLSID_AudioInputDeviceCategory, &pEnum);
+        if (SUCCEEDED(hr))
+        {
+            //Get audio devices names
+            getDshowDeviceInformation(pEnum, audio_devices);
+            pEnum->Release();
+        }
+        CoUninitialize();
+    }
+    // Prepare dshow command input audio device parameter string
+    string audioInputName;
+    audioInputName.append("audio=") ;
+    auto curr_name = audio_devices->begin();
+    for (int i = 0; i < 1 && curr_name != audio_devices->end(); i++) {// Select first available audio device
+        audioInputName.append(curr_name->c_str());// Write value to string
+        curr_name++;
+    }
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED); // Set COM to multithreaded model
 	av_dict_set(&options, "rtbufsize", "3M", 0);
 	audioInputFormat = av_find_input_format("dshow");
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
     av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
+    // Open audio input device
 	auto ret = avformat_open_input(&audioInputFormatContext,
-							"audio=Microfono (TONOR TC30 Audio Device)", audioInputFormat,
+                                   audioInputName.c_str(), audioInputFormat,
 							&options);
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
@@ -592,7 +667,8 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext, AVPacket *outPacke
     }
 }
 
-static int convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext, AVStream *videoStream, AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, mutex *wR, condition_variable *writeFrame) {
+static int convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext, AVStream *videoStream,
+                                     AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, mutex *wR, condition_variable *writeFrame) {
     // Create encoder video frame
     AVFrame *outputFrame = alloc_video_frame(outputCodecContext->width, outputCodecContext->height,
                                                                         (AVPixelFormat) outputCodecContext->pix_fmt, 32);
@@ -635,7 +711,8 @@ static int convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *out
     return 0;
 }
 
-static int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream, AVFormatContext *outputFormatContext, mutex *wR, condition_variable *writeFrame) {
+static int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream,
+                                             AVFormatContext *outputFormatContext, mutex *wR, condition_variable *writeFrame) {
     // Create encoder audio packet
     AVPacket *outPacket = alloc_packet();
     for (int result;;) {
@@ -664,7 +741,8 @@ static int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
     return 0;
 }
 
-static int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodecContext *outputCodecContext, AVStream *audioStream, AVFormatContext *outputFormatContext, int finalSize, mutex *wR, condition_variable *writeFrame) {
+static int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodecContext *outputCodecContext, AVStream *audioStream,
+                                             AVFormatContext *outputFormatContext, int finalSize, mutex *wR, condition_variable *writeFrame) {
     // Create encoder audio packet
     AVPacket *outPacket = alloc_packet();
     AVPacket *nextOutPacket = alloc_packet();

@@ -12,6 +12,7 @@
 #include <string.h>
 #include <memory>
 #include <atomic>
+#include <vector>
 extern "C" {
 #include <libavutil/audio_fifo.h>
 #include <libavutil/imgutils.h>
@@ -28,6 +29,9 @@ extern "C" {
 #ifdef _WIN32
 // Windows
 #include <dshow.h>
+#include <windows.h>
+#include <dshow.h>
+#pragma comment(lib, "strmiids.lib")
 extern "C" {
 #include "libavcodec/avcodec.h"
 #include "libavdevice/avdevice.h"
@@ -128,7 +132,7 @@ class ScreenRecorder {
 	bool recordVideo;
 	const char *output_file = nullptr;
     int frameCount;
-
+    std::vector<std::string> *audio_devices;
 	double video_pts;
 
 	int out_size;
