@@ -107,7 +107,7 @@ void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *au
             hr = pPropBag->Read(L"FriendlyName", &var, nullptr);
         }
         if (SUCCEEDED(hr)) {
-            printf("%S\n", var.bstrVal);
+//            printf("%S\n", var.bstrVal);
             wstring ws(var.bstrVal);// Convert to wstring
             string device_name(ws.begin(), ws.end());// Convert to string
             audioDevices->push_back(device_name);// Add to device names vector
@@ -125,7 +125,7 @@ int ScreenRecorder::init() {
 	options = nullptr;
 
 #ifdef _WIN32
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED); // Set COM to multithreaded model
     if (SUCCEEDED(hr))
     {
         IEnumMoniker *pEnum;
@@ -137,8 +137,8 @@ int ScreenRecorder::init() {
             getDshowDeviceInformation(pEnum, audio_devices);
             pEnum->Release();
         }
-        CoUninitialize();
     }
+    else throw avException("Error during thread initialization");
     // Prepare dshow command input audio device parameter string
     string audioInputName;
     audioInputName.append("audio=") ;
@@ -147,7 +147,6 @@ int ScreenRecorder::init() {
         audioInputName.append(curr_name->c_str());// Write value to string
         curr_name++;
     }
-	CoInitializeEx(nullptr, COINIT_MULTITHREADED); // Set COM to multithreaded model
 	av_dict_set(&options, "rtbufsize", "3M", 0);
 	audioInputFormat = av_find_input_format("dshow");
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
@@ -619,6 +618,9 @@ int ScreenRecorder::CloseMediaFile() {
             throw fsException("Failed to close file");
         }
     }
+#ifdef WIN32
+    CoUninitialize();
+#endif
     return ret;
 }
 
