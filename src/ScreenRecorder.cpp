@@ -155,7 +155,7 @@ int ScreenRecorder::init() {
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
     av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
     // Open audio input device
-    cout << "Selected audio input device: " << audioInputName.substr(6, 35) << endl;
+    cout << "Selected dshow audio input device: " << audioInputName.substr(6, 35) << endl;
 	auto ret = avformat_open_input(&audioInputFormatContext,
                                    audioInputName.c_str(), audioInputFormat,
 							&options);
