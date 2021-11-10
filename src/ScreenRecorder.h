@@ -118,8 +118,10 @@ class ScreenRecorder {
     std::atomic_bool *stopped;
     std::mutex *vD;
     std::mutex *aD;
+    std::mutex *wR;
     std::condition_variable *videoCnv;
     std::condition_variable *audioCnv;
+    std::condition_variable *writeFrame;
     bool finishedVideoDemux;
 	bool finishedAudioDemux;
     bool finishedAudioConversion;
