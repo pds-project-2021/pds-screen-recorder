@@ -396,6 +396,27 @@ AVFrame *alloc_audio_frame(int nb_samples, AVSampleFormat format, uint64_t chann
 	return audioFrame;
 }
 
+void init_video_frame(AVFrame *frame, int width, int height, AVPixelFormat format, int align) {
+    if (frame == nullptr) {
+        frame = av_frame_alloc();
+        if (!frame) {
+            throw avException("Unable to release the audio avframe resources");
+        }
+    }
+    // fill frame fields
+    frame->data[0] = nullptr;
+    frame->width = width;
+    frame->height = height;
+    frame->format = format;
+    frame->pts = 0;
+    // Setup the data pointers and linesizes based on the specified image
+    // parameters and the provided array.
+    // allocate data fields
+    if (av_image_alloc(frame->data, frame->linesize, width, height,(AVPixelFormat) format, align) < 0) {
+        throw avException("Error in allocating frame data");
+    }
+}
+
 void init_audio_frame(AVFrame *audioFrame, int nb_samples, AVSampleFormat format, uint64_t channel_layout, int align) {
     if (audioFrame == nullptr) {
         audioFrame = av_frame_alloc();
@@ -734,23 +755,29 @@ void ScreenRecorder::CaptureVideoFrames() {
 			if (got_frame) { // frame is ready
 				// Convert frame picture format and write frame to file
                 convertAndWriteVideoFrame(swsContext, outputCodecContext, inputCodecContext, videoStream, outputFormatContext, frame, &count);
+                av_frame_unref(frame);
+                init_video_frame(frame, inputCodecPar->width, inputCodecPar->height,
+                                 (AVPixelFormat) inputCodecPar->format, 32);
 			}
 		}
+        av_packet_unref(packet);
 	} // End of while-loop
 	// Handle delayed frames
     convertAndWriteDelayedVideoFrames(outputCodecContext, videoStream, outputFormatContext);
-    av_free(frame);
-    av_free(packet);
+    av_frame_unref(frame);
+    av_packet_unref(packet);
+    av_frame_free(&frame);
+    av_packet_free(&packet);
 }
 
 void ScreenRecorder::DemuxVideoInput() {
     // Create decoder video packet
-    auto packet = make_unique<AVPacket>(*alloc_packet()) ;
+    AVPacket *packet = alloc_packet();
     int count = 0;
     int frameNum = 0; // frame number in a second
     int result;
     auto start = std::chrono::system_clock::now();
-    while (av_read_frame(inputFormatContext, packet.get()) >= 0) {
+    while (av_read_frame(inputFormatContext, packet) >= 0) {
         if (frameNum == 30) {
             frameNum = 0; // reset every fps frames
             auto end = std::chrono::system_clock::now();
@@ -764,8 +791,11 @@ void ScreenRecorder::DemuxVideoInput() {
         }
         // Send packet to decoder
         if(vD->try_lock()) {
-            result = avcodec_send_packet(inputCodecContext, packet.get());// Try to send a packet without waiting
-            if (result >= 0) videoCnv->notify_one(); // notify converter thread if halted
+            result = avcodec_send_packet(inputCodecContext, packet);// Try to send a packet without waiting
+            if (result >= 0) {
+                videoCnv->notify_one(); // notify converter thread if halted
+                av_packet_unref(packet);
+            }
             vD->unlock();
         }
         else result = AVERROR(EAGAIN);
@@ -774,8 +804,11 @@ void ScreenRecorder::DemuxVideoInput() {
             unique_lock<mutex> ul(*vD);
             videoCnv->notify_one();// Send sync signal to converter thread
             videoCnv->wait(ul);// Wait for resume signal
-            result = avcodec_send_packet(inputCodecContext, packet.get());
-            if (result >= 0) videoCnv->notify_one(); // notify converter thread if halted
+            result = avcodec_send_packet(inputCodecContext, packet);
+            if (result >= 0) {
+                videoCnv->notify_one(); // notify converter thread if halted
+                av_packet_unref(packet);
+            }
         }
         if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
             // Decoder error
@@ -785,17 +818,19 @@ void ScreenRecorder::DemuxVideoInput() {
         frameNum++;
     }
     //Free allocated memory
+    av_packet_unref(packet);
+    av_packet_free(&packet);
 }
 
 void ScreenRecorder::ConvertVideoFrames() {
     // Create decoder audio frame
-    auto frame = make_unique<AVFrame>(*alloc_video_frame(inputCodecPar->width, inputCodecPar->height,
-                                                         (AVPixelFormat) inputCodecPar->format, 32));
+    AVFrame *frame = alloc_video_frame(inputCodecPar->width, inputCodecPar->height,
+                                                         (AVPixelFormat) inputCodecPar->format, 32);
     // Create encoder audio frame
     int64_t count = 0;
     int result = AVERROR(EAGAIN);
     if(vD->try_lock()) {
-        result = avcodec_receive_frame(inputCodecContext, frame.get()); // Try to get a decoded frame without waiting
+        result = avcodec_receive_frame(inputCodecContext, frame); // Try to get a decoded frame without waiting
         if(result>=0) videoCnv->notify_one();// Signal demuxer thread to resume if halted
         vD->unlock();
     }
@@ -804,10 +839,13 @@ void ScreenRecorder::ConvertVideoFrames() {
         if(result >= 0) {
             //Convert frames and then write them to file
             count++;
-            convertAndWriteVideoFrame(swsContext, outputCodecContext, inputCodecContext, videoStream, outputFormatContext, frame.get(), &count);
+            convertAndWriteVideoFrame(swsContext, outputCodecContext, inputCodecContext, videoStream, outputFormatContext, frame, &count);
+            av_frame_unref(frame);
+            init_video_frame(frame, inputCodecPar->width, inputCodecPar->height,
+                             (AVPixelFormat) inputCodecPar->format, 32);
         }
         if(vD->try_lock()) {
-            result = avcodec_receive_frame(inputCodecContext, frame.get()); // Try to get a decoded frame without waiting
+            result = avcodec_receive_frame(inputCodecContext, frame); // Try to get a decoded frame without waiting
             if(result>=0) videoCnv->notify_one();// Signal demuxer thread to resume if halted
             vD->unlock();
         }
@@ -822,7 +860,7 @@ void ScreenRecorder::ConvertVideoFrames() {
                 videoCnv->notify_one();// Sync with main thread if necessary
                 break;
             }
-            result = avcodec_receive_frame(inputCodecContext, frame.get()); // Try to get a decoded frame
+            result = avcodec_receive_frame(inputCodecContext, frame); // Try to get a decoded frame
             if(result>=0) videoCnv->notify_one();// Signal demuxer thread to resume if halted
         }
         if(result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) throw avException("Audio Converter/Writer threads syncronization error");
@@ -832,7 +870,8 @@ void ScreenRecorder::ConvertVideoFrames() {
         throw avException("Failed to receive decoded packet");
     }
     // Free allocated memory
-//    free(audioFrame);
+    av_frame_unref(frame);
+    av_frame_free(&frame);
 }
 
 static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *audioOutputCodecContext, AVCodecContext *audioInputCodecContext, AVStream *audioStream, AVFormatContext *outputFormatContext, AVFrame *audioFrame, int64_t *pts_p) {
