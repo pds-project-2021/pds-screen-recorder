@@ -99,6 +99,8 @@ int ScreenRecorder::init() {
 #elif defined linux
 	//av_dict_set(&options, "rtbufsize", "10M", 0);
 	audioInputFormat = av_find_input_format("pulse");
+    av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
+    av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
 	auto ret = avformat_open_input(&audioInputFormatContext, "default", audioInputFormat, &options);
 	if (ret != 0) {
 		throw avException("Couldn't open input stream");
