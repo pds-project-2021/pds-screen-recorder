@@ -396,6 +396,21 @@ AVFrame *alloc_audio_frame(int nb_samples, AVSampleFormat format, uint64_t chann
 	return audioFrame;
 }
 
+void init_audio_frame(AVFrame *audioFrame, int nb_samples, AVSampleFormat format, uint64_t channel_layout, int align) {
+    if (audioFrame == nullptr) {
+        audioFrame = av_frame_alloc();
+        if (!audioFrame) {
+            throw avException("Unable to release the audio avframe resources");
+        }
+    }
+    audioFrame->nb_samples = nb_samples;
+    audioFrame->format = format;
+    audioFrame->channel_layout = channel_layout;
+    if (av_frame_get_buffer(audioFrame, align) < 0) {
+        throw avException("Could not allocate audio data buffers");
+    }
+}
+
 AVPacket *alloc_packet() {
 	AVPacket *packet = av_packet_alloc();
 	if (!packet) {
@@ -604,14 +619,15 @@ static int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
 
 static int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodecContext *outputCodecContext, AVStream *audioStream, AVFormatContext *outputFormatContext, int finalSize) {
     // Create encoder audio packet
-    auto outPacket = make_unique<AVPacket>(*alloc_packet());
-    auto nextOutPacket = make_unique<AVPacket>(*alloc_packet());
+    AVPacket *outPacket = alloc_packet();
+    AVPacket *nextOutPacket = alloc_packet();
+    AVPacket *prevPacket = nullptr;
     int result;
     avcodec_send_frame(outputCodecContext, nullptr);
-    auto receive = avcodec_receive_packet(outputCodecContext, outPacket.get());
+    auto receive = avcodec_receive_packet(outputCodecContext, outPacket);
     while (receive >= 0) {// Try to get packet
         avcodec_send_frame(outputCodecContext, nullptr);
-        receive = avcodec_receive_packet(outputCodecContext, nextOutPacket.get());
+        receive = avcodec_receive_packet(outputCodecContext, nextOutPacket);
         if(receive>=0) {//if this is not the last packet
             if (outPacket->pts != AV_NOPTS_VALUE) {
                 outPacket->pts =
@@ -638,13 +654,14 @@ static int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, 
             // Write packet to file
             outPacket->stream_index = 1;
             result = av_write_frame(outputFormatContext,
-                                    outPacket.get()); // Write packet to file
+                                    outPacket); // Write packet to file
             if (result != 0) {
                 throw avException("Error in writing audio frame");
             }
-            av_packet_unref(outPacket.get());
-            outPacket = move(nextOutPacket);
-            nextOutPacket = make_unique<AVPacket>(*alloc_packet());
+            av_packet_unref(outPacket);
+            prevPacket = outPacket;
+            outPacket = nextOutPacket;
+            nextOutPacket =prevPacket;
         }
         else {//if this is the last packet
             if (outPacket->pts != AV_NOPTS_VALUE) {
@@ -672,12 +689,15 @@ static int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, 
             // Write packet to file
             outPacket->stream_index = 1;
             result = av_write_frame(outputFormatContext,
-                                    outPacket.get()); // Write packet to file
+                                    outPacket); // Write packet to file
             if (result != 0) {
                 throw avException("Error in writing audio frame");
             }
             cout << "Final pts value is: " << outPacket->pts << endl;
-            av_packet_unref(outPacket.get());
+            av_packet_unref(outPacket);
+            av_packet_unref(nextOutPacket);
+            av_packet_free(&outPacket);
+            av_packet_free(&nextOutPacket);
         }
     }
     return 0;
@@ -817,15 +837,15 @@ void ScreenRecorder::ConvertVideoFrames() {
 
 static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *audioOutputCodecContext, AVCodecContext *audioInputCodecContext, AVStream *audioStream, AVFormatContext *outputFormatContext, AVFrame *audioFrame, int64_t *pts_p) {
     // Create encoder audio frame
-    auto audioOutputFrame = make_unique<AVFrame>(*alloc_audio_frame(
-            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
-            audioOutputCodecContext->channel_layout, 0));
-//    AVFrame *audioOutputFrame = alloc_audio_frame(
+//    auto audioOutputFrame = make_unique<AVFrame>(*alloc_audio_frame(
 //            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
-//            audioOutputCodecContext->channel_layout, 0);
+//            audioOutputCodecContext->channel_layout, 0));
+    AVFrame *audioOutputFrame = alloc_audio_frame(
+            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
+            audioOutputCodecContext->channel_layout, 0);
     // Create encoder audio packet
-    auto audioOutputPacket = make_unique<AVPacket>(*alloc_packet());
-//    AVPacket *audioOutputPacket = alloc_packet();
+//    auto audioOutputPacket = make_unique<AVPacket>(*alloc_packet());
+    AVPacket *audioOutputPacket = alloc_packet();
     int got_packet = 0;
     int got_samples = swr_convert(
             swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples,
@@ -837,8 +857,11 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
         *pts_p += got_samples;
         audioOutputFrame->nb_samples=got_samples;
         audioOutputFrame->pts = *pts_p;
-        encode(audioOutputCodecContext, audioOutputPacket.get(), &got_packet,
-               audioOutputFrame.get());
+        encode(audioOutputCodecContext, audioOutputPacket, &got_packet,
+               audioOutputFrame);
+        av_frame_unref(audioOutputFrame);
+        init_audio_frame(audioOutputFrame, audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
+                         audioOutputCodecContext->channel_layout, 0);
         // Frame was sent successfully
         if (got_packet > 0) { // Packet received successfully
             if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
@@ -865,21 +888,23 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
                                  audioStream->time_base);
             // Write packet to file
             audioOutputPacket->stream_index = 1;
-            auto result = av_write_frame(outputFormatContext, audioOutputPacket.get());
+            auto result = av_write_frame(outputFormatContext, audioOutputPacket);
             if (result != 0) {
                 throw avException("Error in writing video frame");
             }
+            av_packet_unref(audioOutputPacket);
         }
-//        got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
     }
-//    auto test = swr_get_out_samples(swrContext, 0);
     while (swr_get_out_samples(swrContext, 0) >= audioOutputCodecContext->frame_size) {
         got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
         *pts_p += got_samples;
         //audioOutputFrame->nb_samples=got_samples;
         audioOutputFrame->pts = *pts_p;
-        encode(audioOutputCodecContext, audioOutputPacket.get(), &got_packet,
-               audioOutputFrame.get());
+        encode(audioOutputCodecContext, audioOutputPacket, &got_packet,
+               audioOutputFrame);
+        av_frame_unref(audioOutputFrame);
+        init_audio_frame(audioOutputFrame, audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
+                         audioOutputCodecContext->channel_layout, 0);
         // Frame was sent successfully
         if (got_packet > 0) { // Packet received successfully
             if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
@@ -906,30 +931,31 @@ static int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *au
                                  audioStream->time_base);
             // Write packet to file
             audioOutputPacket->stream_index = 1;
-            auto result = av_write_frame(outputFormatContext, audioOutputPacket.get());
+            auto result = av_write_frame(outputFormatContext, audioOutputPacket);
             if (result != 0) {
                 throw avException("Error in writing audio frame");
             }
+            av_packet_unref(audioOutputPacket);
         }
     }
-    av_packet_unref(audioOutputPacket.get());
-    av_frame_unref(audioOutputFrame.get());
-//    av_free(audioOutputFrame);
-//    av_free(audioOutputPacket);
+    av_packet_unref(audioOutputPacket);
+    av_frame_unref(audioOutputFrame);
+    av_frame_free(&audioOutputFrame);
+    av_packet_free(&audioOutputPacket);
     return 0;
 }
 
 static int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *audioOutputCodecContext, AVCodecContext *audioInputCodecContext, AVStream *audioStream, AVFormatContext *outputFormatContext, int64_t *pts_p) {
     // Create encoder audio frame
-    auto audioOutputFrame = make_unique<AVFrame>(*alloc_audio_frame(
-            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
-            audioOutputCodecContext->channel_layout, 0));
-//    AVFrame *audioOutputFrame = alloc_audio_frame(
+//    auto audioOutputFrame = make_unique<AVFrame>(*alloc_audio_frame(
 //            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
-//            audioOutputCodecContext->channel_layout, 0);
+//            audioOutputCodecContext->channel_layout, 0));
+    AVFrame *audioOutputFrame = alloc_audio_frame(
+            audioOutputCodecContext->frame_size, audioOutputCodecContext->sample_fmt,
+            audioOutputCodecContext->channel_layout, 0);
     // Create encoder audio packet
-    auto audioOutputPacket = make_unique<AVPacket>(*alloc_packet());
-//    AVPacket *audioOutputPacket = alloc_packet();
+//    auto audioOutputPacket = make_unique<AVPacket>(*alloc_packet());
+    AVPacket *audioOutputPacket = alloc_packet();
     int got_packet = 0;
     int got_samples = swr_convert(swrContext, audioOutputFrame->data, audioOutputFrame->nb_samples, nullptr, 0);
     if (got_samples < 0) {
@@ -939,8 +965,8 @@ static int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext
         *pts_p += got_samples;
         audioOutputFrame->nb_samples=got_samples;
         audioOutputFrame->pts = *pts_p;
-        encode(audioOutputCodecContext, audioOutputPacket.get(), &got_packet,
-               audioOutputFrame.get());
+        encode(audioOutputCodecContext, audioOutputPacket, &got_packet,
+               audioOutputFrame);
         // Frame was sent successfully
         if (got_packet > 0) { // Packet received successfully
             if (audioOutputPacket->pts != AV_NOPTS_VALUE) {
@@ -967,15 +993,17 @@ static int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext
                                  audioStream->time_base);
             // Write packet to file
             audioOutputPacket->stream_index = 1;
-            auto result = av_write_frame(outputFormatContext, audioOutputPacket.get());
+            auto result = av_write_frame(outputFormatContext, audioOutputPacket);
             if (result != 0) {
                 throw avException("Error in writing video frame");
             }
         }
         convertAndWriteDelayedAudioFrames(audioInputCodecContext, audioOutputCodecContext, audioStream, outputFormatContext, got_samples);
     }
-    av_packet_unref(audioOutputPacket.get());
-    av_frame_unref(audioOutputFrame.get());
+    av_packet_unref(audioOutputPacket);
+    av_frame_unref(audioOutputFrame);
+    av_packet_free(&audioOutputPacket);
+    av_frame_free(&audioOutputFrame);
     return 0;
 }
 
@@ -985,16 +1013,11 @@ void ScreenRecorder::CaptureAudioFrames() {
 	AVFrame *audioFrame =
 		alloc_audio_frame( 22050, audioInputCodecContext->sample_fmt,
 		                  audioInputCodecContext->channel_layout, 0);
+    int frame_size = 0;
 	// Create decoder audio packet
 	AVPacket *audioPacket = alloc_packet();
-//	int count = 0;
-//	int audioCount  = 2;
-//	int audioFrameNum = 0;
 	int got_frame = 0;
-//	int set_audioCount = 0;
-//    uint8_t ** audio_samples = NULL;
     int64_t pts = 0;
-//    int dts = 0;
 	// Handle audio input stream packets
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
 		if (*stopped) {
@@ -1005,23 +1028,26 @@ void ScreenRecorder::CaptureAudioFrames() {
 		// check if decoded frame is ready
 		if (got_frame > 0) { // frame is ready
 			// Convert and write frames
-//            if (set_audioCount == 0) {
-//                audioCount  = ((int) frameCount/30*2*AUDIO_CHANNELS*AUDIO_SAMPLE_RATE/audioFrame->nb_samples);
-//                set_audioCount = 1;
-//            }
+            if(frame_size == 0) frame_size = audioFrame->nb_samples;
             convertAndWriteAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, audioFrame, &pts);
+            av_frame_unref(audioFrame);
+            init_audio_frame(audioFrame,  frame_size, audioInputCodecContext->sample_fmt,
+                             audioInputCodecContext->channel_layout, 0);
 		} else
 			throw avException("Failed to decode packet");
+        av_packet_unref(audioPacket);
 	}
     // Convert and write last frame
     convertAndWriteLastAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, &pts);
-    av_free(audioFrame);
-    av_free(audioPacket);
+    av_packet_unref(audioPacket);
+    av_frame_unref(audioFrame);
+    av_frame_free(&audioFrame);
+    av_packet_free(&audioPacket);
 }
 
 void ScreenRecorder::DemuxAudioInput(){
     // Create decoder audio packet
-    auto audioPacket = make_unique<AVPacket>(*alloc_packet()) ;
+    AVPacket *audioPacket = alloc_packet();
 //    int count = 0;
     int result;
 //    double avsyncD = (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
@@ -1029,7 +1055,7 @@ void ScreenRecorder::DemuxAudioInput(){
 //    int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
     auto end = start;
-    while (av_read_frame(audioInputFormatContext, audioPacket.get()) >= 0) {
+    while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
         if (*stopped) {
             break;
         }
@@ -1039,8 +1065,11 @@ void ScreenRecorder::DemuxAudioInput(){
         //audioCnv.notify_one(); //signal converting thread to start if needed
         // Send packet to decoder
         if(aD->try_lock()) {
-            result = avcodec_send_packet(audioInputCodecContext, audioPacket.get());// Try to send a packet without waiting
-            if (result >= 0) audioCnv->notify_one(); // notify converter thread if halted
+            result = avcodec_send_packet(audioInputCodecContext, audioPacket);// Try to send a packet without waiting
+            if (result >= 0) {
+                audioCnv->notify_one(); // notify converter thread if halted
+                av_packet_unref(audioPacket);
+            }
             aD->unlock();
         }
         else result = AVERROR(EAGAIN);
@@ -1049,8 +1078,11 @@ void ScreenRecorder::DemuxAudioInput(){
             unique_lock<mutex> ul(*aD);
             audioCnv->notify_one();// Send sync signal to converter thread
             audioCnv->wait(ul);// Wait for resume signal
-            result = avcodec_send_packet(audioInputCodecContext, audioPacket.get());
-            if (result >= 0) audioCnv->notify_one(); // notify converter thread if halted
+            result = avcodec_send_packet(audioInputCodecContext, audioPacket);
+            if (result >= 0) {
+                audioCnv->notify_one(); // notify converter thread if halted
+                av_packet_unref(audioPacket);
+            }
         }
         if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
             // Decoder error
@@ -1060,17 +1092,20 @@ void ScreenRecorder::DemuxAudioInput(){
         start = std::chrono::system_clock::now();
     }
     //Free allocated memory
+    av_packet_unref(audioPacket);
+    av_packet_free(&audioPacket);
 }
 
 void ScreenRecorder::ConvertAudioFrames() {
     // Create decoder audio frame
-    auto audioFrame = make_unique<AVFrame>(*alloc_audio_frame( audioInputCodecContext->frame_size, audioInputCodecContext->sample_fmt,
-                                                      audioInputCodecContext->channel_layout, 0));
+    AVFrame *audioFrame =alloc_audio_frame( audioInputCodecContext->frame_size, audioInputCodecContext->sample_fmt,
+                                                      audioInputCodecContext->channel_layout, 0);
     // Create encoder audio frame
+    int frame_size = 0;
     int64_t pts = 0;
     int result = AVERROR(EAGAIN);
     if(aD->try_lock()) {
-        result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame without waiting
+        result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame without waiting
         if(result>=0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
         aD->unlock();
     }
@@ -1078,10 +1113,14 @@ void ScreenRecorder::ConvertAudioFrames() {
     while(result >= 0 || result == AVERROR(EAGAIN)) {
         if(result >= 0) {
             //Convert frames and then write them to file
-            convertAndWriteAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, audioFrame.get(), &pts);
+            if(frame_size == 0) frame_size = audioFrame->nb_samples;
+            convertAndWriteAudioFrames(swrContext, audioOutputCodecContext, audioInputCodecContext, audioStream, outputFormatContext, audioFrame, &pts);
+            av_frame_unref(audioFrame);
+            init_audio_frame(audioFrame, frame_size, audioInputCodecContext->sample_fmt,
+                             audioInputCodecContext->channel_layout, 0);
         }
         if(aD->try_lock()) {
-            result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame without waiting
+            result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame without waiting
             if(result>=0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
             aD->unlock();
         }
@@ -1096,7 +1135,7 @@ void ScreenRecorder::ConvertAudioFrames() {
                 audioCnv->notify_one();// Sync with main thread if necessary
                 break;
             }
-            result = avcodec_receive_frame(audioInputCodecContext, audioFrame.get()); // Try to get a decoded frame
+            result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame
             if(result>=0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
         }
         if(result < 0 && result != AVERROR(EAGAIN)) throw avException("Audio Converter/Writer threads syncronization error");
@@ -1106,7 +1145,8 @@ void ScreenRecorder::ConvertAudioFrames() {
         throw avException("Failed to receive decoded packet");
     }
     // Free allocated memory
-//    free(audioFrame);
+    av_frame_unref(audioFrame);
+    av_frame_free(&audioFrame);
 }
 
 //void ScreenRecorder::WriteAudioOutput(AVFormatContext *formatContext, AVRational bq, AVRational cq) {
