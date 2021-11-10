@@ -143,8 +143,11 @@ int ScreenRecorder::init() {
     string audioInputName;
     audioInputName.append("audio=") ;
     auto curr_name = audio_devices->begin();
-    for (int i = 0; i < 1 && curr_name != audio_devices->end(); i++) {// Select first available audio device
-        audioInputName.append(curr_name->c_str());// Write value to string
+    for (int i = 0; curr_name != audio_devices->end(); i++) {// Select first available audio device
+        if(i==0) {
+            audioInputName.append(curr_name->c_str());// Write value to string
+            break;
+        }
         curr_name++;
     }
 	av_dict_set(&options, "rtbufsize", "3M", 0);
@@ -152,6 +155,7 @@ int ScreenRecorder::init() {
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
     av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
     // Open audio input device
+    cout << "Selected audio input device: " << audioInputName.substr(6, 35) << endl;
 	auto ret = avformat_open_input(&audioInputFormatContext,
                                    audioInputName.c_str(), audioInputFormat,
 							&options);
