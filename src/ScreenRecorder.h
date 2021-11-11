@@ -13,6 +13,7 @@
 #include <memory>
 #include <atomic>
 #include <vector>
+#include <future>
 extern "C" {
 #include <libavutil/audio_fifo.h>
 #include <libavutil/imgutils.h>
