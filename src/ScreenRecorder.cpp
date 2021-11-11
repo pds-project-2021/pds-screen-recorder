@@ -68,7 +68,7 @@ void show_avfoundation_device() {
 	avformat_open_input(&pFormatCtx, "", iformat, &options);
 	printf("=============================\n");
 }
-
+#ifdef WIN32
 HRESULT enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
 {
     // Create the System Device Enumerator.
@@ -117,7 +117,7 @@ void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *au
         pMoniker->Release();
     }
 }
-
+#endif
 
 int ScreenRecorder::init() {
 	inputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.

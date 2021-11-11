@@ -12,7 +12,7 @@ if (UNIX)
     link_directories(${GTK4_LIBRARY_DIRS})
     add_definitions(${GTK4_CFLAGS_OTHER})
     # ffmpeg
-    pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+    pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
             libavdevice
             libavfilter
             libavformat
@@ -65,7 +65,7 @@ endif ()
 
 add_executable(pds_screen_recorder src/main.cpp src/ScreenRecorder.cpp src/ScreenRecorder.h src/exceptions/fsException.h src/exceptions/dataException.h src/exceptions/avException.h src/ffmpeg/ffmpeg.h src/ffmpeg/ffmpegcpp.h)
 if(UNIX)
-    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::FFMPEG)
+    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV)
 elseif(WIN32)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES})
 endif()
