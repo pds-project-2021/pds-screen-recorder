@@ -206,16 +206,16 @@ int ScreenRecorder::init() {
 	//	av_dict_set(&options, "video_size", "1920x1080", 0);
 	//av_dict_set(&options, "capture_cursor", "1", 0);
 	av_dict_set(&options, "pixel_format", "bgr0", 0);
-	av_dict_set(&options, "video_device_index", "1", 0);
+	//av_dict_set(&options, "video_device_index", "1", 0);
 
-	auto ret = avformat_open_input(&inputFormatContext, "", inputFormat, &options);
+	auto ret = avformat_open_input(&inputFormatContext, "1", inputFormat, &options);
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
 	}
-	//audioInputFormat = av_find_input_format("avfoundation");
-	options= nullptr;
-	av_dict_set(&options, "audio_device_index", "0", 0);
-	ret = avformat_open_input(&audioInputFormatContext, "", inputFormat, &options);
+	audioInputFormat = av_find_input_format("avfoundation");
+    av_dict_free(&options);
+	//av_dict_set(&options, "audio_device_index", "0", 0);
+	ret = avformat_open_input(&audioInputFormatContext, ":0", audioInputFormat, &options);
 	if (ret != 0) {
 	    throw avException("Couldn't open input stream");
 	}
