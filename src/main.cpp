@@ -106,8 +106,18 @@ void recorder() {
 
 int main(int argc, char **argv) {
 	//  return gtk_test(argc, argv);
-    std::future<void> foo = std::async(std::launch::async, recorder);
-    if (future_is_ready(foo)){
-        return 0;
+    //std::future<void> foo = std::async(std::launch::async, recorder);
+    //if (future_is_ready(foo)){
+    //    return 0;
+    //}
+    auto s = ScreenRecorder();
+    s.init();
+    std::cout << "Initialized input streams" << std::endl;
+    s.init_outputfile();
+    std::cout << "Initialized output streams and file" << std::endl;
+    if (s.CaptureStart() >= 0) {
+        std::cout << "Capture started" << std::endl;
+        s.CloseMediaFile();
+        std::cout << "Capture complete" << std::endl;
     }
 }

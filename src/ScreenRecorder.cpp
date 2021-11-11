@@ -200,11 +200,11 @@ int ScreenRecorder::init() {
 	//show_avfoundation_device();
 	inputFormat = av_find_input_format("avfoundation");
 	av_dict_set(&options, "framerate", "30", 0);
-	av_dict_set(&options, "preset", "medium", 0);
+	//av_dict_set(&options, "preset", "medium", 0);
 	av_dict_set(&options, "offset_x", "0", 0);
 	av_dict_set(&options, "offset_y", "0", 0);
 	//	av_dict_set(&options, "video_size", "1920x1080", 0);
-	av_dict_set(&options, "capture_cursor", "1", 0);
+	//av_dict_set(&options, "capture_cursor", "1", 0);
 	av_dict_set(&options, "pixel_format", "bgr0", 0);
 	av_dict_set(&options, "video_device_index", "1", 0);
 
