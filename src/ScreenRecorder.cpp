@@ -636,6 +636,7 @@ void ScreenRecorder::ResumeCapture(){
 }
 
 int ScreenRecorder::CloseMediaFile() {
+    *stopped = true;
 #if (VIDEO_MT==1)
     videoDemux->join();
     unique_lock<mutex> ulvC(*vD);
@@ -680,10 +681,14 @@ int ScreenRecorder::CloseMediaFile() {
 #ifdef WIN32
     CoUninitialize();
 #endif
+    *stopped = false;
     return ret;
 }
 
 int ScreenRecorder::initThreads() {
+    *stopped = false;
+    *pausedVideo = false;
+    *pausedAudio = false;
 #if (VIDEO_MT==1)
     finishedVideoDemux = false;
     videoDemux = new thread(&ScreenRecorder::DemuxVideoInput, this);
@@ -896,15 +901,14 @@ void ScreenRecorder::CaptureVideoFrames() {
 	AVPacket *packet = alloc_packet();
 	// Try to extract packet from input stream
 	while (av_read_frame(inputFormatContext, packet) >= 0) {
+        if (*stopped) {
+            break;
+        }
         if(*pausedVideo) {// Check if capture has been paused
             unique_lock<mutex> ul(*vP);
             *pausedVideo = false;// Sync signal to handler thread
             videoDmx->wait(ul);// Wait for resume signal
         }
-		if (count++ == frameCount) {
-            *stopped = true;
-			break;
-		}
 		if (frameNum++ == 30)
 			frameNum = 0; // reset every fps frames
 
@@ -934,11 +938,14 @@ void ScreenRecorder::CaptureVideoFrames() {
 void ScreenRecorder::DemuxVideoInput() {
     // Create decoder video packet
     AVPacket *packet = alloc_packet();
-    int count = 0;
+//    int count = 0;
     int frameNum = 0; // frame number in a second
     int result;
     auto start = std::chrono::system_clock::now();
     while (av_read_frame(inputFormatContext, packet) >= 0) {
+        if (*stopped) {
+            break;
+        }
         if(*pausedVideo) {// Check if capture has been paused
             unique_lock<mutex> ul(*vP);
             *pausedVideo = false;// Sync signal to handler thread
@@ -950,10 +957,6 @@ void ScreenRecorder::DemuxVideoInput() {
             std::chrono::duration<double> elapsed_seconds = end-start;
             std::cout << "Received 30 video packets in " << elapsed_seconds.count() << " s\n";
             start = std::chrono::system_clock::now();
-        }
-        if (count++ == frameCount) {
-            *stopped = true;
-            break;
         }
         // Send packet to decoder
         if(vD->try_lock()) {
@@ -1219,14 +1222,14 @@ void ScreenRecorder::CaptureAudioFrames() {
     int64_t pts = 0;
 	// Handle audio input stream packets
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+        if (*stopped) {
+            break;
+        }
         if(*pausedAudio) {// Check if capture has been paused
             unique_lock<mutex> ul(*aP);
             *pausedAudio = false;// Sync signal to handler thread
             audioDmx->wait(ul);// Wait for resume signal
         }
-		if (*stopped) {
-			break;
-		}
 		// Send packet to decoder
 		decode(audioInputCodecContext, audioFrame, &got_frame, audioPacket);
 		// check if decoded frame is ready
@@ -1252,21 +1255,21 @@ void ScreenRecorder::CaptureAudioFrames() {
 void ScreenRecorder::DemuxAudioInput(){
     // Create decoder audio packet
     AVPacket *audioPacket = alloc_packet();
-//    int count = 0;
     int result;
+//    int count = 0;
 //    double avsyncD = (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
 //    int avsyncI = (int) (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
 //    int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
     auto end = start;
     while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+        if (*stopped) {
+            break;
+        }
         if(*pausedAudio) {// Check if capture has been paused
             unique_lock<mutex> ul(*aP);
             *pausedAudio = false;// Sync signal to handler thread
             audioDmx->wait(ul);// Wait for resume signal
-        }
-        if (*stopped) {
-            break;
         }
         end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end-start;

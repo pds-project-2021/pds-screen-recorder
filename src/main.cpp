@@ -127,16 +127,18 @@ int main(int argc, char **argv) {
     s.init_outputfile();
     std::cout << "Initialized output streams and file" << std::endl;
     if (s.CaptureStart() >= 0) {
-        int secondsPause = 2;
-        int secondsResume = 2;
+        int millisecondsPause = 2000;
+        int millisecondsResume = 2000;
+        int millisecondsStop = 2500;
         std::cout << "Capture started" << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(secondsPause));
+        std::this_thread::sleep_for(std::chrono::milliseconds(millisecondsPause));
         s.PauseCapture();
-        std::cout << "Capture paused after " << secondsPause << " seconds" << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(secondsResume));
+        std::cout << "Capture paused after " << ((double)millisecondsPause/1000) << " seconds" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(millisecondsResume));
         s.ResumeCapture();
-        std::cout << "Capture resumed after " << secondsResume << " seconds \n" << std::endl;
+        std::cout << "Capture resumed after " << ((double)millisecondsResume/1000) << " seconds \n" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(millisecondsStop));
         s.CloseMediaFile();
-        std::cout << "Capture complete" << std::endl;
+        std::cout << "Capture complete after " << ((double)millisecondsStop/1000) << " seconds \n" << std::endl;
     }
 }
