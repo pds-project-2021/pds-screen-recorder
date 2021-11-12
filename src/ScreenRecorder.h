@@ -119,13 +119,18 @@ class ScreenRecorder {
     std::thread *videoConvert;
     std::thread *audioDemux;
     std::thread *audioConvert;
-    std::atomic_bool *paused;
+    std::atomic_bool *pausedVideo;
+    std::atomic_bool *pausedAudio;
     std::atomic_bool *stopped;
     std::mutex *vD;
     std::mutex *aD;
+    std::mutex *vP;
+    std::mutex *aP;
     std::mutex *wR;
     std::condition_variable *videoCnv;
     std::condition_variable *audioCnv;
+    std::condition_variable *videoDmx;
+    std::condition_variable *audioDmx;
     std::condition_variable *writeFrame;
     bool finishedVideoDemux;
 	bool finishedAudioDemux;
@@ -156,6 +161,8 @@ class ScreenRecorder {
 	int init_outputfile();
 	int CloseMediaFile();
 	int CaptureStart();
+    void PauseCapture();
+    void ResumeCapture();
 
 	//  ----------------
 

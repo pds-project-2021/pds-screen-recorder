@@ -2,6 +2,7 @@
 using namespace std;
 
 #define AUDIO 1
+#define AUDIO_INPUT 0
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
 #define VIDEO_MT 1
@@ -26,11 +27,19 @@ ScreenRecorder::ScreenRecorder() {
 //init variables for thread synchronization
     vD = new mutex;
     aD = new mutex;
+    vP = new mutex;
+    aP = new mutex;
     wR = new mutex;
     videoCnv = new condition_variable;
     audioCnv = new condition_variable;
+    videoDmx = new condition_variable;
+    audioDmx = new condition_variable;
     writeFrame = new condition_variable;
 	recordVideo = false;
+    pausedVideo = new atomic_bool;
+    *pausedVideo = false;
+    pausedAudio = new atomic_bool;
+    *pausedAudio = false;
     stopped = new atomic_bool;
     *stopped = false;
     frameCount = 0;
@@ -50,10 +59,16 @@ ScreenRecorder::~ScreenRecorder() {
 //free allocated memory of variables for thread synchronization
     free(vD);
     free(aD);
+    free(vP);
+    free(aP);
     free(wR);
     free(videoCnv);
     free(audioCnv);
+    free(videoDmx);
+    free(audioDmx);
     free(writeFrame);
+    free(pausedVideo);
+    free(pausedAudio);
     free(stopped);
     free(audio_devices);
 	cout << "clean all" << endl;
@@ -68,6 +83,7 @@ void show_avfoundation_device() {
 	avformat_open_input(&pFormatCtx, "", iformat, &options);
 	printf("=============================\n");
 }
+
 #ifdef WIN32
 HRESULT enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
 {
@@ -144,7 +160,7 @@ int ScreenRecorder::init() {
     audioInputName.append("audio=") ;
     auto curr_name = audio_devices->begin();
     for (int i = 0; curr_name != audio_devices->end(); i++) {// Select first available audio device
-        if(i==0) {
+        if(i==AUDIO_INPUT) {
             audioInputName.append(curr_name->c_str());// Write value to string
             break;
         }
@@ -214,8 +230,8 @@ int ScreenRecorder::init() {
 	}
 	audioInputFormat = av_find_input_format("avfoundation");
     av_dict_free(&options);
-	//av_dict_set(&options, "audio_device_index", "0", 0);
-	ret = avformat_open_input(&audioInputFormatContext, ":0", audioInputFormat, &options);
+	av_dict_set(&options, "audio_device_index", "AUDIO_INPUT", 0);
+	ret = avformat_open_input(&audioInputFormatContext, "", audioInputFormat, &options);
 	if (ret != 0) {
 	    throw avException("Couldn't open input stream");
 	}
@@ -591,6 +607,34 @@ static int encode(AVCodecContext *avctx, AVPacket *pkt, int *got_packet, AVFrame
 	}
 }
 
+
+void pauseStream(mutex *m, condition_variable *cv) {
+    unique_lock<mutex> ul(*m);
+    cv->wait(ul);// Wait for resume signal
+}
+
+void ScreenRecorder::PauseCapture(){
+    *pausedVideo = true;
+    *pausedAudio = true;
+    while(*pausedVideo || *pausedAudio) {
+        this_thread::sleep_for(std::chrono::milliseconds (25));
+    }
+}
+
+void ScreenRecorder::ResumeCapture(){
+    while(!vP->try_lock()) {
+        this_thread::sleep_for(std::chrono::milliseconds (5));
+    }
+    videoDmx->notify_one();// Send sync signal to handler thread
+    vP->unlock();
+    while(!aP->try_lock()) {
+        this_thread::sleep_for(std::chrono::milliseconds (5));
+    }
+    audioDmx->notify_one();// Send sync signal to handler thread
+    aP->unlock();
+
+}
+
 int ScreenRecorder::CloseMediaFile() {
 #if (VIDEO_MT==1)
     videoDemux->join();
@@ -852,6 +896,11 @@ void ScreenRecorder::CaptureVideoFrames() {
 	AVPacket *packet = alloc_packet();
 	// Try to extract packet from input stream
 	while (av_read_frame(inputFormatContext, packet) >= 0) {
+        if(*pausedVideo) {// Check if capture has been paused
+            unique_lock<mutex> ul(*vP);
+            *pausedVideo = false;// Sync signal to handler thread
+            videoDmx->wait(ul);// Wait for resume signal
+        }
 		if (count++ == frameCount) {
             *stopped = true;
 			break;
@@ -890,6 +939,11 @@ void ScreenRecorder::DemuxVideoInput() {
     int result;
     auto start = std::chrono::system_clock::now();
     while (av_read_frame(inputFormatContext, packet) >= 0) {
+        if(*pausedVideo) {// Check if capture has been paused
+            unique_lock<mutex> ul(*vP);
+            *pausedVideo = false;// Sync signal to handler thread
+            videoDmx->wait(ul);// Wait for resume signal
+        }
         if (frameNum == 30) {
             frameNum = 0; // reset every fps frames
             auto end = std::chrono::system_clock::now();
@@ -1165,6 +1219,11 @@ void ScreenRecorder::CaptureAudioFrames() {
     int64_t pts = 0;
 	// Handle audio input stream packets
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+        if(*pausedAudio) {// Check if capture has been paused
+            unique_lock<mutex> ul(*aP);
+            *pausedAudio = false;// Sync signal to handler thread
+            audioDmx->wait(ul);// Wait for resume signal
+        }
 		if (*stopped) {
 			break;
 		}
@@ -1201,6 +1260,11 @@ void ScreenRecorder::DemuxAudioInput(){
     auto start = std::chrono::system_clock::now();
     auto end = start;
     while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+        if(*pausedAudio) {// Check if capture has been paused
+            unique_lock<mutex> ul(*aP);
+            *pausedAudio = false;// Sync signal to handler thread
+            audioDmx->wait(ul);// Wait for resume signal
+        }
         if (*stopped) {
             break;
         }

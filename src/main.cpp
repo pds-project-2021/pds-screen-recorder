@@ -91,17 +91,28 @@ bool future_is_ready(std::future<T>& t){
     return t.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
 
-void recorder() {
-    auto s = ScreenRecorder();
-    s.init();
-    std::cout << "Initialized input streams" << std::endl;
-    s.init_outputfile();
-    std::cout << "Initialized output streams and file" << std::endl;
-    if (s.CaptureStart() >= 0) {
-        std::cout << "Capture started" << std::endl;
-        s.CloseMediaFile();
-        std::cout << "Capture complete" << std::endl;
-    }
+//void recorder() {
+//    auto s = ScreenRecorder();
+//    s.init();
+//    std::cout << "Initialized input streams" << std::endl;
+//    s.init_outputfile();
+//    std::cout << "Initialized output streams and file" << std::endl;
+//    if (s.CaptureStart() >= 0) {
+//        std::cout << "Capture started" << std::endl;
+//        s.CloseMediaFile();
+//        std::cout << "Capture complete" << std::endl;
+//    }
+//}
+
+void pauseTest(ScreenRecorder *s) {
+    int secondsPause = 2;
+    int secondsResume = 1;
+    std::this_thread::sleep_for(std::chrono::seconds(secondsPause));
+    s->PauseCapture();
+    std::cout << "Capture paused after " << secondsPause << " seconds" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(secondsResume));
+    s->ResumeCapture();
+    std::cout << "Capture resumed after " << secondsResume << " seconds" << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -116,7 +127,15 @@ int main(int argc, char **argv) {
     s.init_outputfile();
     std::cout << "Initialized output streams and file" << std::endl;
     if (s.CaptureStart() >= 0) {
+        int secondsPause = 2;
+        int secondsResume = 2;
         std::cout << "Capture started" << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(secondsPause));
+        s.PauseCapture();
+        std::cout << "Capture paused after " << secondsPause << " seconds" << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(secondsResume));
+        s.ResumeCapture();
+        std::cout << "Capture resumed after " << secondsResume << " seconds \n" << std::endl;
         s.CloseMediaFile();
         std::cout << "Capture complete" << std::endl;
     }
