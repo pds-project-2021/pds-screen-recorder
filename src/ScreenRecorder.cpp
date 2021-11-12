@@ -14,7 +14,7 @@ using namespace std;
 #endif
 #define VIDEO_BITRATE 8000000
 //#define FRAME_COUNT 280
-#define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
+#define AUDIO_CODEC 86017 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE 128000
 
 
@@ -169,7 +169,7 @@ int ScreenRecorder::init() {
         }
         curr_name++;
     }
-	av_dict_set(&options, "rtbufsize", "3M", 0);
+//	av_dict_set(&options, "rtbufsize", "3M", 0);
     audioInputFormat = make_unique<AVInputFormat>(*av_find_input_format("dshow"));
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
     av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
@@ -721,7 +721,7 @@ int ScreenRecorder::CloseMediaFile() {
 int ScreenRecorder::initThreads() {
     *stopped = false;
 //    *paused = false;
-    *pausedVideo = false;
+    *pausedVideo = true;
     *pausedAudio = false;
 #if (VIDEO_MT==1)
     finishedVideoDemux = false;
@@ -1274,6 +1274,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 //            audioDmx->wait(ul);// Wait for resume signal
 //        }
         if(!*pausedAudio) {
+            if(*pausedVideo) *pausedVideo = false;
             // Send packet to decoder
             decode(audioInputCodecContext, audioFrame, &got_frame, audioPacket);
             // check if decoded frame is ready
@@ -1322,6 +1323,7 @@ void ScreenRecorder::DemuxAudioInput(){
 //            audioDmx->wait(ul);// Wait for resume signal
 //        }
         if(!*pausedAudio) {
+            if(*pausedVideo) *pausedVideo = false;
             end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end-start;
             std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
