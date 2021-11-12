@@ -119,8 +119,9 @@ class ScreenRecorder {
     std::thread *videoConvert;
     std::thread *audioDemux;
     std::thread *audioConvert;
-    std::atomic_bool *pausedVideo;
-    std::atomic_bool *pausedAudio;
+    std::atomic_bool *paused;
+//    std::atomic_bool *pausedVideo;
+//    std::atomic_bool *pausedAudio;
     std::atomic_bool *stopped;
     std::mutex *vD;
     std::mutex *aD;
