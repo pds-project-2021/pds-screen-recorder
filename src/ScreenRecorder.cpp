@@ -36,12 +36,12 @@ ScreenRecorder::ScreenRecorder() {
     audioDmx = new condition_variable;
     writeFrame = new condition_variable;
 	recordVideo = false;
-    paused = new atomic_bool;
-    *paused = false;
-//    pausedVideo = new atomic_bool;
-//    *pausedVideo = false;
-//    pausedAudio = new atomic_bool;
-//    *pausedAudio = false;
+//    paused = new atomic_bool;
+//    *paused = false;
+    pausedVideo = new atomic_bool;
+    *pausedVideo = false;
+    pausedAudio = new atomic_bool;
+    *pausedAudio = false;
     stopped = new atomic_bool;
     *stopped = false;
     frameCount = 0;
@@ -69,9 +69,9 @@ ScreenRecorder::~ScreenRecorder() {
     free(videoDmx);
     free(audioDmx);
     free(writeFrame);
-    free(paused);
-//    free(pausedVideo);
-//    free(pausedAudio);
+//    free(paused);
+    free(pausedVideo);
+    free(pausedAudio);
     free(stopped);
     free(audio_devices);
 	cout << "clean all" << endl;
@@ -617,16 +617,18 @@ void pauseStream(mutex *m, condition_variable *cv) {
 }
 
 void ScreenRecorder::PauseCapture(){
-    *paused = true;
+//    *paused = true;
 //    *pausedVideo = true;
-//    *pausedAudio = true;
+    *pausedAudio = true;
 //    while(*pausedVideo || *pausedAudio) {
 //        this_thread::sleep_for(std::chrono::milliseconds (25));
 //    }
 }
 
 void ScreenRecorder::ResumeCapture(){
-    *paused = false;
+//    *paused = false;
+    *pausedVideo = false;
+    *pausedAudio = false;
 //    while(!vP->try_lock()) {
 //        this_thread::sleep_for(std::chrono::milliseconds (5));
 //    }
@@ -692,9 +694,9 @@ int ScreenRecorder::CloseMediaFile() {
 
 int ScreenRecorder::initThreads() {
     *stopped = false;
-    *paused = false;
-//    *pausedVideo = false;
-//    *pausedAudio = false;
+//    *paused = false;
+    *pausedVideo = false;
+    *pausedAudio = false;
 #if (VIDEO_MT==1)
     finishedVideoDemux = false;
     videoDemux = new thread(&ScreenRecorder::DemuxVideoInput, this);
@@ -915,7 +917,7 @@ void ScreenRecorder::CaptureVideoFrames() {
 //            *pausedVideo = false;// Sync signal to handler thread
 //            videoDmx->wait(ul);// Wait for resume signal
 //        }
-        if(!*paused) {
+        if(!*pausedVideo) {
             if (frameNum++ == 30)
                 frameNum = 0; // reset every fps frames
 
@@ -959,7 +961,7 @@ void ScreenRecorder::DemuxVideoInput() {
 //            *pausedVideo = false;// Sync signal to handler thread
 //            videoDmx->wait(ul);// Wait for resume signal
 //        }
-        if(!*paused) {
+        if(!*pausedVideo) {
             if (frameNum == 30) {
                 frameNum = 0; // reset every fps frames
                 auto end = std::chrono::system_clock::now();
@@ -1241,7 +1243,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 //            *pausedAudio = false;// Sync signal to handler thread
 //            audioDmx->wait(ul);// Wait for resume signal
 //        }
-        if(!*paused) {
+        if(!*pausedAudio) {
             // Send packet to decoder
             decode(audioInputCodecContext, audioFrame, &got_frame, audioPacket);
             // check if decoded frame is ready
@@ -1255,6 +1257,7 @@ void ScreenRecorder::CaptureAudioFrames() {
             } else
                 throw avException("Failed to decode packet");
         }
+        else if(!*pausedVideo) *pausedVideo = true;
         av_packet_unref(audioPacket);
         if (*stopped) {
             break;
@@ -1287,7 +1290,7 @@ void ScreenRecorder::DemuxAudioInput(){
 //            *pausedAudio = false;// Sync signal to handler thread
 //            audioDmx->wait(ul);// Wait for resume signal
 //        }
-        if(!*paused) {
+        if(!*pausedAudio) {
             end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end-start;
             std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
@@ -1320,7 +1323,10 @@ void ScreenRecorder::DemuxAudioInput(){
             //Packet sent
             start = std::chrono::system_clock::now();
         }
-        else av_packet_unref(audioPacket);
+        else {
+            av_packet_unref(audioPacket);
+            if(!*pausedVideo) *pausedVideo = true;
+        }
         if (*stopped) {
             break;
         }
