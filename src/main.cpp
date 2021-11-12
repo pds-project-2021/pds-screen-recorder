@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     if (s.CaptureStart() >= 0) {
         int millisecondsPause = 2000;
         int millisecondsResume = 2000;
-        int millisecondsStop = 2500;
+        int millisecondsStop = 3000;
         std::cout << "Capture started" << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(millisecondsPause));
         s.PauseCapture();

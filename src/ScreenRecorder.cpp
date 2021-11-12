@@ -5,7 +5,7 @@ using namespace std;
 #define AUDIO_INPUT 0
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
-#define VIDEO_MT 1
+#define VIDEO_MT 0
 #define AUDIO_MT 1
 #ifdef WIN32
 #define VIDEO_CODEC 27 //27 H264; 2 MPEG2;
@@ -928,6 +928,7 @@ void ScreenRecorder::CaptureVideoFrames() {
                 // check if decoded frame is ready
                 if (got_frame) { // frame is ready
                     // Convert frame picture format and write frame to file
+                    count++;
                     convertAndWriteVideoFrame(swsContext, outputCodecContext, inputCodecContext, videoStream, outputFormatContext, frame, &count, wR, writeFrame);
                     av_frame_unref(frame);
                     init_video_frame(frame, inputCodecPar->width, inputCodecPar->height,
