@@ -13,7 +13,7 @@ using namespace std;
 #define VIDEO_CODEC 2 //MPEG2, but H264 can be used if libx264-dev is installed
 #endif
 #define VIDEO_BITRATE 8000000
-#define FRAME_COUNT 280
+//#define FRAME_COUNT 280
 #define AUDIO_CODEC 86018 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE 128000
 
