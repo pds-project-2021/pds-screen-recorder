@@ -170,13 +170,13 @@ int ScreenRecorder::init() {
         curr_name++;
     }
 	av_dict_set(&options, "rtbufsize", "3M", 0);
-	audioInputFormat = av_find_input_format("dshow");
+    audioInputFormat = make_unique<AVInputFormat>(*av_find_input_format("dshow"));
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
     av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
     // Open audio input device
     cout << "Selected dshow audio input device: " << audioInputName.substr(6, 35) << endl;
 	auto ret = avformat_open_input(&audioInputFormatContext,
-                                   audioInputName.c_str(), audioInputFormat,
+                                   audioInputName.c_str(), audioInputFormat.get(),
 							&options);
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
@@ -188,17 +188,17 @@ int ScreenRecorder::init() {
 	av_dict_set(&options, "offset_y", "0", 0);
 	// av_dict_set(&options, "video_size", "1920x1080", 0);
 	av_dict_set(&options, "show_region", "1", 0);
-	inputFormat = av_find_input_format("gdigrab");
-	ret = avformat_open_input(&inputFormatContext, "desktop", inputFormat, &options);
+	inputFormat = make_unique<AVInputFormat>(*av_find_input_format("gdigrab"));
+	ret = avformat_open_input(&inputFormatContext, "desktop", inputFormat.get(), &options);
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
 	}
 #elif defined linux
 	//av_dict_set(&options, "rtbufsize", "10M", 0);
-	audioInputFormat = av_find_input_format("pulse");
+	audioInputFormat = make_unique<AVInputFormat>(*av_find_input_format("pulse"));
     av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
     av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
-	auto ret = avformat_open_input(&audioInputFormatContext, "default", audioInputFormat, &options);
+	auto ret = avformat_open_input(&audioInputFormatContext, "default", audioInputFormat.get(), &options);
 	if (ret != 0) {
 		throw avException("Couldn't open input stream");
 	}
@@ -210,14 +210,14 @@ int ScreenRecorder::init() {
 //	av_dict_set(&options, "video_size", "1920x1080", 0);
 	av_dict_set(&options, "show_region", "1", 0);
 
-	inputFormat = av_find_input_format("x11grab");
-	ret = avformat_open_input(&inputFormatContext, ":0.0", inputFormat, &options);
+	inputFormat = make_unique<AVInputFormat>(*av_find_input_format("x11grab"));
+	ret = avformat_open_input(&inputFormatContext, ":0.0", inputFormat.get(), &options);
     if (ret != 0) {
         throw avException("Couldn't open input stream");
     }
 #else
 	//show_avfoundation_device();
-	inputFormat = av_find_input_format("avfoundation");
+	inputFormat = make_unique<AVInputFormat>(*av_find_input_format("avfoundation"));
 	av_dict_set(&options, "framerate", "30", 0);
 	//av_dict_set(&options, "preset", "medium", 0);
 	av_dict_set(&options, "offset_x", "0", 0);
@@ -227,14 +227,14 @@ int ScreenRecorder::init() {
 	av_dict_set(&options, "pixel_format", "bgr0", 0);
 	//av_dict_set(&options, "video_device_index", "1", 0);
 
-	auto ret = avformat_open_input(&inputFormatContext, "1", inputFormat, &options);
+	auto ret = avformat_open_input(&inputFormatContext, "1", inputFormat.get(), &options);
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
 	}
-	audioInputFormat = av_find_input_format("avfoundation");
+	audioInputFormat = make_unique<AVInputFormat>(*av_find_input_format("avfoundation"));
     av_dict_free(&options);
 	av_dict_set(&options, "audio_device_index", "AUDIO_INPUT", 0);
-	ret = avformat_open_input(&audioInputFormatContext, "", audioInputFormat, &options);
+	ret = avformat_open_input(&audioInputFormatContext, "", audioInputFormat.get(), &options);
 	if (ret != 0) {
 	    throw avException("Couldn't open input stream");
 	}
@@ -276,12 +276,12 @@ int ScreenRecorder::init() {
 	audioInputCodecPar->frame_size = 22050; // set number of audio samples in each frame
 //    audioInputCodecPar->bit_rate = AUDIO_CHANNELS*705600;
 
-	inputCodec = avcodec_find_decoder(inputCodecPar->codec_id);
+	auto inputCodec = avcodec_find_decoder(inputCodecPar->codec_id);
 	if (inputCodec == nullptr) {
 		throw avException("Unable to find the video decoder");
 	}
 
-	audioInputCodec = avcodec_find_decoder(audioInputCodecPar->codec_id);
+	auto audioInputCodec = avcodec_find_decoder(audioInputCodecPar->codec_id);
 	if (audioInputCodec == nullptr) {
 		throw avException("Unable to find the audio decoder");
 	}
@@ -311,6 +311,7 @@ int ScreenRecorder::init() {
 	}
 
 #ifdef _WIN32
+    CoUninitialize();
 	av_dump_format(inputFormatContext, 0, "desktop", 0);
 	av_dump_format(audioInputFormatContext, 1, "dshow-audio-device", 0);
 #elif defined linux
@@ -322,15 +323,33 @@ int ScreenRecorder::init() {
 	return 0;
 }
 
+void ScreenRecorder::close() {
+    CloseMediaFile();
+    avcodec_close(inputCodecContext);
+    avcodec_free_context(&inputCodecContext);
+    avcodec_close(audioInputCodecContext);
+    avcodec_free_context(&audioInputCodecContext);
+    avformat_close_input(&inputFormatContext);
+    avformat_free_context(inputFormatContext);
+    avformat_close_input(&audioInputFormatContext);
+    avformat_free_context(audioInputFormatContext);
+    avcodec_close(outputCodecContext);
+    avcodec_free_context(&outputCodecContext);
+    avcodec_close(audioOutputCodecContext);
+    avcodec_free_context(&audioOutputCodecContext);
+    avformat_free_context(outputFormatContext);
+    avformat_free_context(audioOutputFormatContext);
+}
+
 int ScreenRecorder::init_outputfile() {
 	output_file = "../media/output.mp4";
 //    frameCount = FRAME_COUNT;
-	outputCodec = avcodec_find_encoder((AVCodecID) VIDEO_CODEC);
+	auto outputCodec = avcodec_find_encoder((AVCodecID) VIDEO_CODEC);
 	if (!outputCodec) {
 		throw avException(
 			"Error in finding the video av codecs. try again with correct codec");
 	}
-	audioOutputCodec = avcodec_find_encoder((AVCodecID) AUDIO_CODEC);
+	auto audioOutputCodec = avcodec_find_encoder((AVCodecID) AUDIO_CODEC);
 	if (!audioOutputCodec) {
 		throw avException(
 			"Error in finding the audio av codecs. try again with correct codec");
@@ -355,8 +374,8 @@ int ScreenRecorder::init_outputfile() {
 	 * best matches the provided parameters, or returns nullptr if there is no
 	 * match.
 	 */
-	outputFormat = av_guess_format(nullptr, output_file, nullptr);
-	if (!outputFormat) {
+	outputFormat = make_unique<AVOutputFormat>(*av_guess_format(nullptr, output_file, nullptr));
+	if (!outputFormat.get()) {
 		throw avException(
 			"Error in guessing the video format. try with correct format");
 	}
@@ -615,6 +634,11 @@ void pauseStream(mutex *m, condition_variable *cv) {
     unique_lock<mutex> ul(*m);
     cv->wait(ul);// Wait for resume signal
 }
+bool ScreenRecorder::isPaused() {
+    if(*pausedVideo) return true;
+    return false;
+
+}
 
 void ScreenRecorder::PauseCapture(){
 //    *paused = true;
@@ -627,6 +651,8 @@ void ScreenRecorder::PauseCapture(){
 
 void ScreenRecorder::ResumeCapture(){
 //    *paused = false;
+    avformat_flush(inputFormatContext);
+    avformat_flush(audioInputFormatContext);
     *pausedVideo = false;
     *pausedAudio = false;
 //    while(!vP->try_lock()) {
@@ -685,9 +711,9 @@ int ScreenRecorder::CloseMediaFile() {
             throw fsException("Failed to close file");
         }
     }
-#ifdef WIN32
-    CoUninitialize();
-#endif
+//#ifdef WIN32
+//    CoUninitialize();
+//#endif
     *stopped = false;
     return ret;
 }
@@ -908,6 +934,7 @@ void ScreenRecorder::CaptureVideoFrames() {
 	// Create decoder packet
 	AVPacket *packet = alloc_packet();
 	// Try to extract packet from input stream
+    avformat_flush(inputFormatContext);
 	while (av_read_frame(inputFormatContext, packet) >= 0) {
         if (*stopped) {
             break;
@@ -953,6 +980,7 @@ void ScreenRecorder::DemuxVideoInput() {
     int frameNum = 0; // frame number in a second
     int result;
     auto start = std::chrono::system_clock::now();
+    avformat_flush(inputFormatContext);
     while (av_read_frame(inputFormatContext, packet) >= 0) {
         if (*stopped) {
             break;
@@ -1235,6 +1263,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 	int got_frame = 0;
     int64_t pts = 0;
 	// Handle audio input stream packets
+    avformat_flush(audioInputFormatContext);
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
         if (*stopped) {
             break;
@@ -1282,6 +1311,7 @@ void ScreenRecorder::DemuxAudioInput(){
 //    int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
     auto end = start;
+    avformat_flush(audioInputFormatContext);
     while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
         if (*stopped) {
             break;

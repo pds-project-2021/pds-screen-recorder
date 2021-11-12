@@ -86,9 +86,9 @@ class ScreenRecorder {
 	//  int i, video_index;
 
 	//  -----------------------
-	AVInputFormat *inputFormat = nullptr;
-	AVInputFormat *audioInputFormat = nullptr;
-	AVOutputFormat *outputFormat = nullptr;
+	std::unique_ptr<AVInputFormat> inputFormat = nullptr;
+    std::unique_ptr<AVInputFormat> audioInputFormat = nullptr;
+    std::unique_ptr<AVOutputFormat> outputFormat = nullptr;
 	AVOutputFormat *audioOutputFormat = nullptr;
 	AVCodecContext *inputCodecContext = nullptr;
 	AVCodecContext *audioInputCodecContext = nullptr;
@@ -103,10 +103,10 @@ class ScreenRecorder {
 	AVCodecParameters *outputCodecPar = nullptr;
 	AVCodecParameters *audioOutputCodecPar = nullptr;
 
-	AVCodec *inputCodec = nullptr;
-	AVCodec *audioInputCodec = nullptr;
-	AVCodec *outputCodec = nullptr;
-	AVCodec *audioOutputCodec = nullptr;
+//	AVCodec *inputCodec = nullptr;
+//	AVCodec *audioInputCodec = nullptr;
+//	AVCodec *outputCodec = nullptr;
+//	AVCodec *audioOutputCodec = nullptr;
 	AVDictionary *options = nullptr;
 
 	AVStream *videoStream = nullptr;
@@ -152,6 +152,7 @@ class ScreenRecorder {
     void ConvertAudioFrames();
     void WriteAudioOutput(AVFormatContext*, AVRational, AVRational);
 	int initThreads();
+    int CloseMediaFile();
 
   public:
 	ScreenRecorder();
@@ -160,10 +161,11 @@ class ScreenRecorder {
 	/* function to initiate communication with display library */
 	int init();
 	int init_outputfile();
-	int CloseMediaFile();
 	int CaptureStart();
     void PauseCapture();
     void ResumeCapture();
+    bool isPaused();
+    void close();
 
 	//  ----------------
 
