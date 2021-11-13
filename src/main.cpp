@@ -6,6 +6,7 @@
 GtkWidget *window;
 ScreenRecorder *s;
 bool ready = false;
+bool started = false;
 
 void init_output() {
     s->init_outputfile();
@@ -17,6 +18,7 @@ void recorder() {
     s->init();
     std::cout << "Initialized input streams" << std::endl;
     init_output();
+    started = false;
 //    if (s.CaptureStart() >= 0) {
 //        int millisecondsPause = 2000;
 //        int millisecondsResume = 2000;
@@ -38,7 +40,10 @@ void startRecording() {
     if(!ready) recorder();
     if(s->isPaused()) s->ResumeCapture();
     else {
-        s->CaptureStart();
+        if(!started) {
+            s->CaptureStart();
+            started = true;
+        }
     }
 }
 
@@ -52,6 +57,7 @@ void stopRecording() {
     if(!ready) return;
     s->close();
     ready = false;
+    started = false;
 }
 
 static void record(GtkWidget *widget, gpointer data) {
