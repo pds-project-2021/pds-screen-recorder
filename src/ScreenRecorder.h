@@ -108,7 +108,7 @@ class ScreenRecorder {
 //	AVCodec *outputCodec = nullptr;
 //	AVCodec *audioOutputCodec = nullptr;
 	AVDictionary *options = nullptr;
-
+    AVDictionary *audioOptions = nullptr;
 	AVStream *videoStream = nullptr;
 	AVStream *audioStream = nullptr;
 	SwsContext *swsContext = nullptr;

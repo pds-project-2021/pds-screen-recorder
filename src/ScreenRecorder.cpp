@@ -141,7 +141,6 @@ void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *au
 int ScreenRecorder::init() {
 	inputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
 	audioInputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
-	options = nullptr;
 
 #ifdef _WIN32
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED); // Set COM to multithreaded model
@@ -171,17 +170,16 @@ int ScreenRecorder::init() {
     }
 //	av_dict_set(&options, "rtbufsize", "3M", 0);
     audioInputFormat = make_unique<AVInputFormat>(*av_find_input_format("dshow"));
-    av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
-    av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
+    av_dict_set(&audioOptions, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
+    av_dict_set(&audioOptions, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
     // Open audio input device
     cout << "Selected dshow audio input device: " << audioInputName.substr(6, 35) << endl;
 	auto ret = avformat_open_input(&audioInputFormatContext,
                                    audioInputName.c_str(), audioInputFormat.get(),
-							&options);
+							&audioOptions);
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
 	}
-	options = nullptr;
 	av_dict_set(&options, "framerate", "30", 0);
 	//av_dict_set(&options, "preset", "medium", 0);
 	av_dict_set(&options, "offset_x", "0", 0);
@@ -196,13 +194,12 @@ int ScreenRecorder::init() {
 #elif defined linux
 	//av_dict_set(&options, "rtbufsize", "10M", 0);
 	audioInputFormat = make_unique<AVInputFormat>(*av_find_input_format("pulse"));
-    av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
-    av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
-	auto ret = avformat_open_input(&audioInputFormatContext, "default", audioInputFormat.get(), &options);
+    av_dict_set(&audioOptions, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
+    av_dict_set(&audioOptions, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
+	auto ret = avformat_open_input(&audioInputFormatContext, "default", audioInputFormat.get(), &audioOptions);
 	if (ret != 0) {
 		throw avException("Couldn't open input stream");
 	}
-	options = nullptr;
 	av_dict_set(&options, "framerate", "30", 0);
 	av_dict_set(&options, "preset", "medium", 0);
 	av_dict_set(&options, "offset_x", "0", 0);
@@ -232,9 +229,8 @@ int ScreenRecorder::init() {
 	  throw avException("Couldn't open input stream");
 	}
 	audioInputFormat = make_unique<AVInputFormat>(*av_find_input_format("avfoundation"));
-    av_dict_free(&options);
-	av_dict_set(&options, "audio_device_index", "AUDIO_INPUT", 0);
-	ret = avformat_open_input(&audioInputFormatContext, "", audioInputFormat.get(), &options);
+	av_dict_set(&audioOptions, "audio_device_index", "AUDIO_INPUT", 0);
+	ret = avformat_open_input(&audioInputFormatContext, "", audioInputFormat.get(), &audioOptions);
 	if (ret != 0) {
 	    throw avException("Couldn't open input stream");
 	}
@@ -246,22 +242,25 @@ int ScreenRecorder::init() {
 		throw avException("Unable to find the video stream information");
 	}
 
-	ret = avformat_find_stream_info(audioInputFormatContext, nullptr);
+	ret = avformat_find_stream_info(audioInputFormatContext, &audioOptions);
 	if (ret < 0) {
 		throw avException("Unable to find the audio stream information");
 	}
-
+    av_dict_free(&options);
+    av_dict_free(&audioOptions);
 	auto index = av_find_best_stream(inputFormatContext, AVMEDIA_TYPE_VIDEO, -1,
 	                                 -1, nullptr, 0);
 	if (index == -1) {
 		throw avException("Unable to find the video stream index. (-1)");
 	}
+    auto videoStart = std::chrono::system_clock::now();
 
 	auto audioIndex = av_find_best_stream(audioInputFormatContext,
 	                                      AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (audioIndex == -1) {
 		throw avException("Unable to find the audio stream index. (-1)");
 	}
+    auto audioStart = std::chrono::system_clock::now();
 
 	inputCodecPar = inputFormatContext->streams[index]->codecpar;
 	inputCodecPar->format = AV_PIX_FMT_BGR0;
@@ -309,11 +308,10 @@ int ScreenRecorder::init() {
 	if (ret < 0) {
 		throw avException("Unable to open the audio av codec");
 	}
-
 #ifdef _WIN32
     CoUninitialize();
 	av_dump_format(inputFormatContext, 0, "desktop", 0);
-	av_dump_format(audioInputFormatContext, 1, "dshow-audio-device", 0);
+	av_dump_format(audioInputFormatContext, 1, curr_name->c_str(), 0);
 #elif defined linux
 	av_dump_format(inputFormatContext, 0, ":0.0+0,0", 0);
 	av_dump_format(audioInputFormatContext, 0, "default", 0);
