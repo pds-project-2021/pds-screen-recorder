@@ -241,26 +241,27 @@ int ScreenRecorder::init() {
 	if (ret < 0) {
 		throw avException("Unable to find the video stream information");
 	}
-
+//    auto videoStart = std::chrono::system_clock::now();
 	ret = avformat_find_stream_info(audioInputFormatContext, &audioOptions);
 	if (ret < 0) {
 		throw avException("Unable to find the audio stream information");
 	}
+    auto audioStart = std::chrono::system_clock::now();
+//    auto aS = audioStart.time_since_epoch();
     av_dict_free(&options);
     av_dict_free(&audioOptions);
+
 	auto index = av_find_best_stream(inputFormatContext, AVMEDIA_TYPE_VIDEO, -1,
 	                                 -1, nullptr, 0);
 	if (index == -1) {
 		throw avException("Unable to find the video stream index. (-1)");
 	}
-    auto videoStart = std::chrono::system_clock::now();
 
 	auto audioIndex = av_find_best_stream(audioInputFormatContext,
 	                                      AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (audioIndex == -1) {
 		throw avException("Unable to find the audio stream index. (-1)");
 	}
-    auto audioStart = std::chrono::system_clock::now();
 
 	inputCodecPar = inputFormatContext->streams[index]->codecpar;
 	inputCodecPar->format = AV_PIX_FMT_BGR0;
@@ -312,7 +313,10 @@ int ScreenRecorder::init() {
     CoUninitialize();
 	av_dump_format(inputFormatContext, 0, "desktop", 0);
 	av_dump_format(audioInputFormatContext, 1, curr_name->c_str(), 0);
+
 #elif defined linux
+    ref_time = inputFormatContext->start_time;
+    if(audioInputFormatContext->start_time>ref_time) ref_time = audioInputFormatContext->start_time;
 	av_dump_format(inputFormatContext, 0, ":0.0+0,0", 0);
 	av_dump_format(audioInputFormatContext, 0, "default", 0);
 #else
@@ -649,8 +653,8 @@ void ScreenRecorder::PauseCapture(){
 
 void ScreenRecorder::ResumeCapture(){
 //    *paused = false;
-    avformat_flush(inputFormatContext);
-    avformat_flush(audioInputFormatContext);
+//    avformat_flush(inputFormatContext);
+//    avformat_flush(audioInputFormatContext);
     *pausedVideo = false;
     *pausedAudio = false;
 //    while(!vP->try_lock()) {
@@ -990,7 +994,7 @@ void ScreenRecorder::DemuxVideoInput() {
     bool synced = false;
     bool sync = false;
     auto start = std::chrono::system_clock::now();
-    avformat_flush(inputFormatContext);
+//    avformat_flush(inputFormatContext);
     if(inputFormatContext->start_time == ref_time) {// If video started later
         sync = true;// Video needs to set the ref_time value
     }
@@ -1355,9 +1359,7 @@ void ScreenRecorder::DemuxAudioInput(){
             if(audioPacket->pts>ref_time) ref_time = audioPacket->pts;
             synced = true;
         }
-        if (*stopped) {
-            break;
-        }
+
 //        if(*pausedAudio) {// Check if capture has been paused
 //            unique_lock<mutex> ul(*aP);
 //            *pausedAudio = false;// Sync signal to handler thread
