@@ -974,7 +974,7 @@ void ScreenRecorder::CaptureVideoFrames() {
                 }
             }
         }
-        else if(synced) synced = false;
+//        else if(synced) synced = false;
         av_packet_unref(packet);
 	} // End of while-loop
 	// Handle delayed frames
@@ -1048,7 +1048,7 @@ void ScreenRecorder::DemuxVideoInput() {
             frameNum++;
         }
         else {
-            if(synced) synced = false;
+//            if(synced) synced = false;
             av_packet_unref(packet);
         }
     }
@@ -1323,7 +1323,7 @@ void ScreenRecorder::CaptureAudioFrames() {
         }
         else {
             if(!*pausedVideo) *pausedVideo = true;
-            if(synced) synced = false;
+//            if(synced) synced = false;
         }
         av_packet_unref(audioPacket);
         if (*stopped) {
@@ -1402,7 +1402,7 @@ void ScreenRecorder::DemuxAudioInput(){
         else {
             av_packet_unref(audioPacket);
             if(!*pausedVideo) *pausedVideo = true;
-            if(synced) synced = false;
+//            if(synced) synced = false;
         }
         if (*stopped) {
             break;
