@@ -141,6 +141,7 @@ class ScreenRecorder {
     int frameCount;
     std::vector<std::string> *audio_devices;
 	double video_pts;
+    int64_t ref_time;
 
 	int out_size;
 	int codec_id;
