@@ -5,8 +5,8 @@ using namespace std;
 #define AUDIO_INPUT 0
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
-#define VIDEO_MT 1
-#define AUDIO_MT 1
+#define VIDEO_MT 0
+#define AUDIO_MT 0
 #ifdef WIN32
 #define VIDEO_CODEC 27 //27 H264; 2 MPEG2;
 #else
@@ -664,28 +664,12 @@ void ScreenRecorder::ResumeCapture(){
 //    avformat_flush(audioInputFormatContext);
     *pausedVideo = false;
     *pausedAudio = false;
-//    while(!vP->try_lock()) {
-//        this_thread::sleep_for(std::chrono::milliseconds (5));
-//    }
-//    videoDmx->notify_one();// Send sync signal to handler thread
-//    vP->unlock();
-//    while(!aP->try_lock()) {
-//        this_thread::sleep_for(std::chrono::milliseconds (5));
-//    }
-//    audioDmx->notify_one();// Send sync signal to handler thread
-//    aP->unlock();
-
 }
 
 int ScreenRecorder::CloseMediaFile() {
     *stopped = true;
 #if (VIDEO_MT==1)
     videoDemux->join();
-//    *finishedVideoDemux = true;
-//    unique_lock<mutex> ulvC(*vD);
-//    videoCnv->notify_one();// Send sync signal to video converter thread
-//    videoCnv->wait(ulvC);// Wait for resume signal
-//    videoCnv->notify_one();// Send sync signal to video converter thread
     videoConvert->join();
 #else
     video->join();
@@ -693,22 +677,11 @@ int ScreenRecorder::CloseMediaFile() {
 #if (AUDIO==1)
 #if (AUDIO_MT==1)
     audioDemux->join();
-//    *finishedAudioDemux = true;
-//    unique_lock<mutex> ulC(*aD);
-//    audioCnv->notify_one();// Send sync signal to converter thread
-//    audioCnv->wait(ulC);// Wait for resume signal
-//    audioCnv->notify_one();// Send sync signal to converter thread
     audioConvert->join();
 #else
     audio->join();
 #endif
 #endif
-//    unique_lock<mutex> ulW(aW);
-//    finishedAudioConversion = true;
-//    audioWrt.notify_one();// Send sync signal to output writer thread if necessary
-//    audioWrt.wait(ulW);//Wait for writer thread signal
-//    audioWrt.notify_one();// Send sync signal to output writer thread if necessary
-//    audioWrite->join();
     //Write video file trailer data
     auto ret = av_write_trailer(outputFormatContext);
     if (ret < 0) {
@@ -720,9 +693,6 @@ int ScreenRecorder::CloseMediaFile() {
             throw fsException("Failed to close file");
         }
     }
-//#ifdef WIN32
-//    CoUninitialize();
-//#endif
     *stopped = false;
     return ret;
 }
@@ -960,11 +930,6 @@ void ScreenRecorder::CaptureVideoFrames() {
         if (*stopped) {
             break;
         }
-//        if(*pausedVideo) {// Check if capture has been paused
-//            unique_lock<mutex> ul(*vP);
-//            *pausedVideo = false;// Sync signal to handler thread
-//            videoDmx->wait(ul);// Wait for resume signal
-//        }
         if(!*pausedVideo && packet->pts>=ref_time) {
             if (frameNum++ == 30)
                 frameNum = 0; // reset every fps frames
@@ -1021,11 +986,6 @@ void ScreenRecorder::DemuxVideoInput() {
             videoCnv->notify_one(); // notify converter thread if halted
             break;
         }
-//        if(*pausedVideo) {// Check if capture has been paused
-//            unique_lock<mutex> ul(*vP);
-//            *pausedVideo = false;// Sync signal to handler thread
-//            videoDmx->wait(ul);// Wait for resume signal
-//        }
         if(!*pausedVideo && packet->pts>=ref_time) {
             if (frameNum == 30) {
                 frameNum = 0; // reset every fps frames
@@ -1317,18 +1277,13 @@ void ScreenRecorder::CaptureAudioFrames() {
 	// Handle audio input stream packets
     avformat_flush(audioInputFormatContext);
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+        if (*stopped) {
+            break;
+        }
         if(!synced && sync && !*pausedAudio) {
             if(audioPacket->pts>ref_time) ref_time = audioPacket->pts;
             synced = true;
         }
-        if (*stopped) {
-            break;
-        }
-//        if(*pausedAudio) {// Check if capture has been paused
-//            unique_lock<mutex> ul(*aP);
-//            *pausedAudio = false;// Sync signal to handler thread
-//            audioDmx->wait(ul);// Wait for resume signal
-//        }
         if(!*pausedAudio && audioPacket->pts>=ref_time) {
             if(*pausedVideo) *pausedVideo = false;
             // Send packet to decoder
@@ -1365,10 +1320,6 @@ void ScreenRecorder::DemuxAudioInput(){
     // Create decoder audio packet
     AVPacket *audioPacket = alloc_packet();
     int result;
-//    int count = 0;
-//    double avsyncD = (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
-//    int avsyncI = (int) (frameCount+1.00)/30*AUDIO_SAMPLE_RATE/audioInputCodecContext->frame_size;
-//    int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
     auto end = start;
     bool synced = false;
@@ -1390,12 +1341,6 @@ void ScreenRecorder::DemuxAudioInput(){
             if(audioPacket->pts>ref_time) ref_time = audioPacket->pts;
             synced = true;
         }
-
-//        if(*pausedAudio) {// Check if capture has been paused
-//            unique_lock<mutex> ul(*aP);
-//            *pausedAudio = false;// Sync signal to handler thread
-//            audioDmx->wait(ul);// Wait for resume signal
-//        }
         if(!*pausedAudio && audioPacket->pts>=ref_time) {
             if(*pausedVideo) *pausedVideo = false;
             end = std::chrono::system_clock::now();
