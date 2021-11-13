@@ -5,8 +5,8 @@ using namespace std;
 #define AUDIO_INPUT 0
 #define AUDIO_CHANNELS 1
 #define AUDIO_SAMPLE_RATE 44100
-#define VIDEO_MT 0
-#define AUDIO_MT 0
+#define VIDEO_MT 1
+#define AUDIO_MT 1
 #ifdef WIN32
 #define VIDEO_CODEC 27 //27 H264; 2 MPEG2;
 #else
