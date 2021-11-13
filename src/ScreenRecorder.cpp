@@ -141,7 +141,7 @@ void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *au
 int ScreenRecorder::init() {
 	inputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
 	audioInputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
-
+    ref_time = 0;
 #ifdef _WIN32
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED); // Set COM to multithreaded model
     if (SUCCEEDED(hr))
@@ -929,11 +929,20 @@ void ScreenRecorder::CaptureVideoFrames() {
     int64_t count = 0;
 	int frameNum = 0; // frame number in a second
 	int got_frame = 0;
+    bool synced = false;
+    bool sync = false;
 	// Create decoder packet
 	AVPacket *packet = alloc_packet();
 	// Try to extract packet from input stream
-    avformat_flush(inputFormatContext);
+//    avformat_flush(inputFormatContext);
+    if(inputFormatContext->start_time == ref_time) {// If video started later
+        sync = true;// Video needs to set the ref_time value
+    }
 	while (av_read_frame(inputFormatContext, packet) >= 0) {
+        if(!synced && sync && !*pausedVideo) {
+            if(packet->pts>ref_time) ref_time = packet->pts;
+            synced = true;
+        }
         if (*stopped) {
             break;
         }
@@ -942,7 +951,7 @@ void ScreenRecorder::CaptureVideoFrames() {
 //            *pausedVideo = false;// Sync signal to handler thread
 //            videoDmx->wait(ul);// Wait for resume signal
 //        }
-        if(!*pausedVideo) {
+        if(!*pausedVideo && packet->pts>=ref_time) {
             if (frameNum++ == 30)
                 frameNum = 0; // reset every fps frames
 
@@ -961,6 +970,7 @@ void ScreenRecorder::CaptureVideoFrames() {
                 }
             }
         }
+        else if(synced) synced = false;
         av_packet_unref(packet);
 	} // End of while-loop
 	// Handle delayed frames
@@ -977,9 +987,18 @@ void ScreenRecorder::DemuxVideoInput() {
 //    int count = 0;
     int frameNum = 0; // frame number in a second
     int result;
+    bool synced = false;
+    bool sync = false;
     auto start = std::chrono::system_clock::now();
     avformat_flush(inputFormatContext);
+    if(inputFormatContext->start_time == ref_time) {// If video started later
+        sync = true;// Video needs to set the ref_time value
+    }
     while (av_read_frame(inputFormatContext, packet) >= 0) {
+        if(!synced && sync && !*pausedVideo) {
+            if(packet->pts>ref_time) ref_time = packet->pts;
+            synced = true;
+        }
         if (*stopped) {
             break;
         }
@@ -988,7 +1007,7 @@ void ScreenRecorder::DemuxVideoInput() {
 //            *pausedVideo = false;// Sync signal to handler thread
 //            videoDmx->wait(ul);// Wait for resume signal
 //        }
-        if(!*pausedVideo) {
+        if(!*pausedVideo && packet->pts>=ref_time) {
             if (frameNum == 30) {
                 frameNum = 0; // reset every fps frames
                 auto end = std::chrono::system_clock::now();
@@ -1024,7 +1043,10 @@ void ScreenRecorder::DemuxVideoInput() {
             //Packet sent
             frameNum++;
         }
-        else av_packet_unref(packet);
+        else {
+            if(synced) synced = false;
+            av_packet_unref(packet);
+        }
     }
     //Free allocated memory
     av_packet_unref(packet);
@@ -1260,9 +1282,18 @@ void ScreenRecorder::CaptureAudioFrames() {
 	AVPacket *audioPacket = alloc_packet();
 	int got_frame = 0;
     int64_t pts = 0;
+    bool synced = false;
+    bool sync = false;
+    if(audioInputFormatContext->start_time == ref_time) {// If video started later
+        sync = true;// Video needs to set the ref_time value
+    }
 	// Handle audio input stream packets
-    avformat_flush(audioInputFormatContext);
+//    avformat_flush(audioInputFormatContext);
 	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+        if(!synced && sync && !*pausedAudio) {
+            if(audioPacket->pts>ref_time) ref_time = audioPacket->pts;
+            synced = true;
+        }
         if (*stopped) {
             break;
         }
@@ -1271,7 +1302,7 @@ void ScreenRecorder::CaptureAudioFrames() {
 //            *pausedAudio = false;// Sync signal to handler thread
 //            audioDmx->wait(ul);// Wait for resume signal
 //        }
-        if(!*pausedAudio) {
+        if(!*pausedAudio && audioPacket->pts>=ref_time) {
             if(*pausedVideo) *pausedVideo = false;
             // Send packet to decoder
             decode(audioInputCodecContext, audioFrame, &got_frame, audioPacket);
@@ -1286,7 +1317,10 @@ void ScreenRecorder::CaptureAudioFrames() {
             } else
                 throw avException("Failed to decode packet");
         }
-        else if(!*pausedVideo) *pausedVideo = true;
+        else {
+            if(!*pausedVideo) *pausedVideo = true;
+            if(synced) synced = false;
+        }
         av_packet_unref(audioPacket);
         if (*stopped) {
             break;
@@ -1310,8 +1344,17 @@ void ScreenRecorder::DemuxAudioInput(){
 //    int audioCount = avsyncI+((avsyncD-avsyncI)>=0.5?1:0);
     auto start = std::chrono::system_clock::now();
     auto end = start;
-    avformat_flush(audioInputFormatContext);
+    bool synced = false;
+    bool sync = false;
+    if(audioInputFormatContext->start_time == ref_time) {// If video started later
+        sync = true;// Video needs to set the ref_time value
+    }
+//    avformat_flush(audioInputFormatContext);
     while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
+        if(!synced && sync && !*pausedAudio) {
+            if(audioPacket->pts>ref_time) ref_time = audioPacket->pts;
+            synced = true;
+        }
         if (*stopped) {
             break;
         }
@@ -1320,7 +1363,7 @@ void ScreenRecorder::DemuxAudioInput(){
 //            *pausedAudio = false;// Sync signal to handler thread
 //            audioDmx->wait(ul);// Wait for resume signal
 //        }
-        if(!*pausedAudio) {
+        if(!*pausedAudio && audioPacket->pts>=ref_time) {
             if(*pausedVideo) *pausedVideo = false;
             end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end-start;
@@ -1357,6 +1400,7 @@ void ScreenRecorder::DemuxAudioInput(){
         else {
             av_packet_unref(audioPacket);
             if(!*pausedVideo) *pausedVideo = true;
+            if(synced) synced = false;
         }
         if (*stopped) {
             break;
