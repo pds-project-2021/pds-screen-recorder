@@ -44,10 +44,10 @@ ScreenRecorder::ScreenRecorder() {
     *pausedAudio = false;
     stopped = new atomic_bool;
     *stopped = false;
-//    finishedVideoDemux = new atomic_bool;
-//    *finishedVideoDemux = false;
-//    finishedAudioDemux = new atomic_bool;
-//    *finishedAudioDemux = false;
+    finishedVideoDemux = new atomic_bool;
+    *finishedVideoDemux = false;
+    finishedAudioDemux = new atomic_bool;
+    *finishedAudioDemux = false;
     frameCount = 0;
     audio_devices = new vector<string>;
 }
@@ -77,8 +77,8 @@ ScreenRecorder::~ScreenRecorder() {
     free(pausedVideo);
     free(pausedAudio);
     free(stopped);
-//    free(finishedVideoDemux);
-//    free(finishedAudioDemux);
+    free(finishedVideoDemux);
+    free(finishedAudioDemux);
     free(audio_devices);
 	cout << "clean all" << endl;
 }
@@ -703,7 +703,7 @@ int ScreenRecorder::initThreads() {
     *pausedVideo = true;
     *pausedAudio = false;
 #if (VIDEO_MT==1)
-//    *finishedVideoDemux = false;
+    *finishedVideoDemux = false;
     videoDemux = new thread(&ScreenRecorder::DemuxVideoInput, this);
     videoConvert = new thread(&ScreenRecorder::ConvertVideoFrames, this);
 #else
@@ -711,7 +711,7 @@ int ScreenRecorder::initThreads() {
 #endif
 #if (AUDIO==1)
 #if (AUDIO_MT==1)
-//    *finishedAudioDemux = false;
+    *finishedAudioDemux = false;
     audioDemux = new thread(&ScreenRecorder::DemuxAudioInput, this);
     audioConvert = new thread(&ScreenRecorder::ConvertAudioFrames, this);
 #else
@@ -729,7 +729,7 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext, AVPacket *outPacke
         throw avException("Provided null output values, data could not be written");
     }
     if(wR->try_lock()) {
-        result = av_write_frame(outputFormatContext,
+        result = av_interleaved_write_frame(outputFormatContext,
                                 outPacket); // Write packet to file
         if (result < 0) throw avException("Error in writing video frame");
         else writeFrame->notify_one(); // Notify other writer thread to resume if halted
@@ -739,7 +739,7 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext, AVPacket *outPacke
         unique_lock<mutex> ul(*wR);
 //        writeFrame->notify_one();// Notify other writer thread to resume if halted
         writeFrame->wait(ul);// Wait for resume signal
-        result = av_write_frame(outputFormatContext,
+        result = av_interleaved_write_frame(outputFormatContext,
                                 outPacket); // Write packet to file
         if (result < 0) throw avException("Error in writing video frame");
         else writeFrame->notify_one(); // Notify other writer thread to resume if halted
@@ -977,14 +977,15 @@ void ScreenRecorder::DemuxVideoInput() {
     }
 #endif
     while (av_read_frame(inputFormatContext, packet) >= 0) {
+        if (*stopped) {
+            lock_guard<mutex> ul(*vD);
+            *finishedVideoDemux = true;
+            videoCnv->notify_one(); // notify converter thread if halted
+            break;
+        }
         if(!synced && sync && !*pausedVideo) {
             if(packet->pts>ref_time) ref_time = packet->pts;
             synced = true;
-        }
-        if (*stopped) {
-            lock_guard<mutex> ul(*vD);
-            videoCnv->notify_one(); // notify converter thread if halted
-            break;
         }
         if(!*pausedVideo && packet->pts>=ref_time) {
             if (frameNum == 30) {
@@ -1063,7 +1064,7 @@ void ScreenRecorder::ConvertVideoFrames() {
         else result = AVERROR(EAGAIN);
         if(result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
             std::unique_lock<std::mutex> ul(*vD);
-            if(!*stopped){
+            if(!*finishedVideoDemux){
                 videoCnv->notify_one();// Signal demuxer thread if necessary
                 videoCnv->wait(ul);// Wait for resume signal
                 result = avcodec_receive_frame(inputCodecContext, frame); // Try to get a decoded frame
@@ -1072,10 +1073,6 @@ void ScreenRecorder::ConvertVideoFrames() {
             else if(finished) break;
             finished = true;
         }
-//        else if(*finishedVideoDemux) {
-////                videoCnv->notify_one();// Sync with main thread if necessary
-//            break;
-//        }
         if(result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) throw avException("Audio Converter/Writer threads syncronization error");
     }
     if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
@@ -1269,6 +1266,7 @@ void ScreenRecorder::CaptureAudioFrames() {
     bool synced = false;
     bool sync = false;
 #ifdef WIN32
+//    ref_time=audioInputFormatContext->start_time*10+50000000;
 #else
     if(audioInputFormatContext->start_time == ref_time) {// If video started later
         sync = true;// Video needs to set the ref_time value
@@ -1324,7 +1322,11 @@ void ScreenRecorder::DemuxAudioInput(){
     auto end = start;
     bool synced = false;
     bool sync = false;
+//    bool last_pts_set = false;
+//    int64_t last_pts=MAXINT64;
+//    int64_t offset=50000000;
 #ifdef WIN32
+//    ref_time=audioInputFormatContext->start_time*10+offset;
 #else
     if(audioInputFormatContext->start_time == ref_time) {// If video started later
         sync = true;// Video needs to set the ref_time value
@@ -1333,7 +1335,12 @@ void ScreenRecorder::DemuxAudioInput(){
     avformat_flush(audioInputFormatContext);
     while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
         if (*stopped) {
+//            if(!last_pts_set) {
+//                last_pts=audioPacket->pts+offset;
+//                last_pts_set=true;
+//            }
             lock_guard<mutex> ul(*vD);
+            *finishedAudioDemux = true;
             audioCnv->notify_one(); // notify converter thread if halted
             break;
         }
@@ -1375,6 +1382,8 @@ void ScreenRecorder::DemuxAudioInput(){
             //Packet sent
             start = std::chrono::system_clock::now();
         }
+//        else if(audioPacket->pts >= last_pts){
+//        }
         else {
             av_packet_unref(audioPacket);
             if(!*pausedVideo) *pausedVideo = true;
@@ -1418,7 +1427,7 @@ void ScreenRecorder::ConvertAudioFrames() {
         else result = AVERROR(EAGAIN);
         if(result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
             std::unique_lock<std::mutex> ul(*aD);
-            if(!*stopped) {
+            if(!*finishedAudioDemux) {
                 audioCnv->notify_one();// Signal demuxer thread if necessary
                 audioCnv->wait(ul);// Wait for resume signal
                 result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame
