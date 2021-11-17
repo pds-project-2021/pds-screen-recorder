@@ -10,7 +10,7 @@ using namespace std;
 
 template <class T>
 class Tracker {
-	static inline uint count = 0;
+	static inline unsigned int count = 0;
 	friend T;
 
   public:

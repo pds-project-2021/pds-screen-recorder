@@ -2,7 +2,7 @@
 // Created by gabriele on 31/10/21.
 //
 #include "platform.h"
-
+using namespace std;
 #ifdef _WIN32
 
 HRESULT _enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
@@ -27,7 +27,7 @@ HRESULT _enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
 
 void _getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *audioDevices) {
     IMoniker *pMoniker = nullptr;
-    if (audioDevices == nullptr) throw avException("Devices names vector was not initialized");
+    if (audioDevices == nullptr) return;
     while (pEnum->Next(1, &pMoniker, nullptr) == S_OK) {
         IPropertyBag *pPropBag;
         HRESULT hr = pMoniker->BindToStorage(nullptr, nullptr, IID_PPV_ARGS(&pPropBag));
@@ -75,10 +75,11 @@ std::string get_audio_input_format(){
 	return DEFAULT_AUDIO_INPUT_FORMAT;
 }
 
-std::string get_audio_input_format_context(){
+std::string get_audio_input_device(){
 	// todo get audio
 		// Set COM to multithreaded model
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    auto audio_devices = vector<string>();
     if (SUCCEEDED(hr))
     {
         IEnumMoniker *pEnum;
@@ -88,33 +89,32 @@ std::string get_audio_input_format_context(){
         if (SUCCEEDED(hr))
         {
             //Get audio devices names
-            _getDshowDeviceInformation(pEnum, audio_devices);
+            _getDshowDeviceInformation(pEnum, &audio_devices);
             pEnum->Release();
         }
+        CoUninitialize();
     }
-    else throw avException("Error during thread initialization");
+    else return nullptr;
     // Prepare dshow command input audio device parameter string
     string audioInputName;
     audioInputName.append("audio=") ;
-    auto curr_name = audio_devices->begin();
-    for (int i = 0; curr_name != audio_devices->end(); i++) {// Select first available audio device
-        if(i==AUDIO_INPUT) {
+    if (audio_devices.empty()) return "";
+    auto curr_name = audio_devices.begin();
+    for (int i = 0; curr_name != audio_devices.end(); i++) {// Select first available audio device
+        if(i==DEFAULT_AUDIO_INPUT_DEVICE) {
             audioInputName.append(curr_name->c_str());// Write value to string
             break;
         }
         curr_name++;
     }
-
-
-
-	return DEFAULT_AUDIO_INPUT_DEVICE;
+    return audioInputName;
 }
 
 std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_format_context(){
+std::string get_video_input_device(){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 

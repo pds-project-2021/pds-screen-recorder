@@ -3,7 +3,7 @@ project(recs VERSION 0.0.1)
 
 configure_file(config.h.in config.h)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 if (UNIX)
     find_package(PkgConfig REQUIRED)

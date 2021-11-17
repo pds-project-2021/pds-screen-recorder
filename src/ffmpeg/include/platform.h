@@ -8,6 +8,8 @@
 
 #pragma once
 #include <string>
+#include <vector>
+
 
 #include "ffmpegc.h"
 
@@ -21,9 +23,12 @@
 #define AUDIO_BITRATE       192*1000
 
 #ifdef _WIN32
+#include <iostream>
 
-#define DEFAULT_AUDIO_INPUT_FORMAT  "dhow"
-#define DEFAULT_AUDIO_INPUT_DEVICE  ""
+#include <windows.h>
+#pragma comment(lib, "strmiids.lib")
+#define DEFAULT_AUDIO_INPUT_FORMAT  "dshow"
+#define DEFAULT_AUDIO_INPUT_DEVICE   0
 #define DEFAULT_VIDEO_INPUT_FORMAT  "gdigrab"
 #define DEFAULT_VIDEO_INPUT_DEVICE  "desktop"
 
