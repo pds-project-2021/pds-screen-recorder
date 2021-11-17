@@ -235,7 +235,7 @@ int ScreenRecorder::init() {
 	  throw avException("Couldn't open input stream");
 	}
 	audioInputFormat = make_unique<AVInputFormat>(*av_find_input_format("avfoundation"));
-	av_dict_set(&audioOptions, "audio_device_index", AUDIO_INPUT, 0);
+	av_dict_set(&audioOptions, "audio_device_index", string(AUDIO_INPUT).c_str(), 0);
 	ret = avformat_open_input(&audioInputFormatContext, "", audioInputFormat.get(), &audioOptions);
 	if (ret != 0) {
 	    throw avException("Couldn't open input stream");
