@@ -24,6 +24,7 @@
 #include "platform.h"
 #include "Codec.h"
 #include "Format.h"
+#include "Dictionary.h"
 //#include "Frame.h"
 //#include "Packet.h"
 

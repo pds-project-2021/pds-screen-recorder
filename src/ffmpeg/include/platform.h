@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include <string>
 
 #include "ffmpegc.h"
 
@@ -21,18 +22,29 @@
 
 #ifdef _WIN32
 
+#define DEFAULT_AUDIO_INPUT_FORMAT  "dhow"
+#define DEFAULT_AUDIO_INPUT_DEVICE  ""
+#define DEFAULT_VIDEO_INPUT_FORMAT  "gdigrab"
+#define DEFAULT_VIDEO_INPUT_DEVICE  "desktop"
+
 #define VIDEO_CODEC 27 //H264
 
 #elif defined linux
 
-#define AUDIO_INPUT_FORMAT          "pulse"
-#define AUDIO_INPUT_FORMAT_CONTEXT  "default"
-#define VIDEO_INPUT_FORMAT          "x11grab"
-#define VIDEO_INPUT_FORMAT_CONTEXT  ":0.0"
+#define DEFAULT_AUDIO_INPUT_FORMAT  "pulse"
+#define DEFAULT_AUDIO_INPUT_DEVICE  "default"
+#define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
+#define DEFAULT_VIDEO_INPUT_DEVICE  ":0.0"
 
 #define VIDEO_CODEC 2 //MPEG2
 
 #else
+
+#define DEFAULT_AUDIO_INPUT_FORMAT  "pulse"
+#define DEFAULT_AUDIO_INPUT_DEVICE  "default"
+#define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
+#define DEFAULT_VIDEO_INPUT_DEVICE  ":0.0"
+
 #define VIDEO_CODEC 2 //MPEG2
 
 #endif
@@ -40,3 +52,7 @@
 AVDictionary* get_audio_options();
 AVDictionary* get_video_options();
 
+std::string get_audio_input_format();
+std::string get_audio_input_device();
+std::string get_video_input_format();
+std::string get_video_input_device();

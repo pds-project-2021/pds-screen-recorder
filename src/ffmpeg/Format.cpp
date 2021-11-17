@@ -7,17 +7,19 @@
 /* Private methods */
 
 void Format::init_audio_context() {
-	auto audio = av_find_input_format(AUDIO_INPUT_FORMAT);
+	auto audioFormat = get_audio_input_format();
+	auto audio = av_find_input_format(audioFormat.c_str());
 	input.set_audio(audio);
 
 //	auto options = get_audio_options();
-//	inputOptions.set_audio(options);
+	auto audioInputDevice = get_audio_input_device();
 	auto audioCtx = avformat_alloc_context();
-	auto ret = avformat_open_input(&audioCtx, AUDIO_INPUT_FORMAT_CONTEXT, audio, nullptr);
+	auto ret = avformat_open_input(&audioCtx, audioInputDevice.c_str(), audio, nullptr);
 	if (ret != 0) {
 		throw avException("Couldn't open audio input stream");
 	}
 	inputContext.set_audio(audioCtx);
+//	inputOptions.set_audio(options);
 
 	ret = avformat_find_stream_info(audioCtx, nullptr);
 	if (ret < 0) {
@@ -26,12 +28,14 @@ void Format::init_audio_context() {
 }
 
 void Format::init_video_context() {
-	auto video = av_find_input_format(VIDEO_INPUT_FORMAT);
+	auto videoFormat = get_video_input_format();
+	auto video = av_find_input_format(videoFormat.c_str());
 	input.set_video(video);
 
 	auto options = get_video_options();
+	auto videoDevice = get_video_input_device();
 	auto videoCtx = avformat_alloc_context();
-	auto ret = avformat_open_input(&videoCtx, VIDEO_INPUT_FORMAT_CONTEXT, video, &options);
+	auto ret = avformat_open_input(&videoCtx, videoDevice.c_str(), video, &options);
 	if (ret != 0) {
 		throw avException("Couldn't open video input stream");
 	}

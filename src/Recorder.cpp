@@ -33,7 +33,8 @@ void Recorder::init() {
 }
 
 void Recorder::print_info(){
-	av_dump_format(format.inputContext.get_video(), 0 , VIDEO_INPUT_FORMAT_CONTEXT, 0);
-	av_dump_format(format.inputContext.get_audio(), 0, AUDIO_INPUT_FORMAT_CONTEXT, 0);
+	// todo cambiare nomi device
+	av_dump_format(format.inputContext.get_video(), 0 , DEFAULT_VIDEO_INPUT_DEVICE, 0);
+	av_dump_format(format.inputContext.get_audio(), 0, DEFAULT_AUDIO_INPUT_DEVICE, 0);
 }
 

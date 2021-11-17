@@ -13,6 +13,8 @@ void print_all_wrap(){
 	wrapper<AVCodecParameters>::print_count();
 	wrapper<AVCodecContext>::print_count();
 	wrapper<AVOutputFormat>::print_count();
+	wrapper<AVDictionary>::print_count();
+
 }
 
 void prova(){

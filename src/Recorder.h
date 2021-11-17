@@ -12,6 +12,7 @@ class Recorder {
   public:
 	Format format;
 	Codec codec;
+	Dictionary options;
 
 //	wrapper<AVStream> stream;
 
@@ -22,7 +23,6 @@ class Recorder {
 	bool record_video;
 	int frame_count;
 
-	AVDictionary *options = nullptr;
 
 
 	SwsContext *swsContext = nullptr;
