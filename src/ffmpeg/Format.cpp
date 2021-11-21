@@ -6,7 +6,7 @@
 
 /* Private methods */
 
-void Format::init_audio_context() {
+void Format::source_audio_context() {
 	auto audioFormat = get_audio_input_format();
 	auto audio = av_find_input_format(audioFormat.c_str());
 	input.set_audio(audio);
@@ -27,7 +27,7 @@ void Format::init_audio_context() {
 	}
 }
 
-void Format::init_video_context() {
+void Format::source_video_context() {
 	auto videoFormat = get_video_input_format();
 	auto video = av_find_input_format(videoFormat.c_str());
 	input.set_video(video);
@@ -48,39 +48,75 @@ void Format::init_video_context() {
 	}
 }
 
-void Format::init_audio_stream_info() {
+void Format::destination_audio_context(const string &dest) {
+	auto ctx = outputContext.get_audio();
+	avformat_alloc_output_context2(&ctx, nullptr, nullptr, dest.c_str());
+	if (!ctx) {
+		throw avException("Error in allocating av format output context");
+	}
+	outputContext.set_audio(ctx); // todo vedere se si può togliere
+
+	auto fmt = av_guess_format(nullptr, dest.c_str(), nullptr);
+	if(!fmt){
+		throw avException(
+			"Error in guessing the audio format. try with correct format");
+	}
+	output.set_audio(fmt);
+
+}
+
+void Format::destination_video_context(const string& dest) {
+	auto ctx = outputContext.get_video();
+	avformat_alloc_output_context2(&ctx, nullptr, nullptr, dest.c_str());
+	if (!ctx) {
+		throw avException("Error in allocating av format output context");
+	}
+	outputContext.set_video(ctx); // todo vedere se si può togliere
+
+	auto fmt = av_guess_format(nullptr, dest.c_str(), nullptr);
+	if(!fmt){
+		throw avException(
+			"Error in guessing the video format. try with correct format");
+	}
+	output.set_video(fmt);
+}
+
+void Format::find_source_audio_stream_info() {
 	auto audio = inputContext.get_audio();
 	audioStreamIndex = av_find_best_stream(audio,AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (audioStreamIndex == -1) {
 		throw avException("Unable to find the audio stream index. (-1)");
 	}
-
 }
 
-void Format::init_video_stream_info() {
+void Format::find_source_video_stream_info() {
 	auto video = inputContext.get_video();
 	videoStreamIndex = av_find_best_stream(video, AVMEDIA_TYPE_VIDEO, -1,-1, nullptr, 0);
 	if (videoStreamIndex == -1) {
 		throw avException("Unable to find the video stream index. (-1)");
 	}
-
 }
 
 /* Public methods */
-void Format::setup() {
-	init_audio_context();
-	init_video_context();
+void Format::setup_source() {
+	source_audio_context();
+	source_video_context();
 
-	init_audio_stream_info();
-	init_video_stream_info();
+	find_source_audio_stream_info();
+	find_source_video_stream_info();
 }
 
-AVCodecParameters* Format::get_audio_codec() {
+void Format::setup_destination(const string& dest) {
+	destination_audio_context(dest);
+	destination_video_context(dest);
+}
+
+AVCodecParameters* Format::get_source_audio_codec() {
 	auto audio = inputContext.get_audio();
 	return audio->streams[audioStreamIndex]->codecpar;
 }
 
-AVCodecParameters* Format::get_video_codec() {
+AVCodecParameters* Format::get_source_video_codec() {
 	auto video = inputContext.get_video();
 	return video->streams[videoStreamIndex]->codecpar;
 }

@@ -14,7 +14,7 @@ using namespace std;
 
 template <typename T>
 class wrapper: public Tracker<wrapper<T>> {
-  private:
+  protected:
 	T* audio = nullptr;
 	T* video = nullptr;
 
@@ -22,8 +22,8 @@ class wrapper: public Tracker<wrapper<T>> {
 	wrapper();
 	~wrapper();
 
-	T* get_audio();
-	T* get_video();
+	T * get_audio() const;
+	T * get_video() const;
 
 	void set_audio(T* ptr);
 	void set_video(T* ptr);
@@ -42,7 +42,7 @@ wrapper<T>::~wrapper() = default;
  * @return a pointer to the audio instance of T
  */
 template<typename T>
-T* wrapper<T>::get_audio() {
+T * wrapper<T>::get_audio() const {
 	return audio;
 }
 
@@ -51,7 +51,7 @@ T* wrapper<T>::get_audio() {
  * @return a pointer to the video instance of T
  */
 template<typename T>
-T* wrapper<T>::get_video() {
+T * wrapper<T>::get_video() const {
 	return video;
 }
 
@@ -111,7 +111,6 @@ wrapper<AVCodecContext>::~wrapper() {
  */
 template<> inline
 wrapper<AVDictionary>::~wrapper() {
-	cout << "delete codec context" << endl;
 	if(audio != nullptr){
 		av_dict_free(&audio);
 	}
@@ -120,7 +119,6 @@ wrapper<AVDictionary>::~wrapper() {
 		av_dict_free(&video);
 	}
 }
-
 
 
 

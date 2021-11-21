@@ -10,14 +10,13 @@ using namespace std;
 
 class Recorder {
   public:
-	Format format;
 	Codec codec;
 	Dictionary options;
+	Format format;
+	Stream stream;
 
-//	wrapper<AVStream> stream;
 
-//	AVStream *videoStream = nullptr;
-//	AVStream *audioStream = nullptr;
+	//	--------------------------------
 
 
 	bool record_video;
@@ -60,6 +59,7 @@ class Recorder {
 	void write_audio_output(...);
 	bool capture_starte();
 
-	void print_info();
+	void print_source_info();
+	void print_destination_info(const string& dest);
 };
 

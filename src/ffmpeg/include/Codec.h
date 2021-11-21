@@ -6,50 +6,37 @@
 
 #include "wrapper.h"
 #include "exceptions.h"
-#include "Format.h"
 #include "platform.h"
 
 
 class Codec {
   public:
-//	AVCodec *inputCodec = nullptr;
-//	AVCodec *audioInputCodec = nullptr;
-
 	wrapper<AVCodec> input;
-
-//	AVCodec *outputCodec = nullptr;
-//	AVCodec *audioOutputCodec = nullptr;
-
-//	wrapper<AVCodec> output;
-
-
-//	AVCodecContext *inputCodecContext = nullptr;
-//	AVCodecContext *audioInputCodecContext = nullptr;
+	wrapper<AVCodec> output;
 
 	wrapper<AVCodecContext>  inputContext;
-
-//	AVCodecContext *outputCodecContext = nullptr;
-//	AVCodecContext *audioOutputCodecContext = nullptr;
-
-//	wrapper<AVCodecContext> outputContext;
-
-//	AVCodecParameters *inputCodecPar = nullptr;
-//	AVCodecParameters *audioInputCodecPar = nullptr;
+	wrapper<AVCodecContext> outputContext;
 
 	wrapper<AVCodecParameters> inputPar;
+	wrapper<AVCodecParameters> outputPar;
 
-//	AVCodecParameters *outputCodecPar = nullptr;
-//	AVCodecParameters *audioOutputCodecPar = nullptr;
-
-//	wrapper<AVCodecParameters> outputPar;
   private:
-	void init_audio_context();
-	void init_video_context();
+	void source_audio_context();
+	void source_video_context();
+	void destination_audio_context();
+	void destination_video_context();
+	void find_audio_encoder(const string& codec_name);
+	void find_video_encoder(const string& codec_name);
 
   public:
-	void set_audio_parameters(AVCodecParameters *par);
-	void set_video_parameters(AVCodecParameters *par);
-	void setup();
+	void setup_source();
+	void setup_destination();
+	void find_encoders(const string& audio_codec, const string& video_codec);
+	void set_source_audio_parameters(AVCodecParameters *par);
+	void set_source_video_parameters(AVCodecParameters *par);
+	void set_destination_audio_parameters(AVCodecParameters *par);
+	void set_destination_video_parameters(AVCodecParameters *par);
+	void set_time_base(AVRational time_base);
 };
 
 

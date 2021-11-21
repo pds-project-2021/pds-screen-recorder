@@ -16,8 +16,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <string>
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstring>
 #include <memory>
 #include <thread>
 
@@ -25,6 +25,7 @@
 #include "Codec.h"
 #include "Format.h"
 #include "Dictionary.h"
+#include "Stream.h"
 //#include "Frame.h"
 //#include "Packet.h"
 
