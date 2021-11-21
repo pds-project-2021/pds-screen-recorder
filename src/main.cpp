@@ -8,13 +8,13 @@ void print_all_wrap(){
 
 	wrapper<AVFormatContext>::print_count();
 	wrapper<AVInputFormat>::print_count();
-	wrapper<AVStream>::print_count();
 	wrapper<AVCodec>::print_count();
 	wrapper<AVCodecParameters>::print_count();
 	wrapper<AVCodecContext>::print_count();
 	wrapper<AVOutputFormat>::print_count();
 	wrapper<AVDictionary>::print_count();
-
+	Rescaler::print_count();
+	Stream::print_count();
 }
 
 void prova(){

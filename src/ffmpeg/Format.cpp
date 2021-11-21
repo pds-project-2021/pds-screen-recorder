@@ -71,6 +71,13 @@ void Format::destination_video_context(const string& dest) {
 	if (!ctx) {
 		throw avException("Error in allocating av format output context");
 	}
+
+	/* Some container formats (like MP4) require global headers to be present
+        Mark the encoder so that it behaves accordingly. */
+	if (ctx->oformat->flags & AVFMT_GLOBALHEADER) {
+		ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+	}
+
 	outputContext.set_video(ctx); // todo vedere se si può togliere
 
 	auto fmt = av_guess_format(nullptr, dest.c_str(), nullptr);
@@ -119,5 +126,15 @@ AVCodecParameters* Format::get_source_audio_codec() {
 AVCodecParameters* Format::get_source_video_codec() {
 	auto video = inputContext.get_video();
 	return video->streams[videoStreamIndex]->codecpar;
+}
+
+void Format::write_header(const Dictionary& options) {
+	/* imp: mp4 container or some advanced container file required header
+	 * information */
+	auto opt = options.get_video();
+	auto ret = avformat_write_header(outputContext.get_video(), &opt);
+	if (ret < 0) {
+		throw avException("Error in writing the header context");
+	}
 }
 

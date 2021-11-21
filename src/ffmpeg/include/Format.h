@@ -11,6 +11,7 @@
 #include "wrapper.h"
 #include "exceptions.h"
 #include "platform.h"
+#include "Dictionary.h"
 
 class Format {
   public:
@@ -42,6 +43,8 @@ class Format {
 
 	AVCodecParameters* get_source_audio_codec();
 	AVCodecParameters* get_source_video_codec();
+
+	void write_header(const Dictionary& options);
 
 };
 

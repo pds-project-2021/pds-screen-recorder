@@ -12,8 +12,8 @@ Recorder::Recorder() {
 //	avcodec_register_all(); // todo: maybe useless
 	avdevice_register_all();
 
-	record_video = false;
-	frame_count = 0;
+//	record_video = false;
+//	frame_count = 0;
 
 }
 
@@ -48,6 +48,12 @@ void Recorder::init() {
 
 	codec.setup_destination();
 
+	create_out_file(dest_path);
+	rescaler.scale_audio(codec);
+	rescaler.scale_video(codec);
+
+	format.write_header(options);
+
 	print_destination_info(dest_path);
 
 }
@@ -61,6 +67,20 @@ void Recorder::print_source_info(){
 void Recorder::print_destination_info(const string &dest) {
 	av_dump_format(format.outputContext.get_audio(), 0, dest.c_str(), 1);
 	av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
+}
+
+void Recorder::create_out_file(const string &dest) {
+	auto ctx = format.outputContext.get_video();
+
+	/* create empty video file */
+	if (!(ctx->flags & AVFMT_NOFILE)) {
+		auto ret = avio_open2(&(ctx->pb), dest.c_str(), AVIO_FLAG_WRITE,nullptr, nullptr);
+		if (ret < 0) {
+			char buf[35];
+			av_strerror(ret, buf, sizeof(buf));
+			throw avException(buf);
+		}
+	}
 }
 
 

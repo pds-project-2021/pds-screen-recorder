@@ -6,9 +6,7 @@
 
 #include "wrapper.h"
 
-class Dictionary: wrapper<AVDictionary> {
-
-};
+class Dictionary: public wrapper<AVDictionary> {};
 
 
 

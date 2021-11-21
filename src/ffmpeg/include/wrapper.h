@@ -23,10 +23,10 @@ class wrapper: public Tracker<wrapper<T>> {
 	~wrapper();
 
 	T * get_audio() const;
-	T * get_video() const;
 
 	void set_audio(T* ptr);
 	void set_video(T* ptr);
+	T * get_video() const;
 };
 
 /* General template functions */
@@ -96,7 +96,6 @@ wrapper<AVFormatContext>::~wrapper() {
  */
 template<> inline
 wrapper<AVCodecContext>::~wrapper() {
-	cout << "delete codec context" << endl;
 	if(audio != nullptr){
 		avcodec_free_context(&audio);
 	}
