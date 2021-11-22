@@ -5,7 +5,7 @@
 /.vs/recs/v16/Browse.VC.db-shm
 
 # cmake clion
-cmake-build-debug
+cmake-build-debug*
 .idea
 out
 x64

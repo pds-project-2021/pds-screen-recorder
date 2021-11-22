@@ -13,7 +13,7 @@ if (UNIX)
     link_directories(${GTK4_LIBRARY_DIRS})
     add_definitions(${GTK4_CFLAGS_OTHER})
     # ffmpeg
-    pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+    pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
             libavdevice
             libavfilter
             libavformat
@@ -71,7 +71,7 @@ add_subdirectory(src/ui)
 add_executable(${PROJECT_NAME} src/main.cpp src/Recorder.h src/Recorder.cpp src/ScreenRecorder.cpp)
 
 if(UNIX)
-    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::FFMPEG ffmpegcpp ui)
+    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV ffmpegcpp ui)
 elseif(WIN32)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES} ffmpegcpp ui)
 endif()

@@ -11,8 +11,9 @@
 #include <math.h>
 #include <string.h>
 #include <memory>
-
-#include "ffmpeg/include/exceptions.h"
+#include <atomic>
+#include <vector>
+#include <future>
 
 extern "C" {
 #include <libavutil/audio_fifo.h>
@@ -27,6 +28,9 @@ extern "C" {
 #ifdef _WIN32
 // Windows
 #include <dshow.h>
+#include <windows.h>
+#include <dshow.h>
+#pragma comment(lib, "strmiids.lib")
 extern "C" {
 #include "libavcodec/avcodec.h"
 #include "libavdevice/avdevice.h"
@@ -80,10 +84,9 @@ class ScreenRecorder {
 	//  int i, video_index;
 
 	//  -----------------------
-	AVInputFormat *inputFormat = nullptr;
-	AVInputFormat *audioInputFormat = nullptr;
-
-	AVOutputFormat *outputFormat = nullptr;
+	std::unique_ptr<AVInputFormat> inputFormat = nullptr;
+    std::unique_ptr<AVInputFormat> audioInputFormat = nullptr;
+    std::unique_ptr<AVOutputFormat> outputFormat = nullptr;
 	AVOutputFormat *audioOutputFormat = nullptr;
 
 	AVFormatContext *inputFormatContext = nullptr;
@@ -106,15 +109,12 @@ class ScreenRecorder {
 	AVCodecParameters *outputCodecPar = nullptr;
 	AVCodecParameters *audioOutputCodecPar = nullptr;
 
-	AVCodec *inputCodec = nullptr;
-	AVCodec *audioInputCodec = nullptr;
-
-	AVCodec *outputCodec = nullptr;
-	AVCodec *audioOutputCodec = nullptr;
-//--------------
-
+//	AVCodec *inputCodec = nullptr;
+//	AVCodec *audioInputCodec = nullptr;
+//	AVCodec *outputCodec = nullptr;
+//	AVCodec *audioOutputCodec = nullptr;
 	AVDictionary *options = nullptr;
-
+    AVDictionary *audioOptions = nullptr;
 	AVStream *videoStream = nullptr;
 	AVStream *audioStream = nullptr;
 
@@ -123,21 +123,45 @@ class ScreenRecorder {
 
 	std::thread *video;
 	std::thread *audio;
+    std::thread *videoDemux;
+    std::thread *videoConvert;
     std::thread *audioDemux;
     std::thread *audioConvert;
-    std::thread *audioWrite;
-	bool finishedAudioDemux;
+//    std::atomic_bool *paused;
+    std::atomic_bool *pausedVideo;
+    std::atomic_bool *pausedAudio;
+    std::atomic_bool *stopped;
+    std::atomic_bool *finishedVideoDemux;
+    std::atomic_bool *finishedAudioDemux;
+    std::mutex *vD;
+    std::mutex *aD;
+    std::mutex *vP;
+    std::mutex *aP;
+    std::mutex *wR;
+    std::condition_variable *videoCnv;
+    std::condition_variable *audioCnv;
+    std::condition_variable *videoDmx;
+    std::condition_variable *audioDmx;
+    std::condition_variable *writeFrame;
     bool finishedAudioConversion;
 	bool recordVideo;
 	const char *output_file = nullptr;
     int frameCount;
-
+    std::vector<std::string> *audio_devices;
 	double video_pts;
+    int64_t ref_time;
 
 	int out_size;
 	int codec_id;
-	void VideoDemuxing();
+	void DemuxVideoInput();
+    void ConvertVideoFrames();
+    void CaptureVideoFrames();
+    void CaptureAudioFrames();
+    void DemuxAudioInput();
+    void ConvertAudioFrames();
+    void WriteAudioOutput(AVFormatContext*, AVRational, AVRational);
 	int initThreads();
+    int CloseMediaFile();
 
   public:
 	ScreenRecorder();
@@ -146,13 +170,11 @@ class ScreenRecorder {
 	/* function to initiate communication with display library */
 	int init();
 	int init_outputfile();
-	int CloseMediaFile();
-	void CaptureVideoFrames();
-	void CaptureAudioFrames();
-    void DemuxAudioInput();
-    void ConvertAudioFrames();
-    void WriteAudioOutput(AVFormatContext*, AVRational, AVRational);
 	int CaptureStart();
+    void PauseCapture();
+    void ResumeCapture();
+    bool isPaused();
+    void close();
 
 	//  ----------------
 
