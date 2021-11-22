@@ -32,11 +32,11 @@ class Codec {
 	void setup_source();
 	void setup_destination();
 	void find_encoders(const string& audio_codec, const string& video_codec);
+
 	void set_source_audio_parameters(AVCodecParameters *par);
 	void set_source_video_parameters(AVCodecParameters *par);
 	void set_destination_audio_parameters(AVCodecParameters *par);
 	void set_destination_video_parameters(AVCodecParameters *par);
-	void set_time_base(AVRational time_base);
 };
 
 

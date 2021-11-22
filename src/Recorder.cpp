@@ -49,8 +49,8 @@ void Recorder::init() {
 	codec.setup_destination();
 
 	create_out_file(dest_path);
-	rescaler.scale_audio(codec);
-	rescaler.scale_video(codec);
+	rescaler.set_audio_scaler(codec);
+	rescaler.set_video_scaler(codec);
 
 	format.write_header(options);
 

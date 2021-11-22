@@ -18,8 +18,8 @@ class Rescaler: public Tracker<Rescaler> {
 	Rescaler();
 	~Rescaler();
 
-	void scale_video(const Codec& codec);
-	void scale_audio(const Codec& codec);
+	void set_video_scaler(const Codec& codec);
+	void set_audio_scaler(const Codec& codec);
 
 };
 

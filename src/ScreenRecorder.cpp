@@ -1,4 +1,7 @@
 #include "ScreenRecorder.h"
+#include "ffmpeg.h"
+
+
 using namespace std;
 
 #define AUDIO 1

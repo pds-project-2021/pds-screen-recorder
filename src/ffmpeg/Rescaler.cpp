@@ -2,7 +2,7 @@
 // Created by gabriele on 21/11/21.
 //
 
-#include "Rescaler.h"
+#include "include/Rescaler.h"
 
 Rescaler::Rescaler() {
 	swrCtx = swr_alloc();
@@ -17,7 +17,7 @@ Rescaler::~Rescaler() {
 	}
 }
 
-void Rescaler::scale_video(const Codec &codec) {
+void Rescaler::set_video_scaler(const Codec &codec) {
 	swsCtx = sws_getCachedContext(swsCtx, codec.inputPar.get_video()->width, codec.inputPar.get_video()->height,
 	                              (AVPixelFormat) codec.inputPar.get_video()->format, codec.outputPar.get_video()->width,
 	                              codec.outputPar.get_video()->height, (AVPixelFormat) codec.outputPar.get_video()->format,
@@ -27,7 +27,7 @@ void Rescaler::scale_video(const Codec &codec) {
 	}
 }
 
-void Rescaler::scale_audio(const Codec &codec) {
+void Rescaler::set_audio_scaler(const Codec &codec) {
 	swrCtx = swr_alloc_set_opts(
 		swrCtx, (int64_t) codec.outputContext.get_audio()->channel_layout,
 		codec.outputContext.get_audio()->sample_fmt, codec.outputContext.get_audio()->sample_rate,

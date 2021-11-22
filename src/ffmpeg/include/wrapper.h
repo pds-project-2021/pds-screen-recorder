@@ -22,11 +22,11 @@ class wrapper: public Tracker<wrapper<T>> {
 	wrapper();
 	~wrapper();
 
-	T * get_audio() const;
+	T* get_audio() const;
+	T* get_video() const;
 
 	void set_audio(T* ptr);
 	void set_video(T* ptr);
-	T * get_video() const;
 };
 
 /* General template functions */

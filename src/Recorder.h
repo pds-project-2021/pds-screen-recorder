@@ -11,8 +11,8 @@ using namespace std;
 class Recorder {
   public:
 	Codec codec;
-	Dictionary options;
 	Format format;
+	Dictionary options;
 	Stream stream;
 	Rescaler rescaler;
 
