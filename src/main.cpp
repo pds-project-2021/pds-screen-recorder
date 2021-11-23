@@ -165,6 +165,12 @@ int main(int argc, char **argv) {
     GtkApplication* app;
     int status;
     s = new ScreenRecorder();
+#ifdef WIN32
+    HWND window;
+    AllocConsole();
+    window = FindWindowA("ConsoleWindowClass", NULL);
+    ShowWindow(window,0);
+#endif
     //if (future_is_ready(foo)){
     //    return 0;
     //}
@@ -201,50 +207,4 @@ int main(int argc, char **argv) {
 }
 
 
-//int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-//            LPTSTR    lpCmdLine, int       cmdShow) {
-////      return gtk_test(argc, argv);
-////    LPMSG msg = new tagMSG;
-////    BlockInput(true);
-////    SetConsoleCtrlHandler ((PHANDLER_ROUTINE) ControlHandler, TRUE);
-//    std::future<void> foo = std::async(std::launch::async, recorder);
-//    while(!future_is_ready(foo));
-//    return 0;
-////    while (true)
-////    {
-////        if(PeekMessage(msg,NULL,0,0,PM_REMOVE))
-////        {
-////            TranslateMessage(msg);
-////            DispatchMessage(msg);
-////        }
-////        else
-////        {
-////            if(future_is_ready(foo)) {
-////                free(msg);
-////                return 0;
-////            }
-////        }
-////    }
-////    while(!future_is_ready(foo));
-////        return 0;
-////    auto s = ScreenRecorder();
-////    s.init();
-////    std::cout << "Initialized input streams" << std::endl;
-////    s.init_outputfile();
-////    std::cout << "Initialized output streams and file" << std::endl;
-////    if (s.CaptureStart() >= 0) {
-////        int millisecondsPause = 2000;
-////        int millisecondsResume = 2000;
-////        int millisecondsStop = 3000;
-////        std::cout << "Capture started" << std::endl;
-////        std::this_thread::sleep_for(std::chrono::milliseconds(millisecondsPause));
-////        s.PauseCapture();
-////        std::cout << "Capture paused after " << ((double)millisecondsPause/1000) << " seconds" << std::endl;
-////        std::this_thread::sleep_for(std::chrono::milliseconds(millisecondsResume));
-////        s.ResumeCapture();
-////        std::cout << "Capture resumed after " << ((double)millisecondsResume/1000) << " seconds \n" << std::endl;
-////        std::this_thread::sleep_for(std::chrono::milliseconds(millisecondsStop));
-////        s.CloseMediaFile();
-////        std::cout << "Capture complete after " << ((double)millisecondsStop/1000) << " seconds \n" << std::endl;
-////    }
-//}
+
