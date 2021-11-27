@@ -5,6 +5,7 @@
 #include "ScreenRecorder.h"
 
 GtkWidget *window;
+GtkWidget *selectWindow;
 GtkWidget *recordButton;
 GtkWidget *pauseButton;
 GtkWidget *stopButton;
@@ -12,9 +13,13 @@ GtkWidget *headerBar;
 GtkWidget *image;
 GtkTextBuffer *title;
 GtkGesture *leftGesture;
+GtkGesture *rightGesture;
+GtkWidget *selectionArea;
 GtkWidget *titleView;
-double *startX;
-double *startY;
+double startX = 0;
+double startY = 0;
+double endX = 0;
+double endY = 0;
 ScreenRecorder *s;
 bool ready = false;
 bool started = false;
@@ -25,10 +30,30 @@ void init_output() {
     std::cout << "Initialized output streams and file" << std::endl;
 }
 
-//Mouse click event handler function
+static void right_btn_pressed (GtkGestureClick *gesture,
+                              int                n_press,
+                              double             x,
+                              double             y,
+                              GtkWidget         *widget)
+{
+    g_print ("Left button pressed\n");
+    std::cout << "Start coordinates: " << x << ", " << y << std::endl;
+    gtk_window_close(GTK_WINDOW(selectWindow));
+}
 
-static void
-left_btn_pressed (GtkGestureClick *gesture,
+static void right_btn_released (GtkGestureClick *gesture,
+                               int              n_press,
+                               double           x,
+                               double           y,
+                               GtkWidget       *widget)
+{
+    g_print ("Right button released\n");
+    std::cout << "End coordinates: " << x << ", " << y << std::endl;
+    gtk_gesture_set_state (GTK_GESTURE (gesture),
+                           GTK_EVENT_SEQUENCE_CLAIMED);
+}
+
+static void left_btn_pressed (GtkGestureClick *gesture,
                                    int                n_press,
                                    double             x,
                                    double             y,
@@ -36,10 +61,11 @@ left_btn_pressed (GtkGestureClick *gesture,
 {
     g_print ("Left button pressed\n");
     std::cout << "Start coordinates: " << x << ", " << y << std::endl;
+    startX = x;
+    startY = y;
 }
 
-static void
-left_btn_released (GtkGestureClick *gesture,
+static void left_btn_released (GtkGestureClick *gesture,
                                     int              n_press,
                                     double           x,
                                     double           y,
@@ -47,12 +73,14 @@ left_btn_released (GtkGestureClick *gesture,
 {
     g_print ("Left button released\n");
     std::cout << "End coordinates: " << x << ", " << y << std::endl;
-
+    endX = x;
+    endY = y;
     gtk_gesture_set_state (GTK_GESTURE (gesture),
                            GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
 
+//Mouse click event handler function
 gboolean deal_mouse_press (GtkWidget * widget, GdkEvent * event, gpointer data)
 {
     auto type = gdk_event_get_event_type(event);
@@ -73,8 +101,8 @@ gboolean deal_mouse_press (GtkWidget * widget, GdkEvent * event, gpointer data)
         }
     }
     //Get the coordinate value of the click, from the left vertex of the window
-    gdk_event_get_axis(event, GDK_AXIS_X, startX);
-    gdk_event_get_axis(event, GDK_AXIS_Y, startY);
+    gdk_event_get_axis(event, GDK_AXIS_X, &startX);
+    gdk_event_get_axis(event, GDK_AXIS_Y, &startY);
     std::cout << "press_x = " << startX << ", press_y = " << startY << std::endl;
 
     return TRUE;
@@ -140,8 +168,10 @@ void stopRecording() {
 }
 
 static void record(GtkWidget *widget, gpointer data) {
-    std::future<void> foo = std::async(std::launch::async, startRecording);
+//    std::future<void> foo = std::async(std::launch::async, startRecording);
+    gtk_window_present(GTK_WINDOW(selectWindow));
 	g_print("Record button pressed\n");
+    auto h = gtk_widget_get_height(selectionArea);
 }
 
 static int _pause(GtkWidget *widget, gpointer data) {
@@ -162,8 +192,10 @@ static void close(GtkWidget *widget, gpointer data) {
 static void activate(GtkApplication *app, gpointer user_data) {
 	// GtkWidget* buttonGrid;
 	// GtkWidget* closeButton;
-
 	window = gtk_application_window_new(app);
+    selectWindow = gtk_application_window_new(app);
+    selectionArea = gtk_drawing_area_new();
+    gtk_window_fullscreen(GTK_WINDOW(selectWindow));
 	// buttonGrid = gtk_grid_new();
 	headerBar = gtk_header_bar_new();
 	image = gtk_image_new_from_file("../assets/icon_small.png");
@@ -174,6 +206,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
 	gtk_window_set_decorated(GTK_WINDOW(window), false);
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
+    gtk_window_set_resizable(GTK_WINDOW(selectWindow), false);
 	recordButton = gtk_button_new_with_label("Record");
 	pauseButton = gtk_button_new_with_label("Pause");
 	stopButton = gtk_button_new_with_label("Stop");
@@ -193,13 +226,26 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
+//    gtk_widget_set_hexpand(selectionArea, true);
+//    gtk_widget_set_vexpand(selectionArea, true);
+    gtk_window_set_child(GTK_WINDOW(selectWindow), selectionArea);
+//    gtk_widget_action_set_enabled(selectionArea, "button_press_event", true);
     leftGesture = gtk_gesture_click_new();
+    rightGesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (leftGesture), 1);
+    gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (rightGesture), 3);
+    g_signal_connect (selectionArea, "button-press-event",
+                      G_CALLBACK (deal_mouse_press), NULL);
     g_signal_connect (leftGesture, "pressed",
-                      G_CALLBACK (left_btn_pressed), window);
+                      G_CALLBACK (left_btn_pressed), selectionArea);
     g_signal_connect (leftGesture, "released",
-                      G_CALLBACK (left_btn_released), window);
-    gtk_widget_add_controller (window, GTK_EVENT_CONTROLLER (leftGesture));
+                      G_CALLBACK (left_btn_released), selectionArea);
+    g_signal_connect (rightGesture, "pressed",
+                      G_CALLBACK (right_btn_pressed), selectionArea);
+    g_signal_connect (rightGesture, "released",
+                      G_CALLBACK (right_btn_pressed), selectionArea);
+    gtk_widget_add_controller (selectionArea, GTK_EVENT_CONTROLLER (leftGesture));
+    gtk_widget_add_controller (selectionArea, GTK_EVENT_CONTROLLER (rightGesture));
 	// gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), closeButton);
 	// gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
 	// gtk_grid_insert_next_to(GTK_GRID(buttonGrid), recordButton, GTK_POS_RIGHT);
