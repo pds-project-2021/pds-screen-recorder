@@ -39,6 +39,9 @@ static void right_btn_pressed (GtkGestureClick *gesture,
     g_print ("Left button pressed\n");
     std::cout << "Start coordinates: " << x << ", " << y << std::endl;
     gtk_window_close(GTK_WINDOW(selectWindow));
+    gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+    gtk_window_present(GTK_WINDOW(window));
+    auto c = gtk_window_get_hide_on_close(GTK_WINDOW(window));
 }
 
 static void right_btn_released (GtkGestureClick *gesture,
@@ -169,6 +172,8 @@ void stopRecording() {
 
 static void record(GtkWidget *widget, gpointer data) {
 //    std::future<void> foo = std::async(std::launch::async, startRecording);
+    gtk_window_set_hide_on_close(GTK_WINDOW(window), true);
+    gtk_window_close(GTK_WINDOW(window));
     gtk_window_fullscreen(GTK_WINDOW(selectWindow));
     gtk_window_present(GTK_WINDOW(selectWindow));
 	g_print("Record button pressed\n");
@@ -187,8 +192,10 @@ static void stop(GtkWidget *widget, gpointer data) {
 }
 
 static void close(GtkWidget *widget, gpointer data) {
-	gtk_window_close(GTK_WINDOW(window));
+    gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), false);
+	gtk_window_close(GTK_WINDOW(selectWindow));
 }
+
 
 static void activate(GtkApplication *app, gpointer user_data) {
 	// GtkWidget* buttonGrid;
@@ -255,6 +262,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	// stopButton, pauseButton, GTK_POS_RIGHT, 100, 50);
 	// gtk_grid_attach_next_to(GTK_GRID(buttonGrid), closeButton, stopButton,
 	// GTK_POS_RIGHT, 100, 50);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(close), NULL);
 	gtk_window_present(GTK_WINDOW(window));
     gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), true);
 }
