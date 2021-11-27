@@ -1,9 +1,19 @@
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
 #include <iostream>
 
 #include "ScreenRecorder.h"
 
 GtkWidget *window;
+GtkWidget *recordButton;
+GtkWidget *pauseButton;
+GtkWidget *stopButton;
+GtkWidget *headerBar;
+GtkWidget *image;
+GtkTextBuffer *title;
+GtkWidget *titleView;
+double *startX;
+double *startY;
 ScreenRecorder *s;
 bool ready = false;
 bool started = false;
@@ -12,6 +22,47 @@ void init_output() {
     s->init_outputfile();
     ready = true;
     std::cout << "Initialized output streams and file" << std::endl;
+}
+
+//Mouse click event handler function
+gboolean deal_mouse_press (GtkWidget * widget, GdkEvent * event, gpointer data)
+{
+    auto type = gdk_event_get_event_type(event);
+    if (type == GDK_BUTTON_PRESS) {
+        std::cout << "Click: ";
+        switch (gdk_button_event_get_button(event)) {//Determine the type of mouse click
+            case 1:
+                std::cout << "Left Button" << std::endl;
+                break;
+            case 2:
+                std::cout << "Middle Button" << std::endl;
+                break;
+            case 3:
+                std::cout << "Right Button" << std::endl;
+                break;
+            default:
+                std::cout << "Unknown Button" << std::endl;
+        }
+    }
+    //Get the coordinate value of the click, from the left vertex of the window
+    gdk_event_get_axis(event, GDK_AXIS_X, startX);
+    gdk_event_get_axis(event, GDK_AXIS_Y, startY);
+    std::cout << "press_x = " << startX << ", press_y = " << startY << std::endl;
+
+    return TRUE;
+}
+
+//The processing function of the mouse movement event (click any button of the mouse)
+gboolean deal_motion_notify_event (GtkWidget * widget, GdkEvent * event, gpointer data)
+{
+    //Get the coordinate value of the moving mouse, from the left vertex of the window
+    double *movX;
+    double *movY;
+    gdk_event_get_axis(event, GDK_AXIS_X, movX);
+    gdk_event_get_axis(event, GDK_AXIS_Y, movY);
+    std::cout << "mov_x = " << movX << ", mov_y = " << movY << std::endl;
+
+    return TRUE;
 }
 
 void recorder() {
@@ -82,14 +133,7 @@ static void close(GtkWidget *widget, gpointer data) {
 
 static void activate(GtkApplication *app, gpointer user_data) {
 	// GtkWidget* buttonGrid;
-	GtkWidget *recordButton;
-	GtkWidget *pauseButton;
-	GtkWidget *stopButton;
 	// GtkWidget* closeButton;
-	GtkWidget *headerBar;
-	GtkWidget *image;
-	GtkTextBuffer *title;
-	GtkWidget *titleView;
 
 	window = gtk_application_window_new(app);
 	// buttonGrid = gtk_grid_new();
@@ -106,9 +150,9 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	pauseButton = gtk_button_new_with_label("Pause");
 	stopButton = gtk_button_new_with_label("Stop");
 	// closeButton = gtk_button_new_with_label("Close");
-	g_signal_connect(recordButton, "clicked", G_CALLBACK(record), nullptr);
-	g_signal_connect(pauseButton, "clicked", G_CALLBACK(_pause), nullptr);
-	g_signal_connect(stopButton, "clicked", G_CALLBACK(stop), nullptr);
+	auto rec = g_signal_connect(recordButton, "clicked", G_CALLBACK(record), nullptr);
+	auto p = g_signal_connect(pauseButton, "clicked", G_CALLBACK(_pause), nullptr);
+	auto s = g_signal_connect(stopButton, "clicked", G_CALLBACK(stop), nullptr);
 	// g_signal_connect(closeButton, "clicked", G_CALLBACK(close), NULL);
 	// gtk_window_set_child(GTK_WINDOW(window), buttonGrid);
 	gtk_window_set_child(GTK_WINDOW(window), headerBar);
@@ -166,10 +210,10 @@ int main(int argc, char **argv) {
     int status;
     s = new ScreenRecorder();
 #ifdef WIN32
-    HWND window;
+    HWND Window;
     AllocConsole();
-    window = FindWindowA("ConsoleWindowClass", NULL);
-    ShowWindow(window,0);
+    Window = FindWindowA("ConsoleWindowClass", NULL);
+    ShowWindow(Window,0);
 #endif
     //if (future_is_ready(foo)){
     //    return 0;
