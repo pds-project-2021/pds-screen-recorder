@@ -35,7 +35,6 @@ elseif (WIN32)
             "${VCPKG_INCLUDE_PATH}/include/cairo"
             "${VCPKG_INCLUDE_PATH}/include/pango-1.0"
             "${VCPKG_INCLUDE_PATH}/include/harfbuzz"
-            "${VCPKG_INCLUDE_PATH}/include/pango-1.0"
             "${VCPKG_INCLUDE_PATH}/include/fribidi"
             "${VCPKG_INCLUDE_PATH}/include/harfbuzz"
             "${VCPKG_INCLUDE_PATH}/include/gdk-pixbuf-2.0"
@@ -48,6 +47,7 @@ elseif (WIN32)
             "${VCPKG_INCLUDE_PATH}/lib/glib-2.0/include"
             "${VCPKG_INCLUDE_PATH}/lib/graphene-1.0/include")
     set(GTK4_LIBRARIES "gtk-4"
+            "cairo"
             "pangocairo-1.0"
             "pango-1.0"
             "harfbuzz"

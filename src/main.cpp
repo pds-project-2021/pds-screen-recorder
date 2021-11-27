@@ -1,5 +1,4 @@
 #include <gtk/gtk.h>
-#include <gdk/gdk.h>
 #include <iostream>
 
 #include "ScreenRecorder.h"
@@ -15,6 +14,7 @@ GtkTextBuffer *title;
 GtkGesture *leftGesture;
 GtkGesture *rightGesture;
 GtkWidget *selectionArea;
+cairo_surface_t *surface;
 GtkWidget *titleView;
 double startX = 0;
 double startY = 0;
@@ -30,11 +30,8 @@ void init_output() {
     std::cout << "Initialized output streams and file" << std::endl;
 }
 
-static void right_btn_pressed (GtkGestureClick *gesture,
-                              int                n_press,
-                              double             x,
-                              double             y,
-                              GtkWidget         *widget)
+static void right_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
+                               double y, GtkWidget *widget)
 {
     g_print ("Left button pressed\n");
     std::cout << "Start coordinates: " << x << ", " << y << std::endl;
@@ -44,11 +41,8 @@ static void right_btn_pressed (GtkGestureClick *gesture,
     auto c = gtk_window_get_hide_on_close(GTK_WINDOW(window));
 }
 
-static void right_btn_released (GtkGestureClick *gesture,
-                               int              n_press,
-                               double           x,
-                               double           y,
-                               GtkWidget       *widget)
+static void right_btn_released (GtkGestureClick *gesture, int n_press, double x,
+                                double y, GtkWidget *widget)
 {
     g_print ("Right button released\n");
     std::cout << "End coordinates: " << x << ", " << y << std::endl;
@@ -56,11 +50,8 @@ static void right_btn_released (GtkGestureClick *gesture,
                            GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
-static void left_btn_pressed (GtkGestureClick *gesture,
-                                   int                n_press,
-                                   double             x,
-                                   double             y,
-                                   GtkWidget         *widget)
+static void left_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
+                              double y, GtkWidget *widget)
 {
     g_print ("Left button pressed\n");
     std::cout << "Start coordinates: " << x << ", " << y << std::endl;
@@ -68,11 +59,8 @@ static void left_btn_pressed (GtkGestureClick *gesture,
     startY = y;
 }
 
-static void left_btn_released (GtkGestureClick *gesture,
-                                    int              n_press,
-                                    double           x,
-                                    double           y,
-                                    GtkWidget       *widget)
+static void left_btn_released (GtkGestureClick *gesture, int n_press, double x,
+                               double y, GtkWidget *widget)
 {
     g_print ("Left button released\n");
     std::cout << "End coordinates: " << x << ", " << y << std::endl;
@@ -122,6 +110,20 @@ gboolean deal_motion_notify_event (GtkWidget * widget, GdkEvent * event, gpointe
     std::cout << "mov_x = " << movX << ", mov_y = " << movY << std::endl;
 
     return TRUE;
+}
+
+static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width,
+                 int height, gpointer data)
+{
+    cairo_set_line_width(cr, 1.0);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_move_to(cr, startX, startY);
+    cairo_line_to(cr, endX, startY);
+    cairo_line_to(cr, endX, endY);
+    cairo_line_to(cr, startX, endY);
+    cairo_line_to(cr, startX, startY);
+    cairo_stroke(cr);
+//    cairo_paint(cr);
 }
 
 void recorder() {
@@ -263,8 +265,10 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	// gtk_grid_attach_next_to(GTK_GRID(buttonGrid), closeButton, stopButton,
 	// GTK_POS_RIGHT, 100, 50);
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(close), NULL);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(selectionArea), draw, NULL, NULL);
 	gtk_window_present(GTK_WINDOW(window));
     gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), true);
+    gtk_widget_set_opacity(selectWindow, 0.70);
 }
 
 int gtk_test(int argc, char **argv) {
