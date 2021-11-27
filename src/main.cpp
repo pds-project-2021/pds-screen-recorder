@@ -11,6 +11,7 @@ GtkWidget *stopButton;
 GtkWidget *headerBar;
 GtkWidget *image;
 GtkTextBuffer *title;
+GtkGesture *leftGesture;
 GtkWidget *titleView;
 double *startX;
 double *startY;
@@ -25,6 +26,31 @@ void init_output() {
 }
 
 //Mouse click event handler function
+
+static void
+left_btn_pressed (GtkGestureClick *gesture,
+                                   int                n_press,
+                                   double             x,
+                                   double             y,
+                                   GtkWidget         *widget)
+{
+    g_print ("Left button pressed\n");
+}
+
+static void
+left_btn_released (GtkGestureClick *gesture,
+                                    int              n_press,
+                                    double           x,
+                                    double           y,
+                                    GtkWidget       *widget)
+{
+    g_print ("Left button released\n");
+
+    gtk_gesture_set_state (GTK_GESTURE (gesture),
+                           GTK_EVENT_SEQUENCE_CLAIMED);
+}
+
+
 gboolean deal_mouse_press (GtkWidget * widget, GdkEvent * event, gpointer data)
 {
     auto type = gdk_event_get_event_type(event);
@@ -165,6 +191,13 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
+    leftGesture = gtk_gesture_click_new();
+    gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (leftGesture), 1);
+    g_signal_connect (leftGesture, "pressed",
+                      G_CALLBACK (left_btn_pressed), window);
+    g_signal_connect (leftGesture, "released",
+                      G_CALLBACK (left_btn_released), window);
+    gtk_widget_add_controller (window, GTK_EVENT_CONTROLLER (leftGesture));
 	// gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), closeButton);
 	// gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
 	// gtk_grid_insert_next_to(GTK_GRID(buttonGrid), recordButton, GTK_POS_RIGHT);
