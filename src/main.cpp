@@ -35,6 +35,7 @@ left_btn_pressed (GtkGestureClick *gesture,
                                    GtkWidget         *widget)
 {
     g_print ("Left button pressed\n");
+    std::cout << "Start coordinates: " << x << ", " << y << std::endl;
 }
 
 static void
@@ -45,6 +46,7 @@ left_btn_released (GtkGestureClick *gesture,
                                     GtkWidget       *widget)
 {
     g_print ("Left button released\n");
+    std::cout << "End coordinates: " << x << ", " << y << std::endl;
 
     gtk_gesture_set_state (GTK_GESTURE (gesture),
                            GTK_EVENT_SEQUENCE_CLAIMED);
