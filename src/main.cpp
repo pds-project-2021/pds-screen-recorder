@@ -169,6 +169,7 @@ void stopRecording() {
 
 static void record(GtkWidget *widget, gpointer data) {
 //    std::future<void> foo = std::async(std::launch::async, startRecording);
+    gtk_window_fullscreen(GTK_WINDOW(selectWindow));
     gtk_window_present(GTK_WINDOW(selectWindow));
 	g_print("Record button pressed\n");
     auto h = gtk_widget_get_height(selectionArea);
@@ -195,7 +196,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	window = gtk_application_window_new(app);
     selectWindow = gtk_application_window_new(app);
     selectionArea = gtk_drawing_area_new();
-    gtk_window_fullscreen(GTK_WINDOW(selectWindow));
+//    gtk_window_fullscreen(GTK_WINDOW(selectWindow));
 	// buttonGrid = gtk_grid_new();
 	headerBar = gtk_header_bar_new();
 	image = gtk_image_new_from_file("../assets/icon_small.png");
@@ -234,8 +235,8 @@ static void activate(GtkApplication *app, gpointer user_data) {
     rightGesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (leftGesture), 1);
     gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (rightGesture), 3);
-    g_signal_connect (selectionArea, "button-press-event",
-                      G_CALLBACK (deal_mouse_press), NULL);
+//    g_signal_connect (selectWindow, "button-press-event",
+//                      G_CALLBACK (deal_mouse_press), NULL);
     g_signal_connect (leftGesture, "pressed",
                       G_CALLBACK (left_btn_pressed), selectionArea);
     g_signal_connect (leftGesture, "released",
@@ -255,6 +256,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	// gtk_grid_attach_next_to(GTK_GRID(buttonGrid), closeButton, stopButton,
 	// GTK_POS_RIGHT, 100, 50);
 	gtk_window_present(GTK_WINDOW(window));
+    gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), true);
 }
 
 int gtk_test(int argc, char **argv) {
