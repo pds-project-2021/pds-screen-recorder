@@ -14,7 +14,7 @@ GtkTextBuffer *title;
 GtkGesture *leftGesture;
 GtkGesture *rightGesture;
 GtkWidget *selectionArea;
-cairo_surface_t *surface;
+cairo_surface_t *surface = nullptr;
 GtkWidget *titleView;
 double startX = 0;
 double startY = 0;
@@ -23,6 +23,126 @@ double endY = 0;
 ScreenRecorder *s;
 bool ready = false;
 bool started = false;
+
+static void
+clear_surface (void)
+{
+    cairo_t *cr;
+
+    cr = cairo_create (surface);
+
+    cairo_set_source_rgb (cr, 1, 1, 1);
+    cairo_paint (cr);
+
+    cairo_destroy (cr);
+}
+
+/* Create a new surface of the appropriate size to store our scribbles */
+static gboolean configure_event_cb (GtkWidget         *widget,
+                    GdkEvent *event,
+                    gpointer           data)
+{
+    if (surface)
+        cairo_surface_destroy (surface);
+    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (widget), gtk_widget_get_allocated_height (widget));
+
+    /* Initialize the surface to white */
+    clear_surface ();
+
+    /* We've handled the configure event, no need for further processing. */
+    return TRUE;
+}
+
+/* Redraw the screen from the surface. Note that the ::draw
+ * signal receives a ready-to-be-used cairo_t that is already
+ * clipped to only draw the exposed areas of the widget
+ */
+static gboolean draw_cb (GtkWidget *widget,
+         cairo_t   *cr,
+         gpointer   data)
+{
+    cairo_set_source_surface (cr, surface, 0, 0);
+    cairo_paint (cr);
+
+    return FALSE;
+}
+
+
+
+//Mouse click event handler function
+//gboolean deal_mouse_press (GtkWidget * widget, GdkEvent * event, gpointer data)
+//{
+//    auto type = gdk_event_get_event_type(event);
+//    if (type == GDK_BUTTON_PRESS) {
+//        std::cout << "Click: ";
+//        switch (gdk_button_event_get_button(event)) {//Determine the type of mouse click
+//            case 1:
+//                std::cout << "Left Button" << std::endl;
+//                break;
+//            case 2:
+//                std::cout << "Middle Button" << std::endl;
+//                break;
+//            case 3:
+//                std::cout << "Right Button" << std::endl;
+//                break;
+//            default:
+//                std::cout << "Unknown Button" << std::endl;
+//        }
+//    }
+//    //Get the coordinate value of the click, from the left vertex of the window
+//    gdk_event_get_axis(event, GDK_AXIS_X, &startX);
+//    gdk_event_get_axis(event, GDK_AXIS_Y, &startY);
+//    std::cout << "press_x = " << startX << ", press_y = " << startY << std::endl;
+//
+//    return TRUE;
+//}
+
+////The processing function of the mouse movement event (click any button of the mouse)
+//gboolean deal_motion_notify_event (GtkWidget * widget, GdkEvent * event, gpointer data)
+//{
+//    //Get the coordinate value of the moving mouse, from the left vertex of the window
+//    double *movX;
+//    double *movY;
+//    gdk_event_get_axis(event, GDK_AXIS_X, movX);
+//    gdk_event_get_axis(event, GDK_AXIS_Y, movY);
+//    std::cout << "mov_x = " << movX << ", mov_y = " << movY << std::endl;
+//
+//    return TRUE;
+//}
+
+static void draw_rect (cairo_t *cr)
+{
+    if(startX > endX) {
+        if(startY > endY) cairo_rectangle (cr, startX, startY, endX - startX, endY - startY);     /* set rectangle */
+        else cairo_rectangle (cr, startX, endY, endX - startX, startY - endY);
+    }
+    else {
+        if(startY > endY) cairo_rectangle (cr, endX, startY, startX - endX, endY - startY);     /* set rectangle */
+        else cairo_rectangle (cr, endX, endY, startX - endX, startY - endY);
+    }
+//    cairo_rectangle (cr, 10, 10, 180, 180);
+    cairo_set_source_rgb (cr, 0.3, 0.4, 0.6);   /* set fill color */
+    cairo_fill (cr);                            /* fill rectangle */
+}
+
+static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width,
+                 int height, gpointer data)
+{
+//    draw_rect (cr);     /* draw rectangle in window */
+
+    cairo_set_source_surface (cr, surface, 0, 0);
+    cairo_paint (cr);
+
+//    cairo_set_line_width(cr, 1.0);
+//    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+//    cairo_move_to(cr, startX, startY);
+//    cairo_line_to(cr, endX, startY);
+//    cairo_line_to(cr, endX, endY);
+//    cairo_line_to(cr, startX, endY);
+//    cairo_line_to(cr, startX, startY);
+//    cairo_stroke(cr);
+//    cairo_paint(cr);
+}
 
 void init_output() {
     s->init_outputfile();
@@ -57,6 +177,12 @@ static void left_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
     std::cout << "Start coordinates: " << x << ", " << y << std::endl;
     startX = x;
     startY = y;
+    if (surface)
+        cairo_surface_destroy (surface);
+    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (widget), gtk_widget_get_allocated_height (widget));
+
+    /* Initialize the surface to white */
+//    clear_surface ();
 }
 
 static void left_btn_released (GtkGestureClick *gesture, int n_press, double x,
@@ -68,63 +194,10 @@ static void left_btn_released (GtkGestureClick *gesture, int n_press, double x,
     endY = y;
     gtk_gesture_set_state (GTK_GESTURE (gesture),
                            GTK_EVENT_SEQUENCE_CLAIMED);
+    draw_rect(cairo_create (surface));
+    gtk_widget_queue_draw(GTK_WIDGET(selectionArea));
 }
 
-
-//Mouse click event handler function
-gboolean deal_mouse_press (GtkWidget * widget, GdkEvent * event, gpointer data)
-{
-    auto type = gdk_event_get_event_type(event);
-    if (type == GDK_BUTTON_PRESS) {
-        std::cout << "Click: ";
-        switch (gdk_button_event_get_button(event)) {//Determine the type of mouse click
-            case 1:
-                std::cout << "Left Button" << std::endl;
-                break;
-            case 2:
-                std::cout << "Middle Button" << std::endl;
-                break;
-            case 3:
-                std::cout << "Right Button" << std::endl;
-                break;
-            default:
-                std::cout << "Unknown Button" << std::endl;
-        }
-    }
-    //Get the coordinate value of the click, from the left vertex of the window
-    gdk_event_get_axis(event, GDK_AXIS_X, &startX);
-    gdk_event_get_axis(event, GDK_AXIS_Y, &startY);
-    std::cout << "press_x = " << startX << ", press_y = " << startY << std::endl;
-
-    return TRUE;
-}
-
-//The processing function of the mouse movement event (click any button of the mouse)
-gboolean deal_motion_notify_event (GtkWidget * widget, GdkEvent * event, gpointer data)
-{
-    //Get the coordinate value of the moving mouse, from the left vertex of the window
-    double *movX;
-    double *movY;
-    gdk_event_get_axis(event, GDK_AXIS_X, movX);
-    gdk_event_get_axis(event, GDK_AXIS_Y, movY);
-    std::cout << "mov_x = " << movX << ", mov_y = " << movY << std::endl;
-
-    return TRUE;
-}
-
-static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width,
-                 int height, gpointer data)
-{
-    cairo_set_line_width(cr, 1.0);
-    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-    cairo_move_to(cr, startX, startY);
-    cairo_line_to(cr, endX, startY);
-    cairo_line_to(cr, endX, endY);
-    cairo_line_to(cr, startX, endY);
-    cairo_line_to(cr, startX, startY);
-    cairo_stroke(cr);
-//    cairo_paint(cr);
-}
 
 void recorder() {
     s->init();
@@ -265,7 +338,14 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	// gtk_grid_attach_next_to(GTK_GRID(buttonGrid), closeButton, stopButton,
 	// GTK_POS_RIGHT, 100, 50);
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(close), NULL);
+//    if (surface)
+//        cairo_surface_destroy (surface);
+//    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
+    /* Initialize the surface to white */
+//    clear_surface ();
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(selectionArea), draw, NULL, NULL);
+//    g_signal_connect (G_OBJECT(selectionArea), "draw",
+//                      G_CALLBACK(on_draw_event), NULL);
 	gtk_window_present(GTK_WINDOW(window));
     gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), true);
     gtk_widget_set_opacity(selectWindow, 0.70);
