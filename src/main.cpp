@@ -1,7 +1,8 @@
 #include <gtk/gtk.h>
 #include <iostream>
-
+#include <thread>
 #include "ScreenRecorder.h"
+using namespace std;
 
 GtkWidget *window;
 GtkWidget *selectWindow;
@@ -13,6 +14,8 @@ GtkWidget *image;
 GtkTextBuffer *title;
 GtkGesture *leftGesture;
 GtkGesture *rightGesture;
+GtkGesture *moveGesture;
+GtkEventController *motionController;
 GtkWidget *selectionArea;
 cairo_surface_t *surface = nullptr;
 GtkWidget *titleView;
@@ -31,7 +34,7 @@ clear_surface (void)
 
     cr = cairo_create (surface);
 
-    cairo_set_source_rgb (cr, 1, 1, 1);
+    cairo_set_source_rgb (cr, 0, 0, 0);
     cairo_paint (cr);
 
     cairo_destroy (cr);
@@ -97,7 +100,7 @@ static gboolean draw_cb (GtkWidget *widget,
 //    return TRUE;
 //}
 
-////The processing function of the mouse movement event (click any button of the mouse)
+//The processing function of the mouse movement event (click any button of the mouse)
 //gboolean deal_motion_notify_event (GtkWidget * widget, GdkEvent * event, gpointer data)
 //{
 //    //Get the coordinate value of the moving mouse, from the left vertex of the window
@@ -112,6 +115,7 @@ static gboolean draw_cb (GtkWidget *widget,
 
 static void draw_rect (cairo_t *cr)
 {
+//    cairo_set_source_rgb (cr, 1, 1, 1);
     if(startX > endX) {
         if(startY > endY) cairo_rectangle (cr, startX, startY, endX - startX, endY - startY);     /* set rectangle */
         else cairo_rectangle (cr, startX, endY, endX - startX, startY - endY);
@@ -123,6 +127,7 @@ static void draw_rect (cairo_t *cr)
 //    cairo_rectangle (cr, 10, 10, 180, 180);
     cairo_set_source_rgb (cr, 0.3, 0.4, 0.6);   /* set fill color */
     cairo_fill (cr);                            /* fill rectangle */
+    cairo_destroy (cr);
 }
 
 static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width,
@@ -170,6 +175,16 @@ static void right_btn_released (GtkGestureClick *gesture, int n_press, double x,
                            GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
+//void refresh() {
+//    while(gtk_widget_is_visible(GTK_WIDGET(selectWindow))){
+////        if (surface)
+////            cairo_surface_destroy (surface);
+////        surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
+////        draw_rect(cairo_create (surface));
+//        gtk_widget_queue_draw(GTK_WIDGET(selectionArea));
+//        this_thread::sleep_for(chrono::milliseconds(16));
+//    };
+//}
 static void left_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
                               double y, GtkWidget *widget)
 {
@@ -177,10 +192,11 @@ static void left_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
     std::cout << "Start coordinates: " << x << ", " << y << std::endl;
     startX = x;
     startY = y;
+    endX = x;
+    endY = y;
     if (surface)
         cairo_surface_destroy (surface);
-    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (widget), gtk_widget_get_allocated_height (widget));
-
+    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
     /* Initialize the surface to white */
 //    clear_surface ();
 }
@@ -198,6 +214,12 @@ static void left_btn_released (GtkGestureClick *gesture, int n_press, double x,
     gtk_widget_queue_draw(GTK_WIDGET(selectionArea));
 }
 
+static void drag (GtkGestureDrag *gesture, double offset_x,
+                  double offset_y, gpointer user_data)
+{
+    cairo_surface_flush(surface);
+    gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+}
 
 void recorder() {
     s->init();
@@ -315,10 +337,14 @@ static void activate(GtkApplication *app, gpointer user_data) {
 //    gtk_widget_action_set_enabled(selectionArea, "button_press_event", true);
     leftGesture = gtk_gesture_click_new();
     rightGesture = gtk_gesture_click_new();
+    moveGesture = gtk_gesture_drag_new();
     gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (leftGesture), 1);
     gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (rightGesture), 3);
+    motionController = gtk_event_controller_motion_new();
 //    g_signal_connect (selectWindow, "button-press-event",
 //                      G_CALLBACK (deal_mouse_press), NULL);
+    g_signal_connect (moveGesture, "update",
+                      G_CALLBACK (left_btn_pressed), selectionArea);
     g_signal_connect (leftGesture, "pressed",
                       G_CALLBACK (left_btn_pressed), selectionArea);
     g_signal_connect (leftGesture, "released",
@@ -326,9 +352,10 @@ static void activate(GtkApplication *app, gpointer user_data) {
     g_signal_connect (rightGesture, "pressed",
                       G_CALLBACK (right_btn_pressed), selectionArea);
     g_signal_connect (rightGesture, "released",
-                      G_CALLBACK (right_btn_pressed), selectionArea);
+                      G_CALLBACK (right_btn_released), selectionArea);
     gtk_widget_add_controller (selectionArea, GTK_EVENT_CONTROLLER (leftGesture));
     gtk_widget_add_controller (selectionArea, GTK_EVENT_CONTROLLER (rightGesture));
+//    gtk_widget_add_controller (selectionArea, GTK_EVENT_CONTROLLER (moveGesture));
 	// gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), closeButton);
 	// gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
 	// gtk_grid_insert_next_to(GTK_GRID(buttonGrid), recordButton, GTK_POS_RIGHT);
@@ -343,6 +370,8 @@ static void activate(GtkApplication *app, gpointer user_data) {
 //    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
     /* Initialize the surface to white */
 //    clear_surface ();
+//    g_signal_connect (selectWindow, "motion-notify-event",
+//                      G_CALLBACK (deal_motion_notify_event), NULL);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(selectionArea), draw, NULL, NULL);
 //    g_signal_connect (G_OBJECT(selectionArea), "draw",
 //                      G_CALLBACK(on_draw_event), NULL);
@@ -417,12 +446,12 @@ int main(int argc, char **argv) {
 //    std::cout << "Initialized input streams" << std::endl;
 //    s.init_outputfile();
 //    std::cout << "Initialized output streams and file" << std::endl;
-    app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect(app, "activate", G_CALLBACK(activate), nullptr);
-    status = g_application_run(G_APPLICATION(app), argc, argv);
-    g_object_unref(app);
+app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
+g_signal_connect(app, "activate", G_CALLBACK(activate), nullptr);
+status = g_application_run(G_APPLICATION(app), argc, argv);
+g_object_unref(app);
 
-    return status;
+return status;
 }
 
 
