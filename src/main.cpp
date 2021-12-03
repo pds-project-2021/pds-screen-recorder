@@ -62,58 +62,7 @@ static gboolean configure_event_cb (GtkWidget         *widget,
  * signal receives a ready-to-be-used cairo_t that is already
  * clipped to only draw the exposed areas of the widget
  */
-static gboolean draw_cb (GtkWidget *widget,
-         cairo_t   *cr,
-         gpointer   data)
-{
-    cairo_set_source_surface (cr, surface, 0, 0);
-    cairo_paint (cr);
 
-    return FALSE;
-}
-
-
-
-//Mouse click event handler function
-//gboolean deal_mouse_press (GtkWidget * widget, GdkEvent * event, gpointer data)
-//{
-//    auto type = gdk_event_get_event_type(event);
-//    if (type == GDK_BUTTON_PRESS) {
-//        std::cout << "Click: ";
-//        switch (gdk_button_event_get_button(event)) {//Determine the type of mouse click
-//            case 1:
-//                std::cout << "Left Button" << std::endl;
-//                break;
-//            case 2:
-//                std::cout << "Middle Button" << std::endl;
-//                break;
-//            case 3:
-//                std::cout << "Right Button" << std::endl;
-//                break;
-//            default:
-//                std::cout << "Unknown Button" << std::endl;
-//        }
-//    }
-//    //Get the coordinate value of the click, from the left vertex of the window
-//    gdk_event_get_axis(event, GDK_AXIS_X, &startX);
-//    gdk_event_get_axis(event, GDK_AXIS_Y, &startY);
-//    std::cout << "press_x = " << startX << ", press_y = " << startY << std::endl;
-//
-//    return TRUE;
-//}
-
-//The processing function of the mouse movement event (click any button of the mouse)
-//gboolean deal_motion_notify_event (GtkWidget * widget, GdkEvent * event, gpointer data)
-//{
-//    //Get the coordinate value of the moving mouse, from the left vertex of the window
-//    double *movX;
-//    double *movY;
-//    gdk_event_get_axis(event, GDK_AXIS_X, movX);
-//    gdk_event_get_axis(event, GDK_AXIS_Y, movY);
-//    std::cout << "mov_x = " << movX << ", mov_y = " << movY << std::endl;
-//
-//    return TRUE;
-//}
 
 static void draw_rect (cairo_t *cr)
 {
@@ -135,20 +84,8 @@ static void draw_rect (cairo_t *cr)
 static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width,
                  int height, gpointer data)
 {
-//    draw_rect (cr);     /* draw rectangle in window */
-
     cairo_set_source_surface (cr, surface, 0, 0);
     cairo_paint (cr);
-
-//    cairo_set_line_width(cr, 1.0);
-//    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-//    cairo_move_to(cr, startX, startY);
-//    cairo_line_to(cr, endX, startY);
-//    cairo_line_to(cr, endX, endY);
-//    cairo_line_to(cr, startX, endY);
-//    cairo_line_to(cr, startX, startY);
-//    cairo_stroke(cr);
-//    cairo_paint(cr);
 }
 
 void init_output() {
@@ -180,6 +117,7 @@ static void right_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
     std::cout << "Start coordinates: " << x << ", " << y << std::endl;
     gtk_window_close(GTK_WINDOW(selectWindow));
     if (surface) cairo_surface_destroy (surface);
+//    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
     gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
     gtk_window_present(GTK_WINDOW(window));
 
@@ -214,11 +152,9 @@ static void left_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
     startY = y;
     endX = x;
     endY = y;
-    if (surface) cairo_surface_destroy (surface);
+//    if (surface) cairo_surface_destroy (surface);
     surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
     selection_enabled = true;
-    /* Initialize the surface to white */
-//    clear_surface ();
 }
 
 static void left_btn_released (GtkGestureClick *gesture, int n_press, double x,
