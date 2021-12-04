@@ -160,7 +160,7 @@ class ScreenRecorder {
 	~ScreenRecorder();
 
 	/* function to initiate communication with display library */
-	int init();
+	int init(int, int, int, int);
 	int init_outputfile();
 	int CaptureStart();
     void PauseCapture();

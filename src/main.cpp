@@ -7,7 +7,9 @@ using namespace std;
 
 GtkWidget *window;
 GtkWidget *selectWindow;
+GtkWidget *recordWindow;
 GtkWidget *recordButton;
+GtkWidget *startRecordButton;
 GtkWidget *pauseButton;
 GtkWidget *stopButton;
 GtkWidget *headerBar;
@@ -19,15 +21,18 @@ GtkGesture *rightGesture;
 GtkGesture *moveGesture;
 GtkEventController *motionController;
 GtkWidget *selectionArea;
+GtkCssProvider *cssProvider;
+GtkStyleContext *context;
 cairo_surface_t *surface = nullptr;
+cairo_surface_t *background;
 GtkWidget *titleView;
 double startX = 0;
 double startY = 0;
 double endX = 0;
 double endY = 0;
 ScreenRecorder *s;
-bool ready = false;
-bool started = false;
+atomic_bool ready;
+atomic_bool started;
 
 static void
 clear_surface (void)
@@ -42,27 +47,116 @@ clear_surface (void)
     cairo_destroy (cr);
 }
 
-/* Create a new surface of the appropriate size to store our scribbles */
-static gboolean configure_event_cb (GtkWidget         *widget,
-                    GdkEvent *event,
-                    gpointer           data)
-{
-    if (surface)
-        cairo_surface_destroy (surface);
-    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (widget), gtk_widget_get_allocated_height (widget));
-
-    /* Initialize the surface to white */
-    clear_surface ();
-
-    /* We've handled the configure event, no need for further processing. */
-    return TRUE;
-}
-
 /* Redraw the screen from the surface. Note that the ::draw
  * signal receives a ready-to-be-used cairo_t that is already
  * clipped to only draw the exposed areas of the widget
  */
 
+//#ifdef WIN32
+//BOOL SaveToFile(HBITMAP hBitmap3, LPCTSTR lpszFileName)
+//{
+//    HDC hDC;
+//    int iBits;
+//    WORD wBitCount;
+//    DWORD dwPaletteSize=0, dwBmBitsSize=0, dwDIBSize=0, dwWritten=0;
+//    BITMAP Bitmap0;
+//    BITMAPFILEHEADER bmfHdr;
+//    BITMAPINFOHEADER bi;
+//    LPBITMAPINFOHEADER lpbi;
+//    HANDLE fh, hDib, hPal,hOldPal2=NULL;
+//    hDC = CreateDC("DISPLAY", NULL, NULL, NULL);
+//    iBits = GetDeviceCaps(hDC, BITSPIXEL) * GetDeviceCaps(hDC, PLANES);
+//    DeleteDC(hDC);
+//    if (iBits <= 1)
+//        wBitCount = 1;
+//    else if (iBits <= 4)
+//        wBitCount = 4;
+//    else if (iBits <= 8)
+//        wBitCount = 8;
+//    else
+//        wBitCount = 24;
+//    GetObject(hBitmap3, sizeof(Bitmap0), (LPSTR)&Bitmap0);
+//    bi.biSize = sizeof(BITMAPINFOHEADER);
+//    bi.biWidth = Bitmap0.bmWidth;
+//    bi.biHeight =-Bitmap0.bmHeight;
+//    bi.biPlanes = 1;
+//    bi.biBitCount = wBitCount;
+//    bi.biCompression = BI_RGB;
+//    bi.biSizeImage = 0;
+//    bi.biXPelsPerMeter = 0;
+//    bi.biYPelsPerMeter = 0;
+//    bi.biClrImportant = 0;
+//    bi.biClrUsed = 256;
+//    dwBmBitsSize = ((Bitmap0.bmWidth * wBitCount +31) & ~31) /8
+//                   * Bitmap0.bmHeight;
+//    hDib = GlobalAlloc(GHND,dwBmBitsSize + dwPaletteSize + sizeof(BITMAPINFOHEADER));
+//    lpbi = (LPBITMAPINFOHEADER)GlobalLock(hDib);
+//    *lpbi = bi;
+//
+//    hPal = GetStockObject(DEFAULT_PALETTE);
+//    if (hPal)
+//    {
+//        hDC = GetDC(NULL);
+//        hOldPal2 = SelectPalette(hDC, (HPALETTE)hPal, FALSE);
+//        RealizePalette(hDC);
+//    }
+//
+//
+//    GetDIBits(hDC, hBitmap3, 0, (UINT) Bitmap0.bmHeight, (LPSTR)lpbi + sizeof(BITMAPINFOHEADER)
+//                                                         +dwPaletteSize, (BITMAPINFO *)lpbi, DIB_RGB_COLORS);
+//
+//    if (hOldPal2)
+//    {
+//        SelectPalette(hDC, (HPALETTE)hOldPal2, TRUE);
+//        RealizePalette(hDC);
+//        ReleaseDC(NULL, hDC);
+//    }
+//
+//    fh = CreateFile(lpszFileName, GENERIC_WRITE,0, NULL, CREATE_ALWAYS,
+//                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+//
+//    if (fh == INVALID_HANDLE_VALUE)
+//        return FALSE;
+//
+//    bmfHdr.bfType = 0x4D42; // "BM"
+//    dwDIBSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + dwPaletteSize + dwBmBitsSize;
+//    bmfHdr.bfSize = dwDIBSize;
+//    bmfHdr.bfReserved1 = 0;
+//    bmfHdr.bfReserved2 = 0;
+//    bmfHdr.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + (DWORD)sizeof(BITMAPINFOHEADER) + dwPaletteSize;
+//
+//    WriteFile(fh, (LPSTR)&bmfHdr, sizeof(BITMAPFILEHEADER), &dwWritten, NULL);
+//
+//    WriteFile(fh, (LPSTR)lpbi, dwDIBSize, &dwWritten, NULL);
+//    GlobalUnlock(hDib);
+//    GlobalFree(hDib);
+//    CloseHandle(fh);
+//
+//    return TRUE;
+//}
+//
+//int screenCapture(int x, int y, int w, int h, LPCSTR fname)
+//{
+//    HDC hdcSource = GetDC(NULL);
+//    HDC hdcMemory = CreateCompatibleDC(hdcSource);
+//
+//    int capX = GetDeviceCaps(hdcSource, HORZRES);
+//    int capY = GetDeviceCaps(hdcSource, VERTRES);
+//
+//    HBITMAP hBitmap = CreateCompatibleBitmap(hdcSource, w, h);
+//    HBITMAP hBitmapOld = (HBITMAP)SelectObject(hdcMemory, hBitmap);
+//
+//    BitBlt(hdcMemory, 0, 0, w, h, hdcSource, x, y, SRCCOPY);
+//    hBitmap = (HBITMAP)SelectObject(hdcMemory, hBitmapOld);
+//
+//    DeleteDC(hdcSource);
+//    DeleteDC(hdcMemory);
+//
+//    HPALETTE hpal = NULL;
+//    if(SaveToFile(hBitmap, fname)) return 1;
+//    return 0;
+//}
+//#endif
 
 static void draw_rect (cairo_t *cr)
 {
@@ -78,7 +172,6 @@ static void draw_rect (cairo_t *cr)
 //    cairo_rectangle (cr, 10, 10, 180, 180);
     cairo_set_source_rgb (cr, 0.3, 0.4, 0.6);   /* set fill color */
     cairo_fill (cr);                            /* fill rectangle */
-    cairo_clip(cr);
 }
 
 static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width,
@@ -101,13 +194,16 @@ void motion_detected (GtkEventControllerMotion *controller, double x, double y,
         endX = x;
         endY = y;
         cairo_t *cr;
+//        cairo_surface_destroy(surface);
+//        surface = cairo_image_surface_create_from_png("../src/screen.png");
         cr = cairo_create(surface);
-        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_set_source_rgba(cr, 0, 0, 0, 0.7);
         cairo_paint(cr);
         draw_rect(cr);
         cairo_destroy (cr);
         gtk_widget_queue_draw(GTK_WIDGET(selectionArea));
     }
+    else if(!gtk_window_is_active(GTK_WINDOW(recordWindow))) gtk_window_present(GTK_WINDOW(recordWindow));
 }
 
 static void right_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
@@ -116,6 +212,7 @@ static void right_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
     g_print ("Left button pressed\n");
     std::cout << "Start coordinates: " << x << ", " << y << std::endl;
     gtk_window_close(GTK_WINDOW(selectWindow));
+    gtk_window_close(GTK_WINDOW(recordWindow));
     if (surface) cairo_surface_destroy (surface);
 //    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
     gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
@@ -152,9 +249,13 @@ static void left_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
     startY = y;
     endX = x;
     endY = y;
-//    if (surface) cairo_surface_destroy (surface);
+    if (surface) cairo_surface_destroy (surface);
+//    screenCapture(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), "../src/screen.png");
+//    background = cairo_image_surface_create_from_png("../src/screen.png");
+//    surface = cairo_image_surface_create_from_png("../src/screen.png");
     surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
     selection_enabled = true;
+    gtk_window_close(GTK_WINDOW(recordWindow));
 }
 
 static void left_btn_released (GtkGestureClick *gesture, int n_press, double x,
@@ -171,9 +272,10 @@ static void left_btn_released (GtkGestureClick *gesture, int n_press, double x,
     cr = cairo_create(surface);
     draw_rect(cr);
     cairo_destroy(cr);
-    gtk_window_close(GTK_WINDOW(selectWindow));
     gtk_widget_queue_draw(GTK_WIDGET(selectionArea));
+    gtk_window_close(GTK_WINDOW(selectWindow));
     gtk_window_present(GTK_WINDOW(selectWindow));
+    gtk_window_present(GTK_WINDOW(recordWindow));
 }
 
 static void drag (GtkGestureDrag *gesture, double offset_x,
@@ -183,8 +285,16 @@ static void drag (GtkGestureDrag *gesture, double offset_x,
     gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
-void recorder() {
-    s->init();
+void recorder(int sX, int sY, int eX, int eY) {
+    if(sX == sY || eX == eY) s->init(0, 0, 0, 0);
+    else if(sX > eX) {
+        if(sY > eY) s->init((int) eX, (int) eY, (int) (sX - eX), (int) (sY - eY));
+        else s->init((int) eX, (int) sY, (int) (sX - eX), (int) (eY - sY));
+    }
+    else {
+        if(sY > eY) s->init((int) sX, (int) eY, (int) (eX - sX), (int) (sY - eY));
+        else s->init((int) sX, (int) sY, (int) (eX - sX), (int) (eY - sY));
+    }
     std::cout << "Initialized input streams" << std::endl;
     init_output();
     started = false;
@@ -206,7 +316,7 @@ void recorder() {
 }
 
 void startRecording() {
-    if(!ready) recorder();
+    if(!ready) recorder(startX, startY, endX, endY);
     if(s->isPaused()) s->ResumeCapture();
     else {
         if(!started) {
@@ -229,17 +339,26 @@ void stopRecording() {
     started = false;
 }
 
-static void record(GtkWidget *widget, gpointer data) {
-//    std::future<void> foo = std::async(std::launch::async, startRecording);
+void select_record_region(GtkWidget *widget, gpointer data) {
     gtk_window_set_hide_on_close(GTK_WINDOW(window), true);
     gtk_window_close(GTK_WINDOW(window));
     gtk_window_fullscreen(GTK_WINDOW(selectWindow));
     gtk_window_present(GTK_WINDOW(selectWindow));
-	g_print("Record button pressed\n");
+    g_print("Record button pressed\n");
     auto h = gtk_widget_get_height(selectionArea);
 }
 
-static int _pause(GtkWidget *widget, gpointer data) {
+void record(GtkWidget *widget, gpointer data) {
+    std::future<void> foo = std::async(std::launch::async, startRecording);
+    if (surface) cairo_surface_destroy (surface);
+    gtk_window_close(GTK_WINDOW(selectWindow));
+    gtk_window_close(GTK_WINDOW(recordWindow));
+    gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+    gtk_window_present(GTK_WINDOW(window));
+	g_print("Start recording button pressed\n");
+}
+
+int _pause(GtkWidget *widget, gpointer data) {
     std::future<void> foo = std::async(std::launch::async, pauseRecording);
 	g_print("Pause button pressed\n");
 	return 0;
@@ -261,7 +380,10 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	// GtkWidget* closeButton;
 	window = gtk_application_window_new(app);
     selectWindow = gtk_application_window_new(app);
+    recordWindow = gtk_application_window_new(app);
     selectionArea = gtk_drawing_area_new();
+    ready = false;
+    started = false;
     selection_enabled = false;
 //    gtk_window_fullscreen(GTK_WINDOW(selectWindow));
 	// buttonGrid = gtk_grid_new();
@@ -272,19 +394,26 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	titleView = gtk_text_view_new_with_buffer(title);
 	gtk_window_set_title(GTK_WINDOW(window), "Screen recorder");
 	gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
+    gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
 	gtk_window_set_decorated(GTK_WINDOW(window), false);
+    gtk_window_set_decorated(GTK_WINDOW(recordWindow), false);
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
     gtk_window_set_resizable(GTK_WINDOW(selectWindow), false);
+    gtk_window_set_resizable(GTK_WINDOW(recordWindow), false);
 	recordButton = gtk_button_new_with_label("Record");
 	pauseButton = gtk_button_new_with_label("Pause");
 	stopButton = gtk_button_new_with_label("Stop");
+    startRecordButton = gtk_button_new_with_label("Start recording");
 	// closeButton = gtk_button_new_with_label("Close");
-	auto rec = g_signal_connect(recordButton, "clicked", G_CALLBACK(record), nullptr);
+	auto rec = g_signal_connect(recordButton, "clicked", G_CALLBACK(select_record_region), nullptr);
+    auto recStart = g_signal_connect(startRecordButton, "clicked", G_CALLBACK(record), nullptr);
 	auto p = g_signal_connect(pauseButton, "clicked", G_CALLBACK(_pause), nullptr);
 	auto s = g_signal_connect(stopButton, "clicked", G_CALLBACK(stop), nullptr);
 	// g_signal_connect(closeButton, "clicked", G_CALLBACK(close), NULL);
 	// gtk_window_set_child(GTK_WINDOW(window), buttonGrid);
 	gtk_window_set_child(GTK_WINDOW(window), headerBar);
+    gtk_window_set_child(GTK_WINDOW(recordWindow), startRecordButton);
+
 	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
 	gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(headerBar),
 	                                     ":minimize,close");
@@ -339,7 +468,17 @@ static void activate(GtkApplication *app, gpointer user_data) {
 //                      G_CALLBACK(on_draw_event), NULL);
 	gtk_window_present(GTK_WINDOW(window));
     gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), true);
-    gtk_widget_set_opacity(selectWindow, 0.70);
+    gtk_window_set_hide_on_close(GTK_WINDOW(recordWindow), true);
+    gtk_widget_set_name(selectWindow, "selector_window");
+
+    cssProvider = gtk_css_provider_new();
+    gtk_css_provider_load_from_path(cssProvider, "../src/style.css");
+    context = gtk_widget_get_style_context(selectWindow);
+    gtk_style_context_add_provider (context,
+                                    GTK_STYLE_PROVIDER(cssProvider),
+                                    GTK_STYLE_PROVIDER_PRIORITY_USER); // I had used wrong priority on first try
+    gtk_style_context_save (context);
+//    gtk_widget_set_opacity(selectWindow, 0.70);
 }
 
 int gtk_test(int argc, char **argv) {

@@ -144,7 +144,7 @@ void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *au
 }
 #endif
 
-int ScreenRecorder::init() {
+int ScreenRecorder::init(int offX, int offY, int width, int height) {
 	inputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
 	audioInputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
     ref_time = 0;
@@ -186,12 +186,19 @@ int ScreenRecorder::init() {
 	if (ret != 0) {
 	  throw avException("Couldn't open input stream");
 	}
-	av_dict_set(&options, "framerate", "30", 0);
-	//av_dict_set(&options, "preset", "medium", 0);
-	av_dict_set(&options, "offset_x", "0", 0);
-	av_dict_set(&options, "offset_y", "0", 0);
-	// av_dict_set(&options, "video_size", "1920x1080", 0);
-	av_dict_set(&options, "show_region", "1", 0);
+    av_dict_set(&options, "framerate", "30", 0);
+    //av_dict_set(&options, "preset", "medium", 0);
+    if(offX > 0 && offY > 0) {
+        av_dict_set(&options, "offset_x", to_string(offX).c_str(), 0);
+        av_dict_set(&options, "offset_y", to_string(offY).c_str(), 0);
+    }
+	if(width > 0 && height > 0) {
+        string videoSize = to_string(width);
+        videoSize.append("x");
+        videoSize.append(to_string(height));
+        av_dict_set(&options, "video_size", videoSize.c_str(), 0);
+    }
+//	av_dict_set(&options, "show_region", "1", 0);
 	inputFormat = make_unique<AVInputFormat>(*av_find_input_format("gdigrab"));
 	ret = avformat_open_input(&inputFormatContext, "desktop", inputFormat.get(), &options);
 	if (ret != 0) {
@@ -208,13 +215,25 @@ int ScreenRecorder::init() {
 	}
 	av_dict_set(&options, "framerate", "30", 0);
 	av_dict_set(&options, "preset", "medium", 0);
-	av_dict_set(&options, "offset_x", "0", 0);
-	av_dict_set(&options, "offset_y", "0", 0);
-//	av_dict_set(&options, "video_size", "1920x1080", 0);
+//	av_dict_set(&options, "offset_x", "0", 0);
+//	av_dict_set(&options, "offset_y", "0", 0);
+    if(width > 0 && height > 0) {
+        string videoSize = to_string(width);
+        videoSize.append("x");
+        videoSize.append(to_string(height));
+        av_dict_set(&options, "video_size", videoSize.c_str(), 0);
+    }
 	av_dict_set(&options, "show_region", "1", 0);
 
 	inputFormat = make_unique<AVInputFormat>(*av_find_input_format("x11grab"));
-	ret = avformat_open_input(&inputFormatContext, ":0.0", inputFormat.get(), &options);
+    string offsets = ":0.0";
+    if(offX > 0 && offY > 0) {
+        offsets.append("+");
+        offsets.append(to_string(offX));
+        offsets.append(",");
+        offsets.append(to_string(offY));
+    }
+    ret = avformat_open_input(&inputFormatContext, offsets.c_str(), inputFormat.get(), &options);
     if (ret != 0) {
         throw avException("Couldn't open input stream");
     }
