@@ -276,8 +276,10 @@ static void left_btn_released (GtkGestureClick *gesture, int n_press, double x,
     draw_rect(cr);
     cairo_destroy(cr);
     gtk_widget_queue_draw(GTK_WIDGET(selectionArea));
+#ifdef WIN32
     gtk_window_close(GTK_WINDOW(selectWindow));
     gtk_window_present(GTK_WINDOW(selectWindow));
+#endif
     gtk_window_present(GTK_WINDOW(recordWindow));
 }
 
@@ -373,7 +375,7 @@ static void stop(GtkWidget *widget, gpointer data) {
 	g_print("Stop button pressed\n");
 }
 
-static void close(GtkWidget *widget, gpointer data) {
+static void close() {
     gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), false);
 	gtk_window_close(GTK_WINDOW(selectWindow));
 }
@@ -399,7 +401,9 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	gtk_window_set_title(GTK_WINDOW(window), "Screen recorder");
 	gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
     gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
+    gtk_widget_set_size_request(selectWindow, 2560, 1080);
 	gtk_window_set_decorated(GTK_WINDOW(window), false);
+    gtk_window_set_decorated(GTK_WINDOW(selectWindow), false);
     gtk_window_set_decorated(GTK_WINDOW(recordWindow), false);
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
     gtk_window_set_resizable(GTK_WINDOW(selectWindow), false);
