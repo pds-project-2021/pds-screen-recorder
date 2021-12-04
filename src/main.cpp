@@ -177,7 +177,10 @@ static void draw_rect (cairo_t *cr)
 static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width,
                  int height, gpointer data)
 {
-    cairo_set_source_surface (cr, surface, 0, 0);
+    if(!surface) {
+        cairo_set_source_rgba(cr, 0, 0, 0, 0.7);   /* set fill color */
+    }
+    else cairo_set_source_surface (cr, surface, 0, 0);
     cairo_paint (cr);
 }
 
@@ -249,7 +252,7 @@ static void left_btn_pressed (GtkGestureClick *gesture, int n_press, double x,
     startY = y;
     endX = x;
     endY = y;
-    if (surface) cairo_surface_destroy (surface);
+//    if (surface) cairo_surface_destroy (surface);
 //    screenCapture(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), "../src/screen.png");
 //    background = cairo_image_surface_create_from_png("../src/screen.png");
 //    surface = cairo_image_surface_create_from_png("../src/screen.png");
@@ -349,8 +352,9 @@ void select_record_region(GtkWidget *widget, gpointer data) {
 }
 
 void record(GtkWidget *widget, gpointer data) {
-    std::future<void> foo = std::async(std::launch::async, startRecording);
     if (surface) cairo_surface_destroy (surface);
+    surface = nullptr;
+    std::future<void> foo = std::async(std::launch::async, startRecording);
     gtk_window_close(GTK_WINDOW(selectWindow));
     gtk_window_close(GTK_WINDOW(recordWindow));
     gtk_window_set_hide_on_close(GTK_WINDOW(window), false);

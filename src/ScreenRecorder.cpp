@@ -145,6 +145,11 @@ void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *au
 #endif
 
 int ScreenRecorder::init(int offX, int offY, int width, int height) {
+    //Remember, no odd numbers
+    if ( offX > 0 && offX % 2 == 1) offX--;
+    if( offY > 0 &&  offY % 2 == 1) offY--;
+    if( width > 0 &&  width % 2 == 1) width--;
+    if( height > 0 &&  height % 2 == 1) height--;
 	inputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
 	audioInputFormatContext = avformat_alloc_context(); // Allocate an AVFormatContext.
     ref_time = 0;
