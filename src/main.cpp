@@ -170,7 +170,7 @@ static void draw_rect (cairo_t *cr)
         else cairo_rectangle (cr, endX, endY, startX - endX, startY - endY);
     }
 //    cairo_rectangle (cr, 10, 10, 180, 180);
-    cairo_set_source_rgb (cr, 0.3, 0.4, 0.6);   /* set fill color */
+    cairo_set_source_rgba(cr, 0.3, 0.4, 0.6, 0.7);   /* set fill color */
     cairo_fill (cr);                            /* fill rectangle */
 }
 
