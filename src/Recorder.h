@@ -5,6 +5,7 @@
 #pragma once
 
 #include "ffmpeg/include/ffmpeg.h"
+#include "utils/include/Screen.h"
 
 using namespace std;
 
@@ -47,7 +48,9 @@ class Recorder {
 	Recorder();
     ~Recorder() = default;
 
-	void init();
+	void init(Screen params);
+	bool capture();
+
 //	void init_output_file();
 //	void close_media_file();
 //	void capture_video_frame_thread();
@@ -57,8 +60,10 @@ class Recorder {
 //	void write_audio_output(...);
 //	bool capture_starte();
 
-	void print_source_info();
-	void print_destination_info(const string& dest);
-	void create_out_file(const string& dest);
+	void create_out_file(const string& dest) const;
+
+	// log functions
+	[[maybe_unused]] void print_source_info() const;
+	[[maybe_unused]] void print_destination_info(const string& dest) const;
 };
 

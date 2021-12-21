@@ -18,10 +18,15 @@ void print_all_wrap(){
 }
 
 void prova(){
-	auto s = Recorder{};
-	s.init();
+	auto rec = Recorder{};
+	auto screen = Screen{};
+	rec.init(screen);
 	cout << "end of init\n" << endl;
-	print_all_wrap();
+	rec.capture();
+	cout << "end of capture\n" << endl;
+
+
+//	print_all_wrap();
 }
 
 // template<typename T>

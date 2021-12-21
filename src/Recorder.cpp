@@ -18,8 +18,10 @@ Recorder::Recorder() {
 }
 
 
-// todo: add params for recording: width, height, offsets
-void Recorder::init() {
+/**
+ * Initialize ffmpeg parameters, audio/video stream and output file
+ */
+void Recorder::init(Screen params) {
 	format.setup_source();
 
 	auto audioPar = format.get_source_audio_codec();
@@ -29,7 +31,7 @@ void Recorder::init() {
 	codec.set_source_video_parameters(videoPar);
 	codec.setup_source();
 
-	print_source_info();
+//	print_source_info();
 
 	// format
 	auto dest_path = "../media/output.mp4";
@@ -54,22 +56,27 @@ void Recorder::init() {
 
 	format.write_header(options);
 
-	print_destination_info(dest_path);
+//	print_destination_info(dest_path);
 
 }
 
-void Recorder::print_source_info(){
+[[maybe_unused]]
+void Recorder::print_source_info() const{
 	// todo cambiare nomi device
 	av_dump_format(format.inputContext.get_video(), 0 , DEFAULT_VIDEO_INPUT_DEVICE, 0);
 	av_dump_format(format.inputContext.get_audio(), 0, DEFAULT_AUDIO_INPUT_DEVICE, 0);
 }
 
-void Recorder::print_destination_info(const string &dest) {
+[[maybe_unused]]
+void Recorder::print_destination_info(const string &dest) const {
 	av_dump_format(format.outputContext.get_audio(), 0, dest.c_str(), 1);
 	av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
 }
 
-void Recorder::create_out_file(const string &dest) {
+/**
+ * Create output media file
+ */
+void Recorder::create_out_file(const string &dest) const {
 	auto ctx = format.outputContext.get_video();
 
 	/* create empty video file */
@@ -81,6 +88,17 @@ void Recorder::create_out_file(const string &dest) {
 			throw avException(buf);
 		}
 	}
+}
+
+/**
+ * Start capture of the screen
+ */
+bool Recorder::capture() {
+	auto cnt = 0;
+	while(cnt++ <= 100){
+		cout << "capturing" << endl;
+	}
+	return false;
 }
 
 
