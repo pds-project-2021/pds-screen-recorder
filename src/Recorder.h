@@ -5,51 +5,67 @@
 #pragma once
 
 #include "ffmpeg/include/ffmpeg.h"
-#include "utils/include/Screen.h"
+#include "Screen.h"
+
 
 using namespace std;
 
 class Recorder {
-  public:
+  private:
 	Codec codec;
 	Format format;
 	Dictionary options;
 	Stream stream;
 	Rescaler rescaler;
 
-	//	--------------------------------
+	thread th_audio_demux;
+	thread th_audio_convert;
+	thread th_video_demux;
+	thread th_video_convert;
+	thread th_video;
 
-//
-//	bool record_video;
-//	int frame_count;
-//
-//
-//
-//
-//	thread *video;
-//	thread *audio;
-//    thread *audioDemux;
-//    thread *audioConvert;
-//    thread *audioWrite;
-//	bool finishedAudioDemux;
-//    bool finishedAudioConversion;
-//	bool recordVideo;
-//	const char *output_file = nullptr;
-//    int frameCount;
-//
-//	double video_pts;
-//
-//	int out_size;
-//	int codec_id;
-//	void VideoDemuxing();
-//	int initThreads();
+	int64_t ref_time = 0;
+
+	// action variable for pause and stop
+	atomic_bool pausedVideo = false;
+	atomic_bool pausedAudio = false;
+	atomic_bool stopped = false;
+	atomic_bool finishedVideoDemux = false;
+	atomic_bool finishedAudioDemux = false;
+
+	mutex vD;
+	mutex aD;
+	mutex vP;
+	mutex aP;
+	mutex wR;
+
+	condition_variable videoCnv;
+    condition_variable audioCnv;
+    condition_variable videoDmx;
+    condition_variable audioDmx;
+
+	condition_variable writeFrame;
+
+	unsigned int num_core = 4; // todo: update with real number of core
+
+	// private functions
+
+	void DemuxVideoInput();
+	void ConvertVideoFrames();
+	void CaptureVideoFrames();
+	void join_all();
 
   public:
 	Recorder();
     ~Recorder() = default;
 
 	void init(Screen params);
-	bool capture();
+	void capture();
+	void capture_blocking();
+	void pause();
+	void stop();
+
+
 
 //	void init_output_file();
 //	void close_media_file();
@@ -61,6 +77,7 @@ class Recorder {
 //	bool capture_starte();
 
 	void create_out_file(const string& dest) const;
+	int64_t get_platform_ref_time() const;
 
 	// log functions
 	[[maybe_unused]] void print_source_info() const;

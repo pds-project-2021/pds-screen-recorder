@@ -4,11 +4,9 @@
 
 #pragma once
 
-#include <memory>
-#include <iostream>
-
 #include "ffmpegc.h"
 #include "Tracker.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -56,7 +54,7 @@ T * wrapper<T>::get_video() const {
 }
 
 /**
- * Set video instance
+ * Set audio instance
  * @param ptr pointer of the audio instance of T
  */
 template<typename T>
@@ -78,15 +76,20 @@ void wrapper<T>::set_video(T* ptr) {
 /**
  * Destructor of `AVFormatContext`
  */
-template<> inline
+template<>
+inline
 wrapper<AVFormatContext>::~wrapper() {
-	if (audio != nullptr){
+	if (audio != nullptr) {
 		avformat_close_input(&audio);
 		avformat_free_context(audio);
 	}
 
-	if(video != nullptr){
-		avformat_close_input(&video);
+	if (video != nullptr) {
+		if (is_file(video->url) && !(video->flags & AVFMT_NOFILE)) {
+			avio_close(video->pb);
+		}else{
+			avformat_close_input(&video);
+		}
 		avformat_free_context(video);
 	}
 }

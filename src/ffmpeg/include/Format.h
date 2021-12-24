@@ -26,6 +26,7 @@ class Format {
 
 	int videoStreamIndex = 0;
 	int audioStreamIndex = 0;
+
   private:
 	void source_audio_context();
 	void source_video_context();

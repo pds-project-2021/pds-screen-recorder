@@ -3,6 +3,14 @@
 #include "Recorder.h"
 #include "ScreenRecorder.h"
 
+// todo: this is only for sleep() function, remove it for release
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+
+
 void print_all_wrap(){
 	cout << "---------------" << endl;
 
@@ -13,6 +21,8 @@ void print_all_wrap(){
 	wrapper<AVCodecContext>::print_count();
 	wrapper<AVOutputFormat>::print_count();
 	wrapper<AVDictionary>::print_count();
+	ptr_wrapper<Frame>::print_count();
+	ptr_wrapper<Packet>::print_count();
 	Rescaler::print_count();
 	Stream::print_count();
 }
@@ -23,9 +33,10 @@ void prova(){
 	rec.init(screen);
 	cout << "end of init\n" << endl;
 	rec.capture();
+	cout << "start of capture\n" << endl;
+	sleep(10);
+	rec.stop();
 	cout << "end of capture\n" << endl;
-
-
 //	print_all_wrap();
 }
 
@@ -48,6 +59,7 @@ void prova(){
 int main(int argc, char **argv) {
 	prova();
 	print_all_wrap();
+
 	return 0;
 
 

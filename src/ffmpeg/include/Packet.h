@@ -4,7 +4,7 @@
 
 #pragma once
 
-class Packet {
+#include "ptr_wrapper.h"
 
-};
+class Packet: public ptr_wrapper<AVPacket>{};
 

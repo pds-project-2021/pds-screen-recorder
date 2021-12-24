@@ -43,3 +43,11 @@ void Rescaler::set_audio_scaler(const Codec &codec) {
 		throw avException("Impossible to initialize resample context for audio conversion");
 	}
 }
+
+SwsContext *Rescaler::get_sws() {
+	return swsCtx;
+}
+
+SwrContext *Rescaler::get_swr() {
+	return swrCtx;
+}
