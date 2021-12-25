@@ -59,3 +59,37 @@ int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
                                       mutex *wR,
                                       condition_variable *writeFrame);
 
+int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
+                                             AVCodecContext *outputCodecContext,
+                                             AVStream *audioStream,
+                                             AVFormatContext *outputFormatContext,
+                                             int finalSize,
+                                             mutex *wR,
+                                             condition_variable *writeFrame);
+
+int convertAndWriteAudioFrames(SwrContext *swrContext,
+                                      AVCodecContext *outputCodecContext,
+                                      AVCodecContext *inputCodecContext,
+                                      AVStream *audioStream,
+                                      AVFormatContext *outputFormatContext,
+                                      AVFrame *audioFrame,
+                                      int64_t *pts_p,
+                                      mutex *wR,
+                                      condition_variable *writeFrame);
+
+int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
+                                             AVCodecContext *outputCodecContext,
+                                             AVStream *audioStream,
+                                             AVFormatContext *outputFormatContext,
+                                             int finalSize,
+                                             mutex *wR,
+                                             condition_variable *writeFrame);
+
+int convertAndWriteLastAudioFrames(SwrContext *swrContext,
+                                   AVCodecContext *outputCodecContext,
+                                   AVCodecContext *inputCodecContext,
+                                   AVStream *audioStream,
+                                   AVFormatContext *outputFormatContext,
+                                   int64_t *pts_p,
+                                   mutex *wR,
+                                   condition_variable *writeFrame);

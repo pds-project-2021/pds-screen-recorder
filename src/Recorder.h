@@ -7,7 +7,6 @@
 #include "ffmpeg/include/ffmpeg.h"
 #include "Screen.h"
 
-
 using namespace std;
 
 class Recorder {
@@ -23,15 +22,16 @@ class Recorder {
 	thread th_video_demux;
 	thread th_video_convert;
 	thread th_video;
+	thread th_audio;
 
 	int64_t ref_time = 0;
 
-	// action variable for pause and stop
-	atomic_bool pausedVideo = false;
-	atomic_bool pausedAudio = false;
-	atomic_bool stopped = false;
-	atomic_bool finishedVideoDemux = false;
-	atomic_bool finishedAudioDemux = false;
+	// action variable for pause and terminate
+	atomic<bool> pausedVideo = false;
+	atomic<bool> pausedAudio = false;
+	atomic<bool> stopped = false;
+	atomic<bool> finishedVideoDemux = false;
+	atomic<bool> finishedAudioDemux = false;
 
 	mutex vD;
 	mutex aD;
@@ -46,14 +46,20 @@ class Recorder {
 
 	condition_variable writeFrame;
 
-	unsigned int num_core = 4; // todo: update with real number of core
+	unsigned int num_core = 2; // todo: update with real number of core
 
-	// private functions
-
-	void DemuxVideoInput();
-	void ConvertVideoFrames();
-	void CaptureVideoFrames();
+	/* private functions */
 	void join_all();
+
+	// single thread (de)muxing
+	void CaptureAudioFrames();
+	void CaptureVideoFrames();
+
+	// multithread (de)muxing
+	void ConvertAudioFrames();
+	void DemuxAudioInput();
+	void ConvertVideoFrames();
+	void DemuxVideoInput();
 
   public:
 	Recorder();
@@ -63,7 +69,8 @@ class Recorder {
 	void capture();
 	void capture_blocking();
 	void pause();
-	void stop();
+	void resume();
+	void terminate();
 
 
 
@@ -77,7 +84,6 @@ class Recorder {
 //	bool capture_starte();
 
 	void create_out_file(const string& dest) const;
-	int64_t get_platform_ref_time() const;
 
 	// log functions
 	[[maybe_unused]] void print_source_info() const;

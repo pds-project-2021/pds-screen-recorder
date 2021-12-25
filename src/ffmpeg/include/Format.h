@@ -30,8 +30,10 @@ class Format {
   private:
 	void source_audio_context();
 	void source_video_context();
-	void destination_audio_context(const string &dest);
-	void destination_video_context(const string &dest);
+
+	/* NOTE: The destination is a file, so it will have the only one context */
+	void destination_context(const string &dest);
+
 	void find_source_audio_stream_info();
 	void find_source_video_stream_info();
 
@@ -42,10 +44,10 @@ class Format {
 	void setup_source();
 	void setup_destination(const string &dest);
 
-	AVCodecParameters* get_source_audio_codec();
-	AVCodecParameters* get_source_video_codec();
+	[[nodiscard]] AVCodecParameters* get_source_audio_codec() const;
+	[[nodiscard]] AVCodecParameters* get_source_video_codec() const;
 
-	void write_header(const Dictionary& options);
+	void write_header(const Dictionary& options) const;
 
 };
 

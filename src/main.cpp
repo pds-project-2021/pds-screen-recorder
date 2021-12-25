@@ -30,12 +30,13 @@ void print_all_wrap(){
 void prova(){
 	auto rec = Recorder{};
 	auto screen = Screen{};
+
 	rec.init(screen);
 	cout << "end of init\n" << endl;
 	rec.capture();
 	cout << "start of capture\n" << endl;
-	sleep(10);
-	rec.stop();
+	sleep(2);
+	rec.terminate();
 	cout << "end of capture\n" << endl;
 //	print_all_wrap();
 }

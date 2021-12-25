@@ -74,6 +74,19 @@ void wrapper<T>::set_video(T* ptr) {
 /* Specialized template functions */
 
 /**
+ * Get audio instance
+ * @return a pointer to the audio instance of T or the video instance if is an output context
+ */
+template<> inline
+AVFormatContext * wrapper<AVFormatContext>::get_audio() const {
+	if(audio == nullptr && video != nullptr) { // for output there is only one context
+		return video;
+	}else{
+		return audio;
+	}
+}
+
+/**
  * Destructor of `AVFormatContext`
  */
 template<>

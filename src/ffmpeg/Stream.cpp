@@ -6,6 +6,12 @@
 
 
 Stream::Stream(const Format &format, const Codec &codec) {
-	this->audio = avformat_new_stream(format.outputContext.get_audio(), codec.output.get_audio());
-	this->video = avformat_new_stream(format.outputContext.get_video(), codec.output.get_video());
+	video = avformat_new_stream(format.outputContext.get_video(), codec.output.get_video());
+	if (!video) {
+		throw avException("Error in creating a av format new video stream");
+	}
+	audio = avformat_new_stream(format.outputContext.get_audio(), codec.output.get_audio());
+	if (!audio) {
+		throw avException("Error in creating a av format new audio stream");
+	}
 }

@@ -12,6 +12,7 @@
 
 
 #include "ffmpegc.h"
+#include "wrapper.h"
 
 #define AUDIO               1
 #define AUDIO_CHANNELS      1
@@ -45,6 +46,8 @@
 
 #else
 
+// todo: add macOs default parameters
+
 #define DEFAULT_AUDIO_INPUT_FORMAT  "pulse"
 #define DEFAULT_AUDIO_INPUT_DEVICE  "default"
 #define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
@@ -61,3 +64,6 @@ std::string get_audio_input_format();
 std::string get_audio_input_device();
 std::string get_video_input_format();
 std::string get_video_input_device();
+
+
+int64_t get_ref_time(const wrapper<AVFormatContext>& ctx);

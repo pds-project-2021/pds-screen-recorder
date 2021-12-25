@@ -11,15 +11,15 @@ void Format::source_audio_context() {
 	auto audio = av_find_input_format(audioFormat.c_str());
 	input.set_audio(audio);
 
-//	auto options = get_audio_options();
+	auto options = get_audio_options();
 	auto audioInputDevice = get_audio_input_device();
 	auto audioCtx = avformat_alloc_context();
-	auto ret = avformat_open_input(&audioCtx, audioInputDevice.c_str(), audio, nullptr);
+	auto ret = avformat_open_input(&audioCtx, audioInputDevice.c_str(), audio, &options);
 	if (ret != 0) {
 		throw avException("Couldn't open audio input stream");
 	}
 	inputContext.set_audio(audioCtx);
-//	inputOptions.set_audio(options);
+	inputOptions.set_audio(options);
 
 	ret = avformat_find_stream_info(audioCtx, nullptr);
 	if (ret < 0) {
@@ -48,24 +48,7 @@ void Format::source_video_context() {
 	}
 }
 
-void Format::destination_audio_context(const string &dest) {
-	auto ctx = outputContext.get_audio();
-	avformat_alloc_output_context2(&ctx, nullptr, nullptr, dest.c_str());
-	if (!ctx) {
-		throw avException("Error in allocating av format output context");
-	}
-	outputContext.set_audio(ctx); // todo vedere se si può togliere
-
-	auto fmt = av_guess_format(nullptr, dest.c_str(), nullptr);
-	if(!fmt){
-		throw avException(
-			"Error in guessing the audio format. try with correct format");
-	}
-	output.set_audio(fmt);
-
-}
-
-void Format::destination_video_context(const string& dest) {
+void Format::destination_context(const string& dest) {
 	auto ctx = outputContext.get_video();
 	avformat_alloc_output_context2(&ctx, nullptr, nullptr, dest.c_str());
 	if (!ctx) {
@@ -78,12 +61,11 @@ void Format::destination_video_context(const string& dest) {
 		ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 	}
 
-	outputContext.set_video(ctx); // todo vedere se si può togliere
+	outputContext.set_video(ctx);
 
 	auto fmt = av_guess_format(nullptr, dest.c_str(), nullptr);
 	if(!fmt){
-		throw avException(
-			"Error in guessing the video format. try with correct format");
+		throw avException("Error in guessing the video format. try with correct format");
 	}
 	output.set_video(fmt);
 }
@@ -114,21 +96,20 @@ void Format::setup_source() {
 }
 
 void Format::setup_destination(const string& dest) {
-	destination_audio_context(dest);
-	destination_video_context(dest);
+	destination_context(dest);
 }
 
-AVCodecParameters* Format::get_source_audio_codec() {
+AVCodecParameters* Format::get_source_audio_codec() const {
 	auto audio = inputContext.get_audio();
 	return audio->streams[audioStreamIndex]->codecpar;
 }
 
-AVCodecParameters* Format::get_source_video_codec() {
+AVCodecParameters* Format::get_source_video_codec() const {
 	auto video = inputContext.get_video();
 	return video->streams[videoStreamIndex]->codecpar;
 }
 
-void Format::write_header(const Dictionary& options) {
+void Format::write_header(const Dictionary& options) const {
 	/* imp: mp4 container or some advanced container file required header
 	 * information */
 	auto opt = options.get_video();

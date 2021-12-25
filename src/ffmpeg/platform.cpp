@@ -1,8 +1,11 @@
 //
 // Created by gabriele on 31/10/21.
 //
+
 #include "platform.h"
+
 using namespace std;
+
 #ifdef _WIN32
 
 HRESULT _enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
@@ -118,13 +121,17 @@ std::string get_video_input_device(){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 
+int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
+	return ctx.get_audio()->start_time * 10 + 50000000;
+}
 
 #elif defined linux
 
 AVDictionary* get_audio_options(){
 	AVDictionary* options = nullptr;
-	av_dict_set(&options, "rtbufsize", "10M", 0);
-
+//	av_dict_set(&options, "rtbufsize", "10M", 0);
+    av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
+    av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
 	return options;
 }
 
@@ -156,6 +163,12 @@ std::string get_video_input_device(){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 
+int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
+	auto video_time = ctx.get_video()->start_time;
+	auto audio_time = ctx.get_audio()->start_time;
+	return video_time > audio_time ? video_time : audio_time;
+}
+
 #else
 
 AVDictionary* get_audio_options(){
@@ -168,6 +181,12 @@ AVDictionary* get_video_options(){
 	AVDictionary* options = nullptr;
 
 	return options;
+}
+
+int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
+	auto video_time = ctx.get_video()->start_time;
+	auto audio_time = ctx.get_audio()->start_time;
+	return video_time > audio_time ? video_time : audio_time;
 }
 
 #endif
