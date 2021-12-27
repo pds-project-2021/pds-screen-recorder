@@ -90,8 +90,8 @@ void Recorder::create_out_file(const string &dest) const {
  */
 void Recorder::capture() {
 	if(num_core > 2) {
-		//	th_audio_demux = thread();
-		//	th_audio_convert = thread();
+		th_audio_demux = thread{&Recorder::DemuxAudioInput, this};
+		th_audio_convert = thread{&Recorder::ConvertAudioFrames, this};
 		th_video_demux = thread{&Recorder::DemuxVideoInput, this};
 		th_video_convert = thread{&Recorder::ConvertVideoFrames, this};
 	}else{
@@ -114,8 +114,8 @@ void Recorder::pause(){
  * Resume capture from pause
  */
 void Recorder::resume() {
-	pausedVideo = true;
-	pausedAudio = true;
+	pausedVideo = false;
+	pausedAudio = false;
 }
 
 /**
@@ -139,18 +139,20 @@ void Recorder::terminate(){
 }
 
 /* Private functions */
+
 void Recorder::join_all() {
 	if(num_core > 2) {
+		th_audio_demux.join();
+		th_audio_convert.join();
 		th_video_demux.join();
 		th_video_convert.join();
-//		th_audio_demux.join();
-//		th_audio_convert.join();
 	}else{
-		th_video.join();
 		th_audio.join();
+		th_video.join();
 	}
 }
 
+/* single thread (de)muxing */
 void Recorder::CaptureAudioFrames() {
 	auto inputFormatContext = format.inputContext.get_audio();
 	auto inputCodecContext= codec.inputContext.get_audio();
@@ -297,172 +299,166 @@ void Recorder::CaptureVideoFrames() {
 	                                  &writeFrame);
 }
 
-//void Recorder::DemuxAudioInput() {
-//	// Create decoder audio packet
-//	AVPacket *audioPacket = alloc_packet();
-//	int result;
-//	auto start = std::chrono::system_clock::now();
-//	auto end = start;
-//	bool synced = false;
-//	bool sync = false;
-////    bool last_pts_set = false;
-////    int64_t last_pts=MAXINT64;
-////    int64_t offset=50000000;
-//#ifdef WIN32
-//	//    ref_time=audioInputFormatContext->start_time*10+offset;
-//#else
-//	if (audioInputFormatContext->start_time == ref_time) {// If video started later
-//		sync = true;// Video needs to set the ref_time value
-//	}
-//#endif
-//	avformat_flush(audioInputFormatContext);
-//	while (av_read_frame(audioInputFormatContext, audioPacket) >= 0) {
-//		if (*stopped) {
-////            if(!last_pts_set) {
-////                last_pts=audioPacket->pts+offset;
-////                last_pts_set=true;
-////            }
-//			lock_guard<mutex> ul(*vD);
-//			*finishedAudioDemux = true;
-//			audioCnv->notify_one(); // notify converter thread if halted
-//			break;
-//		}
-//		if (!synced && sync && !*pausedAudio) {
-//			if (audioPacket->pts > ref_time) ref_time = audioPacket->pts;
-//			synced = true;
-//		}
-//		if (!*pausedAudio && audioPacket->pts >= ref_time) {
-//			if (*pausedVideo) *pausedVideo = false;
-//			end = std::chrono::system_clock::now();
-//			std::chrono::duration<double> elapsed_seconds = end - start;
+/* multi thread (de)muxing */
+
+void Recorder::DemuxAudioInput() {
+	auto start = std::chrono::system_clock::now();
+	auto end = start;
+	bool synced = false;
+	bool sync = false;
+	int result;
+
+	auto inputFormatContext = format.inputContext.get_audio();
+	auto inputCodecContext = codec.inputContext.get_audio();
+
+	if (inputFormatContext->start_time == ref_time) {// If video started later
+		sync = true;// Video needs to set the ref_time value
+	}
+
+	avformat_flush(inputFormatContext);
+	auto read_packet = true;
+	while (read_packet) {
+		auto in_packet = Packet{};
+		read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+
+		if (stopped.load()) {
+			lock_guard<mutex> ul(vD);
+			finishedAudioDemux = true;
+			audioCnv.notify_one(); // notify converter thread if halted
+			break;
+		}
+
+		if (!synced && sync && !pausedAudio.load()) {
+			if (in_packet.into()->pts > ref_time) ref_time = in_packet.into()->pts;
+			synced = true;
+		}
+
+		if (!pausedAudio.load() && in_packet.into()->pts >= ref_time) {
+
+			end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
 //			std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
-//			//audioCnv.notify_one(); //signal converting thread to start if needed
-//			// Send packet to decoder
-//			if (aD->try_lock()) {
-//				result =
-//					avcodec_send_packet(audioInputCodecContext, audioPacket);// Try to send a packet without waiting
-//				if (result >= 0) {
-//					audioCnv->notify_one(); // notify converter thread if halted
-//					av_packet_unref(audioPacket);
-//				}
-//				aD->unlock();
-//			} else result = AVERROR(EAGAIN);
-//			// Check result
-//			if (result == AVERROR(EAGAIN)) {//buffer is full or could not acquire lock, wait and retry
-//				unique_lock<mutex> ul(*aD);
-//				audioCnv->notify_one();// Send sync signal to converter thread
-//				audioCnv->wait(ul);// Wait for resume signal
-//				result = avcodec_send_packet(audioInputCodecContext, audioPacket);
-//				if (result >= 0) {
-//					audioCnv->notify_one(); // notify converter thread if halted
-//					av_packet_unref(audioPacket);
-//				}
-//			}
-//			if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
-//				// Decoder error
-//				throw avException("Failed to send packet to decoder");
-//			}
-//			//Packet sent
-//			start = std::chrono::system_clock::now();
-//		}
-////        else if(audioPacket->pts >= last_pts){
-////        }
-//		else {
-//			av_packet_unref(audioPacket);
-//			if (!*pausedVideo) *pausedVideo = true;
-////            if(synced) synced = false;
-//		}
-//	}
-//	//Free allocated memory
-//	av_packet_unref(audioPacket);
-//	av_packet_free(&audioPacket);
-//}
-//
-//void Recorder::ConvertAudioFrames() {
-//	// Create decoder audio frame
-//	AVFrame *audioFrame = alloc_audio_frame(audioInputCodecContext->frame_size, audioInputCodecContext->sample_fmt,
-//	                                        audioInputCodecContext->channel_layout, 0);
-//	// Create encoder audio frame
-//	AVFrame *audioOutputFrame = av_frame_alloc();
-//	if (!audioOutputFrame) {
-//		throw avException("Error on output audio frame initialization");
-//	}
-//	// Create encoder audio packet
-//	AVPacket *audioOutputPacket = alloc_packet();
-//	int frame_size = 0;
-//	int64_t pts = 0;
-//	bool finished = false;
-//	int result = AVERROR(EAGAIN);
-//	if (aD->try_lock()) {
-//		result =
-//			avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame without waiting
-//		if (result >= 0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
-//		aD->unlock();
-//	} else result = AVERROR(EAGAIN);
-//	while (result >= 0 || result == AVERROR(EAGAIN)) {
-//		if (result >= 0) {
-//			//Convert frames and then write them to file
-//			if (frame_size == 0) frame_size = audioFrame->nb_samples;
-//			convertAndWriteAudioFrames(swrContext,
-//			                           audioOutputCodecContext,
-//			                           audioInputCodecContext,
-//			                           audioStream,
-//			                           outputFormatContext,
-//			                           audioFrame,
-//			                           audioOutputFrame,
-//			                           audioOutputPacket,
-//			                           &pts,
-//			                           wR,
-//			                           writeFrame);
-//			av_frame_unref(audioFrame);
-//			init_audio_frame(audioFrame, frame_size, audioInputCodecContext->sample_fmt,
-//			                 audioInputCodecContext->channel_layout, 0);
-//		}
-//		if (aD->try_lock()) {
-//			result =
-//				avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame without waiting
-//			if (result >= 0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
-//			aD->unlock();
-//		} else result = AVERROR(EAGAIN);
-//		if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
-//			std::unique_lock<std::mutex> ul(*aD);
-//			if (!*finishedAudioDemux) {
-//				audioCnv->notify_one();// Signal demuxer thread if necessary
-//				audioCnv->wait(ul);// Wait for resume signal
-//				result = avcodec_receive_frame(audioInputCodecContext, audioFrame); // Try to get a decoded frame
-//				if (result >= 0) audioCnv->notify_one();// Signal demuxer thread to resume if halted
-//			} else if (finished) break;
-//			finished = true;
-//		}
-////        else if(*finishedAudioDemux) {
-//////                audioCnv->notify_one();// Sync with main thread if necessary
-////            break;
-////        }
-//		if (result < 0 && result != AVERROR(EAGAIN))
-//			throw avException("Audio Converter/Writer threads syncronization error");
-//
-//	}
-//	if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
-//		// Decoder error
-//		throw avException("Failed to receive decoded packet");
-//	}
-//	//Convert last frame and then write it to file
-//	convertAndWriteLastAudioFrames(swrContext,
-//	                               audioOutputCodecContext,
-//	                               audioInputCodecContext,
-//	                               audioStream,
-//	                               outputFormatContext,
-//	                               audioOutputFrame,
-//	                               audioOutputPacket,
-//	                               &pts,
-//	                               wR,
-//	                               writeFrame);
-//	// Free allocated memory
-//	av_frame_unref(audioFrame);
-//	av_frame_free(&audioFrame);
-//	av_frame_free(&audioOutputFrame);
-//	av_packet_free(&audioOutputPacket);
-//}
+
+			// Send packet to decoder
+			if (aD.try_lock()) {
+				result = avcodec_send_packet(inputCodecContext, in_packet.into()); // Try to send a packet without waiting
+				if (result >= 0) {
+					audioCnv.notify_one(); // notify converter thread if halted
+					av_packet_unref(in_packet.into());
+				}
+				aD.unlock();
+			} else {
+				result = AVERROR(EAGAIN);
+			}
+
+			// Check result
+			if (result == AVERROR(EAGAIN)) {//buffer is full or could not acquire lock, wait and retry
+				unique_lock<mutex> ul(aD);
+				audioCnv.notify_one(); // Send sync signal to converter thread
+				audioCnv.wait(ul); // Wait for resume signal
+				result = avcodec_send_packet(inputCodecContext, in_packet.into());
+				if (result >= 0) {
+					audioCnv.notify_one(); // notify converter thread if halted
+				}
+			}
+
+			if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
+				// Decoder error
+				throw avException("Failed to send packet to decoder");
+			}
+			//Packet sent
+			start = std::chrono::system_clock::now();
+		}
+	}
+}
+
+void Recorder::ConvertAudioFrames() {
+	auto inputCodecContext= codec.inputContext.get_audio();
+	auto outputCodecContext = codec.outputContext.get_audio();
+	auto outputFormatContext = format.outputContext.get_audio();
+	auto audioStream = stream.get_audio();
+	auto swrContext = rescaler.get_swr();
+
+	int frame_size = 0;
+	int64_t pts = 0;
+	bool finished = false;
+	int result = AVERROR(EAGAIN);
+
+	auto in_frame = Frame{};
+
+	if (aD.try_lock()) {
+		result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
+		if (result >= 0) {
+			audioCnv.notify_one(); // Signal demuxer thread to resume if halted
+		}
+		aD.unlock();
+	} else {
+		result = AVERROR(EAGAIN);
+	}
+
+	while (result >= 0 || result == AVERROR(EAGAIN)) {
+		if (result >= 0) {
+			//Convert frames and then write them to file
+			if (frame_size == 0) {
+				frame_size = in_frame.into()->nb_samples;
+			}
+
+			convertAndWriteAudioFrames(swrContext,
+			                           outputCodecContext,
+			                           inputCodecContext,
+			                           audioStream,
+			                           outputFormatContext,
+			                           in_frame.into(),
+			                           &pts,
+			                           &wR,
+			                           &writeFrame);
+//			in_frame.unref();
+		}
+		if (aD.try_lock()) {
+			result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
+			if (result >= 0) {
+				audioCnv.notify_one();// Signal demuxer thread to resume if halted
+			}
+			aD.unlock();
+		} else {
+			result = AVERROR(EAGAIN);
+		}
+
+		if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
+			std::unique_lock<std::mutex> ul(aD);
+			if (!finishedAudioDemux.load()) {
+				audioCnv.notify_one();// Signal demuxer thread if necessary
+				audioCnv.wait(ul);// Wait for resume signal
+				result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
+				if (result >= 0) {
+					audioCnv.notify_one();// Signal demuxer thread to resume if halted
+				}
+			} else if (finished) {
+				break;
+			}
+			finished = true;
+		}
+
+		if (result < 0 && result != AVERROR(EAGAIN)) {
+			throw avException("Audio Converter/Writer threads syncronization error");
+		}
+	}
+
+	if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
+		// Decoder error
+		throw avException("Failed to receive decoded packet");
+	}
+
+	//Convert last frame and then write it to file
+	convertAndWriteLastAudioFrames(swrContext,
+	                               outputCodecContext,
+	                               inputCodecContext,
+	                               audioStream,
+	                               outputFormatContext,
+	                               &pts,
+	                               &wR,
+	                               &writeFrame);
+}
 
 void Recorder::DemuxVideoInput() {
 	// frame number in a second
@@ -486,19 +482,19 @@ void Recorder::DemuxVideoInput() {
 
 		auto pts = packet.into()->pts;
 
-		if (stopped) {
+		if (stopped.load()) {
 			lock_guard<mutex> ul(vD);
 			finishedVideoDemux = true;
 			videoCnv.notify_one(); // notify converter thread if halted
 			break;
 		}
 
-		if (!synced && sync && !pausedVideo) {
+		if (!synced && sync && !pausedVideo.load()) {
 			if (pts > ref_time) ref_time = pts;
 			synced = true;
 		}
 
-		if (!pausedVideo && pts >= ref_time) {
+		if (!pausedVideo.load() && pts >= ref_time) {
 			if (frameNum == 30) {
 				frameNum = 0; // reset every fps frames
 				auto end = std::chrono::system_clock::now();
@@ -564,7 +560,6 @@ void Recorder::ConvertVideoFrames() {
 	}
 
 	while (result >= 0 || result == AVERROR(EAGAIN)) {
-
 		if (result >= 0) {
 			//Convert frames and then write them to file
 			count++;
@@ -580,7 +575,7 @@ void Recorder::ConvertVideoFrames() {
 			                          &writeFrame);
 		}
 
-		in_frame.unref();
+//		in_frame.unref();
 
 		if (vD.try_lock()) {
 			result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
@@ -594,7 +589,7 @@ void Recorder::ConvertVideoFrames() {
 
 		if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
 			std::unique_lock<std::mutex> ul(vD);
-			if (!finishedVideoDemux) {
+			if (!finishedVideoDemux.load()) {
 				videoCnv.notify_one();// Signal demuxer thread if necessary
 				videoCnv.wait(ul);// Wait for resume signal
 				result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
@@ -604,10 +599,12 @@ void Recorder::ConvertVideoFrames() {
 			}
 			finished = true;
 		}
+
 		if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
 			throw avException("Audio Converter/Writer threads syncronization error");
 		}
 	}
+
 	if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
 		// Decoder error
 		throw avException("Failed to receive decoded packet");

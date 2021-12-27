@@ -162,7 +162,6 @@ int convertAndWriteAudioFrames(SwrContext *swrContext,
 	}
 
 	while (swr_get_out_samples(swrContext, 0) >= outputCodecContext->frame_size) {
-
 		got_samples = swr_convert(swrContext, outputFrame->data, outputFrame->nb_samples, nullptr, 0);
 		*pts_p += got_samples;
 		//outputFrame->nb_samples=got_samples;
@@ -349,7 +348,9 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext,
 		*pts_p += got_samples;
 		outputFrame->nb_samples = got_samples;
 		outputFrame->pts = *pts_p;
+
 		encode(outputCodecContext, outputPacket,outputFrame, &got_packet);
+
 		// Frame was sent successfully
 		if (got_packet > 0) { // Packet received successfully
 			if (outputPacket->pts != AV_NOPTS_VALUE) {
@@ -367,6 +368,7 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext,
 				throw avException("Error in writing video frame");
 			}
 		}
+
 		convertAndWriteDelayedAudioFrames(inputCodecContext,
 		                                  outputCodecContext,
 		                                  audioStream,

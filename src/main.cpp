@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "Recorder.h"
-#include "ScreenRecorder.h"
 
 // todo: this is only for sleep() function, remove it for release
 #ifdef _WIN32
@@ -10,35 +9,31 @@
 #include <unistd.h>
 #endif
 
-
-void print_all_wrap(){
-	cout << "---------------" << endl;
-
-	wrapper<AVFormatContext>::print_count();
-	wrapper<AVInputFormat>::print_count();
-	wrapper<AVCodec>::print_count();
-	wrapper<AVCodecParameters>::print_count();
-	wrapper<AVCodecContext>::print_count();
-	wrapper<AVOutputFormat>::print_count();
-	wrapper<AVDictionary>::print_count();
-	ptr_wrapper<Frame>::print_count();
-	ptr_wrapper<Packet>::print_count();
-	Rescaler::print_count();
-	Stream::print_count();
-}
-
 void prova(){
 	auto rec = Recorder{};
 	auto screen = Screen{};
 
 	rec.init(screen);
 	cout << "end of init\n" << endl;
+
 	rec.capture();
 	cout << "start of capture\n" << endl;
-	sleep(2);
+
+	sleep(5);
+	cout << "pausing for 5 seconds" << endl;
+	rec.pause();
+
+	auto cnt = 5;
+	while(cnt){
+		sleep(1);
+		cout << "resume in " << cnt-- << " seconds" << endl;
+	}
+	rec.resume();
+	cout << "resumed capture" << endl;
+
+	sleep(5);
 	rec.terminate();
 	cout << "end of capture\n" << endl;
-//	print_all_wrap();
 }
 
 // template<typename T>
@@ -59,7 +54,6 @@ void prova(){
 
 int main(int argc, char **argv) {
 	prova();
-	print_all_wrap();
 
 	return 0;
 

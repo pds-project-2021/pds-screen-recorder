@@ -35,18 +35,18 @@ class Recorder {
 
 	mutex vD;
 	mutex aD;
-	mutex vP;
-	mutex aP;
 	mutex wR;
+//	mutex vP;
+//	mutex aP;
 
 	condition_variable videoCnv;
-    condition_variable audioCnv;
-    condition_variable videoDmx;
-    condition_variable audioDmx;
+	condition_variable audioCnv;
+//    condition_variable videoDmx;
+//    condition_variable audioDmx;
 
 	condition_variable writeFrame;
 
-	unsigned int num_core = 2; // todo: update with real number of core
+	unsigned int num_core = 4; // todo: update with real number of core
 
 	/* private functions */
 	void join_all();
