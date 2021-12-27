@@ -66,22 +66,6 @@ void Recorder::print_destination_info(const string &dest) const {
 	av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
 }
 
-/**
- * Create output media file
- */
-void Recorder::create_out_file(const string &dest) const {
-	auto ctx = format.outputContext.get_video();
-
-	/* create empty video file */
-	if (!(ctx->flags & AVFMT_NOFILE)) {
-		auto ret = avio_open2(&(ctx->pb), dest.c_str(), AVIO_FLAG_WRITE,nullptr, nullptr);
-		if (ret < 0) {
-			char buf[35];
-			av_strerror(ret, buf, sizeof(buf));
-			throw avException(buf);
-		}
-	}
-}
 
 /**
  * Start the capture of the screen
@@ -99,8 +83,6 @@ void Recorder::capture() {
 		th_audio = thread{&Recorder::CaptureAudioFrames, this};
 	}
 }
-
-void Recorder::capture_blocking(){}
 
 /**
  * Pause the capture
@@ -138,6 +120,15 @@ void Recorder::terminate(){
 	stopped = false;
 }
 
+/**
+ * Manually set number of working threads
+ *
+ * @param th number of threads
+ */
+void Recorder::set_threads(unsigned int th) {
+	num_core = th;
+}
+
 /* Private functions */
 
 void Recorder::join_all() {
@@ -149,6 +140,23 @@ void Recorder::join_all() {
 	}else{
 		th_audio.join();
 		th_video.join();
+	}
+}
+
+/**
+ * Create output media file
+ */
+void Recorder::create_out_file(const string &dest) const {
+	auto ctx = format.outputContext.get_video();
+
+	/* create empty video file */
+	if (!(ctx->flags & AVFMT_NOFILE)) {
+		auto ret = avio_open2(&(ctx->pb), dest.c_str(), AVIO_FLAG_WRITE,nullptr, nullptr);
+		if (ret < 0) {
+			char buf[35];
+			av_strerror(ret, buf, sizeof(buf));
+			throw avException(buf);
+		}
 	}
 }
 

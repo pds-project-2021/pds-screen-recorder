@@ -25,6 +25,7 @@ class Recorder {
 	thread th_audio;
 
 	int64_t ref_time = 0;
+	unsigned int num_core = thread::hardware_concurrency();
 
 	// action variable for pause and terminate
 	atomic<bool> pausedVideo = false;
@@ -41,15 +42,13 @@ class Recorder {
 
 	condition_variable videoCnv;
 	condition_variable audioCnv;
+	condition_variable writeFrame;
 //    condition_variable videoDmx;
 //    condition_variable audioDmx;
 
-	condition_variable writeFrame;
-
-	unsigned int num_core = 4; // todo: update with real number of core
-
 	/* private functions */
 	void join_all();
+	void create_out_file(const string& dest) const;
 
 	// single thread (de)muxing
 	void CaptureAudioFrames();
@@ -67,23 +66,10 @@ class Recorder {
 
 	void init(Screen params);
 	void capture();
-	void capture_blocking();
 	void pause();
 	void resume();
 	void terminate();
-
-
-
-//	void init_output_file();
-//	void close_media_file();
-//	void capture_video_frame_thread();
-//	void capture_auto_frame_thread();
-//	void demux_audio_input();
-//	void convert_audio_frame();
-//	void write_audio_output(...);
-//	bool capture_starte();
-
-	void create_out_file(const string& dest) const;
+	[[maybe_unused]] void set_threads(unsigned int th);
 
 	// log functions
 	[[maybe_unused]] void print_source_info() const;
