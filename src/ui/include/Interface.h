@@ -5,23 +5,23 @@
 #pragma once
 
 #include <gtk/gtk.h>
+#include <iostream>
+#include <thread>
+#include <atomic>
+#include <future>
 
-//class Interface {
-//
-//};
+#include "../../Recorder.h"
 
-GtkWidget *window;
+using namespace std;
 
-static void record(GtkWidget *widget, gpointer data) ;
+int launchUI(int argc, char **argv, Recorder *rec);
 
-static int _pause(GtkWidget *widget, gpointer data) ;
+static void record(GtkWidget *widget, gpointer data);
 
-static void stop(GtkWidget *widget, gpointer data);
+static int handlePause(GtkWidget *widget, gpointer data);
 
-static void close(GtkWidget *widget, gpointer data) ;
+static void handleStop(GtkWidget *widget, gpointer data);
 
-static void activate(GtkApplication *app, gpointer user_data) ;
+static void handleClose();
 
-int gtk_test(int argc, char **argv) ;
-
-
+static void activate(GtkApplication *app, gpointer user_data);

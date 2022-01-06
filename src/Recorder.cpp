@@ -122,6 +122,14 @@ void Recorder::terminate(){
 }
 
 /**
+ * Check if capture is paused
+ */
+bool Recorder::is_paused() {
+	return pausedAudio && pausedVideo;
+}
+
+
+/**
  * Manually set number of working threads
  *
  * @param th number of threads

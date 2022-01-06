@@ -68,6 +68,8 @@ class Recorder {
 	void pause();
 	void resume();
 	void terminate();
+	bool is_paused();
+
 	[[maybe_unused]] void set_threads(unsigned int th);
 
 	// log functions
