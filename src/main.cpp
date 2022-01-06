@@ -13,6 +13,11 @@ void prova(){
 	auto rec = Recorder{};
 	auto screen = Screen{};
 
+//	screen.set_dimension("1920x1080");
+	screen.set_dimension(720, 480);
+//	screen.set_offset("0x0");
+	screen.set_offset(100,0);
+
 	rec.init(screen);
 	cout << "end of init\n" << endl;
 

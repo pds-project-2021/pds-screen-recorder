@@ -15,6 +15,7 @@ Recorder::Recorder() {
  * Initialize ffmpeg parameters, audio/video stream and output file
  */
 void Recorder::init(Screen params) {
+	format.set_screen_params(params);
 	format.setup_source();
 
 	auto audioPar = format.get_source_audio_codec();

@@ -63,7 +63,7 @@ AVDictionary* get_video_options();
 std::string get_audio_input_format();
 std::string get_audio_input_device();
 std::string get_video_input_format();
-std::string get_video_input_device();
+std::string get_video_input_device(const Screen &screen);
 
 
 int64_t get_ref_time(const wrapper<AVFormatContext>& ctx);

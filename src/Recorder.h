@@ -5,17 +5,16 @@
 #pragma once
 
 #include "ffmpeg/include/ffmpeg.h"
-#include "Screen.h"
 
 using namespace std;
 
 class Recorder {
   private:
 	Codec codec;
-	Format format;
 	Dictionary options;
-	Stream stream;
+	Format format;
 	Rescaler rescaler;
+	Stream stream;
 
 	thread th_audio_demux;
 	thread th_audio_convert;
@@ -28,9 +27,9 @@ class Recorder {
 	unsigned int num_core = thread::hardware_concurrency();
 
 	// action variable for pause and terminate
+	atomic<bool> stopped = false;
 	atomic<bool> pausedVideo = false;
 	atomic<bool> pausedAudio = false;
-	atomic<bool> stopped = false;
 	atomic<bool> finishedVideoDemux = false;
 	atomic<bool> finishedAudioDemux = false;
 

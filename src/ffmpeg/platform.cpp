@@ -117,7 +117,7 @@ std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_device(){
+std::string get_video_input_device(const Screen &_screen){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 
@@ -140,9 +140,6 @@ AVDictionary* get_video_options(){
 
 	av_dict_set(&options, "framerate", "30", 0);
 	av_dict_set(&options, "preset", "medium", 0);
-	av_dict_set(&options, "offset_x", "0", 0);
-	av_dict_set(&options, "offset_y", "0", 0);
-//	av_dict_set(&options, "video_size", "1920x1080", 0);
 	av_dict_set(&options, "show_region", "1", 0);
 	return options;
 }
@@ -159,8 +156,9 @@ std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_device(){
-	return DEFAULT_VIDEO_INPUT_DEVICE;
+std::string get_video_input_device(const Screen &_screen){
+	auto name = DEFAULT_VIDEO_INPUT_DEVICE;
+	return string(name) + _screen.get_offset_str();
 }
 
 int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
@@ -181,6 +179,22 @@ AVDictionary* get_video_options(){
 	AVDictionary* options = nullptr;
 
 	return options;
+}
+
+std::string get_audio_input_format(){
+	return DEFAULT_AUDIO_INPUT_FORMAT;
+}
+
+std::string get_audio_input_device(){
+	return DEFAULT_AUDIO_INPUT_DEVICE;
+}
+
+std::string get_video_input_format(){
+	return DEFAULT_VIDEO_INPUT_FORMAT;
+}
+
+std::string get_video_input_device(const Screen &_screen){
+	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 
 int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {

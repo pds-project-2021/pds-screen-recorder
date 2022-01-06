@@ -27,9 +27,13 @@ class Format {
 	int videoStreamIndex = 0;
 	int audioStreamIndex = 0;
 
+	// save screen parameters for initialization of AVDictionary
+	Screen screen;
+
   private:
 	void source_audio_context();
 	void source_video_context();
+	void set_screen_parameters(AVDictionary* options) const;
 
 	/* NOTE: The destination is a file, so it will have the only one context */
 	void destination_context(const string &dest);
@@ -41,6 +45,7 @@ class Format {
 	Format() = default;
 	~Format() = default;
 
+	void set_screen_params(const Screen &params);
 	void setup_source();
 	void setup_destination(const string &dest);
 

@@ -33,7 +33,9 @@ void Format::source_video_context() {
 	input.set_video(video);
 
 	auto options = get_video_options();
-	auto videoDevice = get_video_input_device();
+	set_screen_parameters(options);
+
+	auto videoDevice = get_video_input_device(screen);
 	auto videoCtx = avformat_alloc_context();
 	auto ret = avformat_open_input(&videoCtx, videoDevice.c_str(), video, &options);
 	if (ret != 0) {
@@ -47,6 +49,13 @@ void Format::source_video_context() {
 		throw avException("Unable to find the video stream information");
 	}
 }
+
+void Format::set_screen_parameters(AVDictionary *options) const {
+	av_dict_set(&options, "offset_x", screen.get_offset_x().c_str(), 0);
+	av_dict_set(&options, "offset_y", screen.get_offset_y().c_str(), 0);
+	av_dict_set(&options, "video_size", screen.get_video_size().c_str(), 0);
+}
+
 
 void Format::destination_context(const string& dest) {
 	auto ctx = outputContext.get_video();
@@ -87,6 +96,11 @@ void Format::find_source_video_stream_info() {
 }
 
 /* Public methods */
+
+void Format::set_screen_params(const Screen &params) {
+	screen = params;
+}
+
 void Format::setup_source() {
 	source_audio_context();
 	source_video_context();
