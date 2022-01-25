@@ -289,14 +289,17 @@ static void drag(GtkGestureDrag *gesture, double offset_x, double offset_y, gpoi
 }
 
 void recorder(int sX, int sY, int eX, int eY) {
-//	if (sX == sY || eX == eY) s->init(0, 0, 0, 0);
-//	else if (sX > eX) {
-//		if (sY > eY) s->init((int) eX, (int) eY, (int) (sX - eX), (int) (sY - eY));
-//		else s->init((int) eX, (int) sY, (int) (sX - eX), (int) (eY - sY));
-//	} else {
-//		if (sY > eY) s->init((int) sX, (int) eY, (int) (eX - sX), (int) (sY - eY));
-//		else s->init((int) sX, (int) sY, (int) (eX - sX), (int) (eY - sY));
-//	}
+	if (sX == sY || eX == eY) {
+        s->init(Screen(0, 0, 0, 0));
+        std::cout << "Recording area parameters set to 0" << std::endl;
+    }
+	else if (sX > eX) {
+		if (sY > eY) s->init(Screen((int) (sX - eX), (int) (sY - eY), (int) eX, (int) eY));
+		else s->init(Screen((int) (sX - eX), (int) (eY - sY), (int) eX, (int) sY));
+	} else {
+		if (sY > eY) s->init(Screen((int) (eX - sX), (int) (sY - eY), (int) sX, (int) eY));
+		else s->init(Screen((int) (eX - sX), (int) (eY - sY), (int) sX, (int) sY));
+	}
 	std::cout << "Initialized input streams" << std::endl;
 	ready = true;
 	started = false;
