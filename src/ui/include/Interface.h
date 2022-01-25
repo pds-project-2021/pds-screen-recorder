@@ -14,7 +14,7 @@
 
 using namespace std;
 
-int launchUI(int argc, char **argv, Recorder *rec);
+int launchUI(int argc, char **argv);
 
 static void record(GtkWidget *widget, gpointer data);
 

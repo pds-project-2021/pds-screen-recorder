@@ -35,11 +35,11 @@ atomic<bool> started;
 unique_ptr<Recorder> s = nullptr;
 
 
-int launchUI(int argc, char **argv, Recorder *rec){
+int launchUI(int argc, char **argv){
 	GtkApplication *app;
 	int status;
 
-	s = unique_ptr<Recorder>(rec);
+	s = unique_ptr<Recorder>(new Recorder{});
 
 #ifdef WIN32
 	HWND Window;
@@ -340,6 +340,7 @@ void pauseRecording() {
 void stopRecording() {
 	if (!ready) return;
 	s->terminate();
+    s.reset(new Recorder{});
 	ready = false;
 	started = false;
 }

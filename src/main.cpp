@@ -45,8 +45,7 @@
 
 
 int main(int argc, char **argv) {
-	auto rec = Recorder{};
-	auto res = launchUI(argc, argv, &rec);
+	auto res = launchUI(argc, argv);
 
 	return res;
 }
