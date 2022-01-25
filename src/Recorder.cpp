@@ -74,6 +74,8 @@ void Recorder::print_destination_info(const string &dest) const {
  * Release 2 threads for audio/video demuxing and 2 threads for audio/video frame conversion
  */
 void Recorder::capture() {
+	capturing = true;
+
 	if(num_core > 2) {
 		th_audio_demux = thread{&Recorder::DemuxAudioInput, this};
 		th_audio_convert = thread{&Recorder::ConvertAudioFrames, this};
@@ -118,7 +120,7 @@ void Recorder::terminate(){
 		throw avException("Error in writing av trailer");
 	}
 
-	stopped = false;
+	capturing = false;
 }
 
 /**
@@ -126,6 +128,13 @@ void Recorder::terminate(){
  */
 bool Recorder::is_paused() {
 	return pausedAudio && pausedVideo;
+}
+
+/**
+ * Check if capture is running
+ */
+bool Recorder::is_capturing() const {
+	return capturing;
 }
 
 

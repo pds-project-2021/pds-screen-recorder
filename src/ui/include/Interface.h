@@ -16,12 +16,12 @@ using namespace std;
 
 int launchUI(int argc, char **argv);
 
-static void record(GtkWidget *widget, gpointer data);
+static void handleRecord(GtkWidget *widget, gpointer data);
 
 static int handlePause(GtkWidget *widget, gpointer data);
 
 static void handleStop(GtkWidget *widget, gpointer data);
 
-static void handleClose();
+static void handleClose(GtkWidget *widget, gpointer data);
 
 static void activate(GtkApplication *app, gpointer user_data);

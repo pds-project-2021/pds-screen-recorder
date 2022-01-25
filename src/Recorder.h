@@ -33,6 +33,8 @@ class Recorder {
 	atomic<bool> finishedVideoDemux = false;
 	atomic<bool> finishedAudioDemux = false;
 
+	atomic<bool> capturing = false;
+
 	mutex vD;
 	mutex aD;
 	mutex wR;
@@ -69,6 +71,7 @@ class Recorder {
 	void resume();
 	void terminate();
 	bool is_paused();
+	bool is_capturing() const;
 
 	[[maybe_unused]] void set_threads(unsigned int th);
 

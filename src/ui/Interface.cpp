@@ -32,14 +32,18 @@ double endY = 0;
 atomic<bool >ready;
 atomic<bool> started;
 
+
 unique_ptr<Recorder> s = nullptr;
+
+// this is used for correct closing gtk windows
+bool recordered = false;
 
 
 int launchUI(int argc, char **argv){
 	GtkApplication *app;
 	int status;
 
-	s = unique_ptr<Recorder>(new Recorder{});
+	s = std::make_unique<Recorder>();
 
 #ifdef WIN32
 	HWND Window;
@@ -333,14 +337,19 @@ void startRecording() {
 
 void pauseRecording() {
 	if (!ready) return;
-	if (s->is_paused()) s->resume();
-	else s->pause();
+	if (s->is_paused()) {
+		s->resume();
+		gtk_button_set_label(reinterpret_cast<GtkButton *>(pauseButton), "Pause");
+	}else {
+		s->pause();
+		gtk_button_set_label(reinterpret_cast<GtkButton *>(pauseButton), "Resume");
+	}
 }
 
 void stopRecording() {
 	if (!ready) return;
 	s->terminate();
-    s.reset(new Recorder{});
+    s = std::make_unique<Recorder>();
 	ready = false;
 	started = false;
 }
@@ -354,7 +363,11 @@ void select_record_region(GtkWidget *widget, gpointer data) {
 	auto h = gtk_widget_get_height(selectionArea);
 }
 
-void record(GtkWidget *widget, gpointer data) {
+void handleRecord(GtkWidget *widget, gpointer data) {
+	if (s->is_capturing()) {
+		std::future<void> foo = std::async(std::launch::async, stopRecording);
+	}
+
 	if (surface) cairo_surface_destroy(surface);
 	surface = nullptr;
 	std::future<void> foo = std::async(std::launch::async, startRecording);
@@ -376,9 +389,18 @@ static void handleStop(GtkWidget *widget, gpointer data) {
 	g_print("Stop button pressed\n");
 }
 
-static void handleClose() {
-	gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), false);
-	gtk_window_close(GTK_WINDOW(selectWindow));
+static void handleClose(GtkWidget *widget, gpointer data) {
+	g_print("Close button pressed\n");
+
+	// terminate capture if it's running
+	if (s->is_capturing()){
+		s->terminate();
+	}
+
+	if(!recordered){
+		gtk_window_destroy(GTK_WINDOW(recordWindow));
+		gtk_window_destroy(GTK_WINDOW(selectWindow));
+	}
 }
 
 static void activate(GtkApplication *app, gpointer user_data) {
@@ -412,25 +434,25 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	pauseButton = gtk_button_new_with_label("Pause");
 	stopButton = gtk_button_new_with_label("Stop");
 	startRecordButton = gtk_button_new_with_label("Start recording");
-	// closeButton = gtk_button_new_with_label("Close");
-	auto rec = g_signal_connect(recordButton, "clicked", G_CALLBACK(select_record_region), nullptr);
-	auto recStart = g_signal_connect(startRecordButton, "clicked", G_CALLBACK(record), nullptr);
+
+	auto _rec = g_signal_connect(recordButton, "clicked", G_CALLBACK(select_record_region), nullptr);
+	auto recStart = g_signal_connect(startRecordButton, "clicked", G_CALLBACK(handleRecord), nullptr);
 	auto p = g_signal_connect(pauseButton, "clicked", G_CALLBACK(handlePause), nullptr);
 	auto s = g_signal_connect(stopButton, "clicked", G_CALLBACK(handleStop), nullptr);
-	// g_signal_connect(closeButton, "clicked", G_CALLBACK(handleClose), NULL);
+
 	// gtk_window_set_child(GTK_WINDOW(window), buttonGrid);
 	gtk_window_set_child(GTK_WINDOW(window), headerBar);
 	gtk_window_set_child(GTK_WINDOW(recordWindow), startRecordButton);
 
 	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
-	gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(headerBar),
-	                                     ":minimize,handleClose");
+	gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(headerBar),":minimize,close");
 	// gtk_header_bar_set_title_widget(GTK_HEADER_BAR(headerBar), titleView);
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
 	// gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), titleView);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
+
 //    gtk_widget_set_hexpand(selectionArea, true);
 //    gtk_widget_set_vexpand(selectionArea, true);
 	gtk_window_set_child(GTK_WINDOW(selectWindow), selectionArea);
@@ -457,6 +479,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (leftGesture));
 	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (rightGesture));
 	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (motionController));
+
 //    gtk_widget_add_controller (selectionArea, GTK_EVENT_CONTROLLER (moveGesture));
 	// gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), closeButton);
 	// gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
@@ -466,7 +489,9 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	// stopButton, pauseButton, GTK_POS_RIGHT, 100, 50);
 	// gtk_grid_attach_next_to(GTK_GRID(buttonGrid), closeButton, stopButton,
 	// GTK_POS_RIGHT, 100, 50);
-	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(handleClose), NULL);
+
+	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(handleClose), nullptr);
+
 	/* Initialize the surface to white */
 //    clear_surface ();
 //    g_signal_connect (selectWindow, "motion-notify-event",
@@ -489,31 +514,31 @@ static void activate(GtkApplication *app, gpointer user_data) {
 //    gtk_widget_set_opacity(selectWindow, 0.70);
 }
 
-int gtk_test(int argc, char **argv) {
-	GtkApplication *app;
-	int status;
-
-	app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
-	g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-	status = g_application_run(G_APPLICATION(app), argc, argv);
-	g_object_unref(app);
-
-	return status;
-}
-
-template<typename T>
-bool future_is_ready(std::future<T> &t) {
-	return t.wait_for(std::chrono::seconds(1)) == std::future_status::ready;
-}
-
-void pauseTest() {
-	int secondsPause = 2;
-	int secondsResume = 1;
-	std::this_thread::sleep_for(std::chrono::seconds(secondsPause));
-	s->pause();
-	std::cout << "Capture paused after " << secondsPause << " seconds" << std::endl;
-	std::this_thread::sleep_for(std::chrono::seconds(secondsResume));
-	s->resume();
-	std::cout << "Capture resumed after " << secondsResume << " seconds" << std::endl;
-}
+//int gtk_test(int argc, char **argv) {
+//	GtkApplication *app;
+//	int status;
+//
+//	app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
+//	g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+//	status = g_application_run(G_APPLICATION(app), argc, argv);
+//	g_object_unref(app);
+//
+//	return status;
+//}
+//
+//template<typename T>
+//bool future_is_ready(std::future<T> &t) {
+//	return t.wait_for(std::chrono::seconds(1)) == std::future_status::ready;
+//}
+//
+//void pauseTest() {
+//	int secondsPause = 2;
+//	int secondsResume = 1;
+//	std::this_thread::sleep_for(std::chrono::seconds(secondsPause));
+//	s->pause();
+//	std::cout << "Capture paused after " << secondsPause << " seconds" << std::endl;
+//	std::this_thread::sleep_for(std::chrono::seconds(secondsResume));
+//	s->resume();
+//	std::cout << "Capture resumed after " << secondsResume << " seconds" << std::endl;
+//}
 

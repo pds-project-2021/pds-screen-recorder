@@ -113,10 +113,12 @@ wrapper<AVFormatContext>::~wrapper() {
 template<> inline
 wrapper<AVCodecContext>::~wrapper() {
 	if(audio != nullptr){
+		avcodec_close(audio);
 		avcodec_free_context(&audio);
 	}
 
 	if(video != nullptr){
+		avcodec_close(video);
 		avcodec_free_context(&video);
 	}
 }
@@ -134,9 +136,5 @@ wrapper<AVDictionary>::~wrapper() {
 		av_dict_free(&video);
 	}
 }
-
-
-
-
 
 

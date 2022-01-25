@@ -10,6 +10,19 @@
 //#include <unistd.h>
 //#endif
 //
+//void print_all_wrap(){
+//	cout << "---------------" << endl;
+//
+//	wrapper<AVFormatContext>::print_count();
+//	wrapper<AVInputFormat>::print_count();
+//	wrapper<AVCodec>::print_count();
+//	wrapper<AVCodecParameters>::print_count();
+//	wrapper<AVCodecContext>::print_count();
+//	wrapper<AVOutputFormat>::print_count();
+//	wrapper<AVDictionary>::print_count();
+//	Rescaler::print_count();
+//	wrapper<AVStream>::print_count();
+//}
 //
 //void prova(){
 //	auto rec = Recorder{};
@@ -41,12 +54,23 @@
 //	sleep(5);
 //	rec.terminate();
 //	cout << "end of capture\n" << endl;
+//
+//	print_all_wrap();
+//
 //}
-
+//
 
 int main(int argc, char **argv) {
 	auto res = launchUI(argc, argv);
 
 	return res;
+
+//	prova();
+//	print_all_wrap();
+//	cout << "prova 2" << endl;
+//	prova();
+//	print_all_wrap();
+
+	return 0;
 }
 
