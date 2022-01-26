@@ -31,6 +31,8 @@ class Screen{
 	[[nodiscard]] string get_offset_x() const;
 	[[nodiscard]] string get_offset_y() const;
 	[[nodiscard]] string get_offset_str() const;
+    [[nodiscard]] string get_width() const;
+    [[nodiscard]] string get_height() const;
 	[[nodiscard]] string get_video_size() const;
 };
 

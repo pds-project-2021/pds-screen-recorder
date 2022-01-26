@@ -71,6 +71,12 @@ string Screen::get_offset_str() const {
 	return "+" + to_string(offset_x) + "," + to_string(offset_y);
 }
 
+string Screen::get_width() const {
+    return to_string(width);
+}
+string Screen::get_height() const {
+    return to_string(height);
+}
 string Screen::get_video_size() const {
 	return to_string(width) + "x" + to_string(height);
 }
