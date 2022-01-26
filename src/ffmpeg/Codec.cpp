@@ -79,8 +79,8 @@ void Codec::destination_video_context() {
 	if (!videoCtx) {
 		throw avException("Error in allocating the video codec context");
 	}
-	videoCtx->gop_size = 15;
-	videoCtx->max_b_frames = 10;
+	videoCtx->gop_size = 5;
+	videoCtx->max_b_frames = 1;
 	videoCtx->time_base = {1, 30};
 
 	outputContext.set_video(videoCtx);
@@ -164,7 +164,7 @@ void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
 	outputPar.set_audio(par);
 
 	// todo cambiare codec id
-	par->codec_id = (AVCodecID) 86018;
+	par->codec_id = output.get_audio()->id;
 	par->codec_type = AVMEDIA_TYPE_AUDIO;
 	par->bit_rate = AUDIO_BITRATE;
 	par->channels = inputContext.get_audio()->channels;
@@ -178,7 +178,7 @@ void Codec::set_destination_video_parameters(AVCodecParameters *par) {
 	outputPar.set_video(par);
 
 	// todo cambiare codec id
-	par->codec_id = (AVCodecID) 27; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
+	par->codec_id = output.get_video()->id; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
 	par->codec_type = AVMEDIA_TYPE_VIDEO;
 	par->format = AV_PIX_FMT_YUV420P;
 	par->bit_rate = VIDEO_BITRATE; // 2500000

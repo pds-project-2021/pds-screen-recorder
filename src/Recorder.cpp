@@ -2,8 +2,9 @@
 // Created by gabriele on 31/10/21.
 //
 
+#pragma once
 #include "Recorder.h"
-
+#include "platform.h"
 
 /** Initialize ffmpeg codecs and devices */
 Recorder::Recorder() {
@@ -29,8 +30,8 @@ void Recorder::init(Screen params) {
 	auto dest_path = "../media/output.mp4";
 	format.setup_destination(dest_path);
 
-	auto audio_codec = "aac";
-	auto video_codec = "libx264";
+	auto audio_codec = AUDIO_CODEC_ID;
+	auto video_codec = VIDEO_CODEC_ID;
 	codec.find_encoders(audio_codec, video_codec);
 
 	stream = Stream{format, codec};

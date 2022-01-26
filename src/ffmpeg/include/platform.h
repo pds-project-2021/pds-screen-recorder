@@ -22,6 +22,7 @@
 #define FRAME_COUNT         350
 #define AUDIO_CODEC         86018 //86017 MP3; 86018 AAC;
 #define AUDIO_BITRATE       192*1000
+#define AUDIO_CODEC_ID "aac"
 
 #ifdef _WIN32
 #include <iostream>
@@ -32,11 +33,13 @@
 #define DEFAULT_AUDIO_INPUT_DEVICE   0
 #define DEFAULT_VIDEO_INPUT_FORMAT  "gdigrab"
 #define DEFAULT_VIDEO_INPUT_DEVICE  "desktop"
+#define VIDEO_CODEC_ID "h264_mf"
 
 #define VIDEO_CODEC 27 //H264
 
 #elif defined linux
 
+#define VIDEO_CODEC_ID "libx264"
 #define DEFAULT_AUDIO_INPUT_FORMAT  "pulse"
 #define DEFAULT_AUDIO_INPUT_DEVICE  "default"
 #define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
@@ -48,6 +51,7 @@
 
 // todo: add macOs default parameters
 
+#define VIDEO_CODEC_ID "libx264"
 #define DEFAULT_AUDIO_INPUT_FORMAT  "pulse"
 #define DEFAULT_AUDIO_INPUT_DEVICE  "default"
 #define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
