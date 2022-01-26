@@ -60,7 +60,6 @@ class Format {
 	[[nodiscard]] AVCodecParameters* get_source_video_codec() const;
 
 	void write_header(const Dictionary& options) const;
-
 };
 
 

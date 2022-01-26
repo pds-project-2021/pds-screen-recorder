@@ -4,9 +4,13 @@
 
 #pragma once
 
-#include "string"
+#include <filesystem>
+#include <string>
+
+#include "exceptions.h"
 
 using namespace std;
+namespace fs = filesystem;
 
 /**
  * Useful wrapper for screen parameters
@@ -37,3 +41,5 @@ class Screen{
 };
 
 bool is_file(char *url);
+bool is_file_str(const string &str);
+void move_file(const string& source, const string &dest);

@@ -365,7 +365,7 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext,
 			outputPacket->stream_index = 1;
 			auto result = av_write_frame(outputFormatContext, outputPacket);
 			if (result != 0) {
-				throw avException("Error in writing video frame");
+				throw avException("Error in writing audio frame");
 			}
 		}
 

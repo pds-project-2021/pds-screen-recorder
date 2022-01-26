@@ -4,11 +4,11 @@
 #include "ui/include/Interface.h"
 
 // todo: this is only for sleep() function, remove it for release
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
+//#ifdef _WIN32
+//#include <Windows.h>
+//#else
+//#include <unistd.h>
+//#endif
 
 //void print_all_wrap(){
 //	cout << "---------------" << endl;
@@ -66,6 +66,12 @@ int main(int argc, char **argv) {
 	auto res = t.launchUI(argc, argv);
 
 	return res;
+//	try{
+//		move_file("../media/output.mp4", "../media/prova/ciao/cose");
+//	}catch(runtime_error &e){
+//		std::cerr << e.what() << std::endl;
+//		exit(-1);
+//	}
 
 //	prova();
 //	print_all_wrap();
