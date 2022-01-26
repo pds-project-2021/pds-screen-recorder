@@ -69,7 +69,7 @@ AVDictionary* get_audio_options(){
 
 AVDictionary* get_video_options(){
 	AVDictionary* options = nullptr;
-
+    av_dict_set(&options, "offset_x", "0", 0);
 	return options;
 }
 

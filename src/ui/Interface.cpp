@@ -4,6 +4,8 @@
 
 #include "include/Interface.h"
 
+#include <memory>
+
 //GtkWidget *window;
 //GtkWidget *selectWindow;
 //GtkWidget *recordWindow;
@@ -385,7 +387,7 @@ void pauseRecording() {
 void stopRecording() {
 	if (!t->ready) return;
     t->s->terminate();
-    t->s.reset(new Recorder());
+    t->s = std::make_unique<Recorder>();
     t->ready = false;
     t->started = false;
 }

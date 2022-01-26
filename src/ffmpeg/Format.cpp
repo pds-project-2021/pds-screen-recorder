@@ -32,7 +32,7 @@ void Format::source_video_context() {
 	auto video = av_find_input_format(videoFormat.c_str());
 	input.set_video(video);
 
-	auto options = get_video_options();
+	AVDictionary* options = get_video_options();
 	set_screen_parameters(options);
 
 	auto videoDevice = get_video_input_device(screen);
