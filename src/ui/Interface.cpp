@@ -349,7 +349,7 @@ void pauseRecording() {
 void stopRecording() {
 	if (!ready) return;
 	s->terminate();
-    s = std::make_unique<Recorder>();
+    s.reset(new Recorder());
 	ready = false;
 	started = false;
 }

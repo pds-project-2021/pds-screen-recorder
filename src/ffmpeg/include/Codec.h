@@ -8,7 +8,6 @@
 #include "exceptions.h"
 #include "platform.h"
 
-
 class Codec {
   public:
 	wrapper<AVCodec> input;
