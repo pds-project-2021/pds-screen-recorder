@@ -16,6 +16,9 @@ Recorder::Recorder() {
  * Initialize ffmpeg parameters, audio/video stream and output file
  */
 void Recorder::init(Screen params) {
+#ifdef WIN32
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+#endif
 	format.set_screen_params(params);
 	format.setup_source();
 
@@ -51,6 +54,9 @@ void Recorder::init(Screen params) {
 
 	ref_time = get_ref_time(format.inputContext);
 
+#ifdef WIN32
+    CoUninitialize();
+#endif
 //	print_source_info();
 //	print_destination_info(dest_path);
 }
