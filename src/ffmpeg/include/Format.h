@@ -27,6 +27,10 @@ class Format {
 	int videoStreamIndex = 0;
 	int audioStreamIndex = 0;
 
+	// input device
+	string audioDevice;
+	string videoDevice;
+
 	// save screen parameters for initialization of AVDictionary
 	Screen screen;
 
@@ -48,6 +52,9 @@ class Format {
 	void set_screen_params(const Screen &params);
 	void setup_source();
 	void setup_destination(const string &dest);
+
+	string get_audio_device();
+	string get_video_device();
 
 	[[nodiscard]] AVCodecParameters* get_source_audio_codec() const;
 	[[nodiscard]] AVCodecParameters* get_source_video_codec() const;

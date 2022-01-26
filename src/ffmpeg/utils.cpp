@@ -9,7 +9,6 @@ using namespace std;
 
 Screen::Screen(int width, int height, int offset_x, int offset_y) {
 	// NOTE: screen parameters must be even
-
 	this->width = width % 2 ? width + 1 : width;
 	this->height = height % 2 ? height + 1 : height;
 	this->offset_x = offset_x % 2 ? offset_x + 1 : offset_x;

@@ -28,10 +28,10 @@ class Screen{
 	void set_offset(const string &offset);
 	void set_offset(int x, int y);
 
-	string get_offset_x() const;
-	string get_offset_y() const;
-	string get_offset_str() const;
-	string get_video_size() const;
+	[[nodiscard]] string get_offset_x() const;
+	[[nodiscard]] string get_offset_y() const;
+	[[nodiscard]] string get_offset_str() const;
+	[[nodiscard]] string get_video_size() const;
 };
 
 bool is_file(char *url);

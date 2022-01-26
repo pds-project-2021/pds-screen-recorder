@@ -12,9 +12,9 @@ void Format::source_audio_context() {
 	input.set_audio(audio);
 
 	auto options = get_audio_options();
-	auto audioInputDevice = get_audio_input_device();
+	audioDevice = get_audio_input_device();
 	auto audioCtx = avformat_alloc_context();
-	auto ret = avformat_open_input(&audioCtx, audioInputDevice.c_str(), audio, &options);
+	auto ret = avformat_open_input(&audioCtx, audioDevice.c_str(), audio, &options);
 	if (ret != 0) {
 		throw avException("Couldn't open audio input stream");
 	}
@@ -35,7 +35,7 @@ void Format::source_video_context() {
 	AVDictionary* options = get_video_options();
 	set_screen_parameters(options);
 
-	auto videoDevice = get_video_input_device(screen);
+	videoDevice = get_video_input_device(screen);
 	auto videoCtx = avformat_alloc_context();
 	auto ret = avformat_open_input(&videoCtx, videoDevice.c_str(), video, &options);
 	if (ret != 0) {
@@ -113,6 +113,13 @@ void Format::setup_destination(const string& dest) {
 	destination_context(dest);
 }
 
+string Format::get_audio_device() {
+	return audioDevice;
+}
+
+string Format::get_video_device() {
+	return videoDevice;
+}
 AVCodecParameters* Format::get_source_audio_codec() const {
 	auto audio = inputContext.get_audio();
 	return audio->streams[audioStreamIndex]->codecpar;
@@ -132,4 +139,3 @@ void Format::write_header(const Dictionary& options) const {
 		throw avException("Error in writing the header context");
 	}
 }
-

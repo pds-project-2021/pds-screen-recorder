@@ -112,6 +112,91 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext, AVPacket *outPacke
 	}
 }
 
+
+int convertAndWriteVideoFrame(SwsContext *swsContext,
+                              AVCodecContext *outputCodecContext,
+                              AVCodecContext *inputCodecContext,
+                              AVStream *videoStream,
+                              AVFormatContext *outputFormatContext,
+                              AVFrame *frame,
+                              const int64_t *pts_p,
+                              mutex *wR,
+                              condition_variable *writeFrame) {
+
+	auto out_frame =  Frame{outputCodecContext->width, outputCodecContext->height,(AVPixelFormat) outputCodecContext->pix_fmt, 32};
+	auto out_packet = Packet{};
+	auto outputFrame = out_frame.into();
+	auto outputPacket = out_packet.into();
+
+	int got_packet = 0;
+
+	// Convert frame picture format
+	sws_scale(swsContext,
+	          frame->data,
+	          frame->linesize,
+	          0,
+	          inputCodecContext->height,
+	          outputFrame->data,
+	          outputFrame->linesize);
+
+	// Send converted frame to encoder
+	outputFrame->pts = *pts_p - 1;
+
+	encode(outputCodecContext, outputPacket, outputFrame, &got_packet);
+
+	// Frame was sent successfully
+	if (got_packet > 0) { // Packet received successfully
+		if (outputPacket->pts != AV_NOPTS_VALUE) {
+			outputPacket->pts = av_rescale_q(outputPacket->pts, outputCodecContext->time_base, videoStream->time_base);
+		}
+		if (outputPacket->dts != AV_NOPTS_VALUE) {
+			outputPacket->dts = av_rescale_q(outputPacket->dts, outputCodecContext->time_base, videoStream->time_base);
+		}
+		outputPacket->duration = av_rescale_q(1, outputCodecContext->time_base, videoStream->time_base);
+
+		// Write packet to file
+		writeFrameToOutput(outputFormatContext, outputPacket, wR, writeFrame);
+	}
+	return 0;
+}
+
+
+int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
+                                      AVStream *videoStream,
+                                      AVFormatContext *outputFormatContext,
+                                      mutex *wR,
+                                      condition_variable *writeFrame) {
+
+
+	for (int result;;) {
+		auto out_packet = Packet{};
+		auto outPacket = out_packet.into();
+
+		avcodec_send_frame(outputCodecContext, nullptr);
+
+		if (avcodec_receive_packet(outputCodecContext, outPacket) == 0) { // Try to get packet
+			if (outPacket->pts != AV_NOPTS_VALUE) {
+				outPacket->pts =
+					av_rescale_q(outPacket->pts, outputCodecContext->time_base,
+					             videoStream->time_base);
+			}
+			if (outPacket->dts != AV_NOPTS_VALUE) {
+				outPacket->dts =
+					av_rescale_q(outPacket->dts, outputCodecContext->time_base,
+					             videoStream->time_base);
+			}
+			outPacket->duration = av_rescale_q(1, outputCodecContext->time_base,
+			                                   videoStream->time_base);
+			writeFrameToOutput(outputFormatContext, outPacket, wR, writeFrame);
+		} else { // No remaining frames to handle
+			break;
+		}
+	}
+
+	return 0;
+}
+
+
 int convertAndWriteAudioFrames(SwrContext *swrContext,
                                AVCodecContext *outputCodecContext,
                                AVCodecContext *inputCodecContext,
@@ -186,91 +271,6 @@ int convertAndWriteAudioFrames(SwrContext *swrContext,
 	}
 	return 0;
 }
-
-int convertAndWriteVideoFrame(SwsContext *swsContext,
-                              AVCodecContext *outputCodecContext,
-                              AVCodecContext *inputCodecContext,
-                              AVStream *videoStream,
-                              AVFormatContext *outputFormatContext,
-                              AVFrame *frame,
-                              const int64_t *pts_p,
-                              mutex *wR,
-                              condition_variable *writeFrame) {
-
-	auto out_frame =  Frame{outputCodecContext->width, outputCodecContext->height,(AVPixelFormat) outputCodecContext->pix_fmt, 32};
-	auto out_packet = Packet{};
-	auto outputFrame = out_frame.into();
-	auto outputPacket = out_packet.into();
-
-	int got_packet = 0;
-
-	// Convert frame picture format
-	sws_scale(swsContext,
-	          frame->data,
-	          frame->linesize,
-	          0,
-	          inputCodecContext->height,
-	          outputFrame->data,
-	          outputFrame->linesize);
-
-	// Send converted frame to encoder
-	outputFrame->pts = *pts_p - 1;
-
-	encode(outputCodecContext, outputPacket, outputFrame, &got_packet);
-
-	// Frame was sent successfully
-	if (got_packet > 0) { // Packet received successfully
-		if (outputPacket->pts != AV_NOPTS_VALUE) {
-			outputPacket->pts = av_rescale_q(outputPacket->pts, outputCodecContext->time_base, videoStream->time_base);
-		}
-		if (outputPacket->dts != AV_NOPTS_VALUE) {
-			outputPacket->dts = av_rescale_q(outputPacket->dts, outputCodecContext->time_base, videoStream->time_base);
-		}
-		outputPacket->duration = av_rescale_q(1, outputCodecContext->time_base, videoStream->time_base);
-
-		// Write packet to file
-		writeFrameToOutput(outputFormatContext, outputPacket, wR, writeFrame);
-	}
-	return 0;
-}
-
-
-
-int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
-                                      AVStream *videoStream,
-                                      AVFormatContext *outputFormatContext,
-                                      mutex *wR,
-                                      condition_variable *writeFrame) {
-
-
-	for (int result;;) {
-		auto out_packet = Packet{};
-		auto outPacket = out_packet.into();
-
-		avcodec_send_frame(outputCodecContext, nullptr);
-
-		if (avcodec_receive_packet(outputCodecContext, outPacket) == 0) { // Try to get packet
-			if (outPacket->pts != AV_NOPTS_VALUE) {
-				outPacket->pts =
-					av_rescale_q(outPacket->pts, outputCodecContext->time_base,
-					             videoStream->time_base);
-			}
-			if (outPacket->dts != AV_NOPTS_VALUE) {
-				outPacket->dts =
-					av_rescale_q(outPacket->dts, outputCodecContext->time_base,
-					             videoStream->time_base);
-			}
-			outPacket->duration = av_rescale_q(1, outputCodecContext->time_base,
-			                                   videoStream->time_base);
-			writeFrameToOutput(outputFormatContext, outPacket, wR, writeFrame);
-		} else { // No remaining frames to handle
-			break;
-		}
-	}
-
-	return 0;
-}
-
 
 
 int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,

@@ -2,13 +2,43 @@
 // Created by gabriele on 31/10/21.
 //
 
-#pragma once
 #include "Recorder.h"
-#include "platform.h"
 
 /** Initialize ffmpeg codecs and devices */
 Recorder::Recorder() {
 	avdevice_register_all();
+}
+
+/**
+ * Get output audio codec
+ * @return
+ */
+[[maybe_unused]] string Recorder::get_audio_codec() {
+	return audio_codec;
+}
+
+/**
+ * Get output video codec
+ * @return
+ */
+[[maybe_unused]] string Recorder::get_video_codec() {
+	return video_codec;
+}
+
+/**
+ * Set output audio codec
+ * @param device
+ */
+void Recorder::set_audio_codec(const string &cod) {
+	audio_codec = cod;
+}
+
+/**
+ * Set output video codec
+ * @param device
+ */
+void Recorder::set_video_codec(const string &cod) {
+	video_codec = cod;
 }
 
 
@@ -19,6 +49,7 @@ void Recorder::init(Screen params) {
 #ifdef WIN32
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
+
 	format.set_screen_params(params);
 	format.setup_source();
 
@@ -33,8 +64,6 @@ void Recorder::init(Screen params) {
 	auto dest_path = "../media/output.mp4";
 	format.setup_destination(dest_path);
 
-	auto audio_codec = AUDIO_CODEC_ID;
-	auto video_codec = VIDEO_CODEC_ID;
 	codec.find_encoders(audio_codec, video_codec);
 
 	stream = Stream{format, codec};
@@ -57,16 +86,12 @@ void Recorder::init(Screen params) {
 #ifdef WIN32
     CoUninitialize();
 #endif
-//	print_source_info();
-//	print_destination_info(dest_path);
 }
 
-
-[[maybe_unused]]
-void Recorder::print_source_info() const{
-	// todo cambiare nomi device
-	av_dump_format(format.inputContext.get_video(), 0 , DEFAULT_VIDEO_INPUT_DEVICE, 0);
-	av_dump_format(format.inputContext.get_audio(), 0, DEFAULT_AUDIO_INPUT_DEVICE, 0);
+[[maybe_unused]] [[maybe_unused]]
+void Recorder::print_source_info() {
+	av_dump_format(format.inputContext.get_audio(), 0, format.get_audio_device().c_str(), 0);
+	av_dump_format(format.inputContext.get_video(), 0 , format.get_video_device().c_str(), 0);
 }
 
 [[maybe_unused]]
@@ -140,10 +165,9 @@ bool Recorder::is_paused() {
 /**
  * Check if capture is running
  */
-bool Recorder::is_capturing() const {
+bool Recorder::is_capturing() {
 	return capturing;
 }
-
 
 /**
  * Manually set number of working threads

@@ -38,10 +38,12 @@
 int decode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_frame);
 int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet);
 
+
 void writeFrameToOutput(AVFormatContext *outputFormatContext,
                         AVPacket *outPacket,
                         mutex *wR,
                         condition_variable *writeFrame);
+// Video functions
 
 int convertAndWriteVideoFrame(SwsContext *swsContext,
                               AVCodecContext *outputCodecContext,
@@ -59,13 +61,7 @@ int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
                                       mutex *wR,
                                       condition_variable *writeFrame);
 
-int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
-                                             AVCodecContext *outputCodecContext,
-                                             AVStream *audioStream,
-                                             AVFormatContext *outputFormatContext,
-                                             int finalSize,
-                                             mutex *wR,
-                                             condition_variable *writeFrame);
+// Audio functions
 
 int convertAndWriteAudioFrames(SwrContext *swrContext,
                                       AVCodecContext *outputCodecContext,
@@ -77,14 +73,6 @@ int convertAndWriteAudioFrames(SwrContext *swrContext,
                                       mutex *wR,
                                       condition_variable *writeFrame);
 
-int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
-                                             AVCodecContext *outputCodecContext,
-                                             AVStream *audioStream,
-                                             AVFormatContext *outputFormatContext,
-                                             int finalSize,
-                                             mutex *wR,
-                                             condition_variable *writeFrame);
-
 int convertAndWriteLastAudioFrames(SwrContext *swrContext,
                                    AVCodecContext *outputCodecContext,
                                    AVCodecContext *inputCodecContext,
@@ -93,3 +81,13 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext,
                                    int64_t *pts_p,
                                    mutex *wR,
                                    condition_variable *writeFrame);
+
+
+int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
+                                      AVCodecContext *outputCodecContext,
+                                      AVStream *audioStream,
+                                      AVFormatContext *outputFormatContext,
+                                      int finalSize,
+                                      mutex *wR,
+                                      condition_variable *writeFrame);
+

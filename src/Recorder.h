@@ -16,6 +16,10 @@ class Recorder {
 	Rescaler rescaler;
 	Stream stream;
 
+	// output codec
+	string audio_codec = DEFAULT_AUDIO_CODEC;
+	string video_codec = DEFAULT_VIDEO_CODEC;
+
 	thread th_audio_demux;
 	thread th_audio_convert;
 	thread th_video_demux;
@@ -38,14 +42,10 @@ class Recorder {
 	mutex vD;
 	mutex aD;
 	mutex wR;
-//	mutex vP;
-//	mutex aP;
 
 	condition_variable videoCnv;
 	condition_variable audioCnv;
 	condition_variable writeFrame;
-//    condition_variable videoDmx;
-//    condition_variable audioDmx;
 
 	/* private functions */
 	void join_all();
@@ -65,18 +65,25 @@ class Recorder {
 	Recorder();
     ~Recorder() = default;
 
+	// recorder parameters functions
+	[[maybe_unused]] string get_audio_codec();
+	[[maybe_unused]] string get_video_codec();
+	[[maybe_unused]] void set_audio_codec(const string &cod);
+	[[maybe_unused]] void set_video_codec(const string &cod);
+
+	// recorder factions
 	void init(Screen params);
 	void capture();
 	void pause();
 	void resume();
 	void terminate();
 	bool is_paused();
-	bool is_capturing() const;
+	bool is_capturing();
 
 	[[maybe_unused]] void set_threads(unsigned int th);
 
 	// log functions
-	[[maybe_unused]] void print_source_info() const;
+	[[maybe_unused]] void print_source_info();
 	[[maybe_unused]] void print_destination_info(const string& dest) const;
 };
 
