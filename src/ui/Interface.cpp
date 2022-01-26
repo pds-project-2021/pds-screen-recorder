@@ -4,42 +4,42 @@
 
 #include "include/Interface.h"
 
-GtkWidget *window;
-GtkWidget *selectWindow;
-GtkWidget *recordWindow;
-GtkWidget *recordButton;
-GtkWidget *startRecordButton;
-GtkWidget *pauseButton;
-GtkWidget *stopButton;
-GtkWidget *headerBar;
-atomic<bool> selection_enabled;
-GtkWidget *image;
-GtkTextBuffer *title;
-GtkGesture *leftGesture;
-GtkGesture *rightGesture;
-GtkGesture *moveGesture;
-GtkEventController *motionController;
-GtkWidget *selectionArea;
-GtkCssProvider *cssProvider;
-GtkStyleContext *context;
-cairo_surface_t *surface = nullptr;
-cairo_surface_t *background;
-GtkWidget *titleView;
-double startX = 0;
-double startY = 0;
-double endX = 0;
-double endY = 0;
-atomic<bool >ready;
-atomic<bool> started;
-
-
-unique_ptr<Recorder> s = nullptr;
+//GtkWidget *window;
+//GtkWidget *selectWindow;
+//GtkWidget *recordWindow;
+//GtkWidget *recordButton;
+//GtkWidget *startRecordButton;
+//GtkWidget *pauseButton;
+//GtkWidget *stopButton;
+//GtkWidget *headerBar;
+//atomic<bool> selection_enabled;
+//GtkWidget *image;
+//GtkTextBuffer *title;
+//GtkGesture *leftGesture;
+//GtkGesture *rightGesture;
+//GtkGesture *moveGesture;
+//GtkEventController *motionController;
+//GtkWidget *selectionArea;
+//GtkCssProvider *cssProvider;
+//GtkStyleContext *context;
+//cairo_surface_t *surface = nullptr;
+//cairo_surface_t *background;
+//GtkWidget *titleView;
+//double startX = 0;
+//double startY = 0;
+//double endX = 0;
+//double endY = 0;
+//atomic<bool> ready;
+//atomic<bool> started;
+//
+//
+//unique_ptr<Recorder> s = nullptr;
 
 // this is used for correct closing gtk windows
-bool recordered = false;
+//bool recordered = false;
+Interface* t = nullptr;
 
-
-int launchUI(int argc, char **argv){
+int Interface::launchUI(int argc, char **argv){
 	GtkApplication *app;
 	int status;
 
@@ -55,15 +55,14 @@ int launchUI(int argc, char **argv){
 	g_signal_connect(app, "activate", G_CALLBACK(activate), nullptr);
 	status = g_application_run(G_APPLICATION(app), argc, argv);
 	g_object_unref(app);
-
+    t = this;
 	return status;
 }
-
 
 static void clear_surface(void) {
 	cairo_t *cr;
 
-	cr = cairo_create(surface);
+	cr = cairo_create(t->surface);
 
 	cairo_set_source_rgb(cr, 0, 0, 0);
 	cairo_paint(cr);
@@ -182,22 +181,55 @@ static void clear_surface(void) {
 //}
 //#endif
 
+double Interface::getRectCoordinates(double& offsetX, double& offsetY, double& width, double& height) {
+    if (startX > endX) {
+        if (startY > endY) {
+            offsetX = startX;
+            offsetY = startY;
+            width = endX - startX;
+            height = endY - startY;
+        }
+        else {
+            offsetX = startX;
+            offsetY = endY;
+            width = endX - startX;
+            height = startY - endY;
+        }
+    } else {
+        if (startY > endY) {
+            offsetX = endX;
+            offsetY = startY;
+            width = startX - endX;
+            height = endY - startY;
+        }
+        else {
+            offsetX = endX;
+            offsetY = endY;
+            width = startX - endX;
+            height = startY - endY;
+        }
+    }
+};
+
 static void draw_rect(cairo_t *cr) {
 //    cairo_set_source_rgb (cr, 1, 1, 1);
-	if (startX > endX) {
-		if (startY > endY) cairo_rectangle(cr, startX, startY, endX - startX, endY - startY);     /* set rectangle */
-		else cairo_rectangle(cr, startX, endY, endX - startX, startY - endY);
-	} else {
-		if (startY > endY) cairo_rectangle(cr, endX, startY, startX - endX, endY - startY);     /* set rectangle */
-		else cairo_rectangle(cr, endX, endY, startX - endX, startY - endY);
-	}
+    double offsetX, offsetY, width, height;
+    t->getRectCoordinates(offsetX, offsetY, width, height);
+    cairo_rectangle(cr, offsetX, offsetY, width, height);
+//	if (startX > endX) {
+//		if (startY > endY) cairo_rectangle(cr, startX, startY, endX - startX, endY - startY);     /* set rectangle */
+//		else cairo_rectangle(cr, startX, endY, endX - startX, startY - endY);
+//	} else {
+//		if (startY > endY) cairo_rectangle(cr, endX, startY, startX - endX, endY - startY);     /* set rectangle */
+//		else cairo_rectangle(cr, endX, endY, startX - endX, startY - endY);
+//	}
 //    cairo_rectangle (cr, 10, 10, 180, 180);
 	cairo_set_source_rgba(cr, 0.3, 0.4, 0.6, 0.7);   /* set fill color */
 	cairo_fill(cr);                            /* fill rectangle */
 }
 
 static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width, int height, gpointer data) {
-	if (!surface) {
+	if (!t->surface) {
 		cairo_set_source_rgba(cr, 0, 0, 0, 0.7);   /* set fill color */
 	} else cairo_set_source_surface(cr, surface, 0, 0);
 	cairo_paint(cr);
@@ -205,13 +237,13 @@ static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width, int heigh
 
 void motion_detected(GtkEventControllerMotion *controller, double x, double y, gpointer user_data) {
 	if (selection_enabled) {
-		if (!surface) return;
+		if (!t->surface) return;
 		endX = x;
 		endY = y;
 		cairo_t *cr;
 //        cairo_surface_destroy(surface);
 //        surface = cairo_image_surface_create_from_png("../src/screen.png");
-		cr = cairo_create(surface);
+		cr = cairo_create(t->surface);
 		cairo_set_source_rgba(cr, 0, 0, 0, 0.7);
 		cairo_paint(cr);
 		draw_rect(cr);
@@ -225,8 +257,8 @@ static void right_btn_pressed(GtkGestureClick *gesture, int n_press, double x, d
 	std::cout << "Start coordinates: " << x << ", " << y << std::endl;
 	gtk_window_close(GTK_WINDOW(selectWindow));
 	gtk_window_close(GTK_WINDOW(recordWindow));
-	if (surface) cairo_surface_destroy(surface);
-//    surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
+	if (t->getSurface()) cairo_surface_destroy(t->getSurface());
+//    t->surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
 	gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
 	gtk_window_present(GTK_WINDOW(window));
 
@@ -260,7 +292,7 @@ static void left_btn_pressed(GtkGestureClick *gesture, int n_press, double x, do
 //    screenCapture(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), "../src/screen.png");
 //    background = cairo_image_surface_create_from_png("../src/screen.png");
 //    surface = cairo_image_surface_create_from_png("../src/screen.png");
-	surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+    t->surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
 	                                     gtk_widget_get_allocated_width(selectWindow),
 	                                     gtk_widget_get_allocated_height(selectWindow));
 	selection_enabled = true;
@@ -276,7 +308,7 @@ static void left_btn_released(GtkGestureClick *gesture, int n_press, double x, d
 	gtk_gesture_set_state(GTK_GESTURE (gesture),
 	                      GTK_EVENT_SEQUENCE_CLAIMED);
 	cairo_t *cr;
-	cr = cairo_create(surface);
+	cr = cairo_create(t->surface);
 	draw_rect(cr);
 	cairo_destroy(cr);
 	gtk_widget_queue_draw(GTK_WIDGET(selectionArea));
@@ -288,7 +320,7 @@ static void left_btn_released(GtkGestureClick *gesture, int n_press, double x, d
 }
 
 static void drag(GtkGestureDrag *gesture, double offset_x, double offset_y, gpointer user_data) {
-	cairo_surface_flush(surface);
+	cairo_surface_flush(t->surface);
 	gtk_gesture_set_state(GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
@@ -347,7 +379,7 @@ void pauseRecording() {
 }
 
 void stopRecording() {
-	if (!ready) return;
+//	if (!ready) return;
 	s->terminate();
     s.reset(new Recorder());
 	ready = false;
@@ -368,8 +400,8 @@ void handleRecord(GtkWidget *widget, gpointer data) {
 		std::future<void> foo = std::async(std::launch::async, stopRecording);
 	}
 
-	if (surface) cairo_surface_destroy(surface);
-	surface = nullptr;
+	if (t->surface) cairo_surface_destroy(t->surface);
+    t->surface = nullptr;
 	std::future<void> foo = std::async(std::launch::async, startRecording);
 	gtk_window_close(GTK_WINDOW(selectWindow));
 	gtk_window_close(GTK_WINDOW(recordWindow));
