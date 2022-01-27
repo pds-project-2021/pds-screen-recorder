@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
-project(pds_screen_recorder)
+project(recs VERSION 0.0.1)
 
-set(CMAKE_CXX_STANDARD 14)
+configure_file(config.h.in config.h)
 
+set(CMAKE_CXX_STANDARD 17)
 
 if (UNIX)
     find_package(PkgConfig REQUIRED)
@@ -63,9 +64,14 @@ elseif (WIN32)
     include_directories(${FFMPEG_INCLUDE_DIRS})
 endif ()
 
-add_executable(pds_screen_recorder src/main.cpp src/ScreenRecorder.cpp src/ScreenRecorder.h src/exceptions/fsException.h src/exceptions/dataException.h src/exceptions/avException.h src/ffmpeg/ffmpeg.h src/ffmpeg/ffmpegcpp.h)
+
+add_subdirectory(src/ffmpeg)
+add_subdirectory(src/ui)
+
+add_executable(${PROJECT_NAME} src/main.cpp src/Recorder.h src/Recorder.cpp)
+
 if(UNIX)
-    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV)
+    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV ffmpegcpp ui)
 elseif(WIN32)
-    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES} ffmpegcpp ui)
 endif()

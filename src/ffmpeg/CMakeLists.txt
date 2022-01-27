@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.20)
+project(ffmpegcpp)
+
+add_library(${PROJECT_NAME} Codec.cpp Format.cpp Stream.cpp Dictionary.cpp Rescaler.cpp platform.cpp Frame.cpp utils.cpp ffmpeg.cpp)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
