@@ -56,6 +56,8 @@ void Format::set_screen_parameters(AVDictionary *options) const {
         av_dict_set(&options, "offset_y", screen.get_offset_y().c_str(), 0);
         av_dict_set(&options, "video_size", screen.get_video_size().c_str(), 0);
     }
+
+	av_dict_set(&options, "show_region", screen.get_show_region().c_str(), 0);
 }
 
 

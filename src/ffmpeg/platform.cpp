@@ -140,7 +140,6 @@ AVDictionary* get_video_options(){
 
 	av_dict_set(&options, "framerate", "30", 0);
 	av_dict_set(&options, "preset", "medium", 0);
-	av_dict_set(&options, "show_region", "1", 0);
 	return options;
 }
 

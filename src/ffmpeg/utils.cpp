@@ -59,6 +59,10 @@ void Screen::set_offset(int x, int y) {
 	offset_y = y;
 }
 
+void Screen::set_show_region(bool val) {
+	show_region = val;
+}
+
 string Screen::get_offset_x() const {
 	return to_string(offset_x);
 }
@@ -81,6 +85,10 @@ string Screen::get_height() const {
 
 string Screen::get_video_size() const {
 	return to_string(width) + "x" + to_string(height);
+}
+
+string Screen::get_show_region() const {
+	return to_string(show_region);
 }
 
 /* General utils functions */

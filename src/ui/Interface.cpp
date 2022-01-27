@@ -342,6 +342,7 @@ void recorder(int sX, int sY, int eX, int eY) {
 		if (sY > eY) t->s->init(Screen((int) (eX - sX), (int) (sY - eY), (int) sX, (int) eY));
 		else t->s->init(Screen((int) (eX - sX), (int) (eY - sY), (int) sX, (int) sY));
 	}
+
 	std::cout << "Initialized input streams" << std::endl;
     t->ready = true;
     t->started = false;

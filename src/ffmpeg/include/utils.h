@@ -21,6 +21,7 @@ class Screen{
 	int offset_x = 0.0;
 	int offset_y = 0.0;
 
+	bool show_region = true;
   public:
 
 	Screen() = default;
@@ -31,6 +32,7 @@ class Screen{
 	void set_dimension(int w, int h);
 	void set_offset(const string &offset);
 	void set_offset(int x, int y);
+	void set_show_region(bool val);
 
 	[[nodiscard]] string get_offset_x() const;
 	[[nodiscard]] string get_offset_y() const;
@@ -38,6 +40,7 @@ class Screen{
     [[nodiscard]] string get_width() const;
     [[nodiscard]] string get_height() const;
 	[[nodiscard]] string get_video_size() const;
+	[[nodiscard]] string get_show_region() const;
 };
 
 bool is_file(char *url);

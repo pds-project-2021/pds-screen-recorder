@@ -41,7 +41,6 @@ void Recorder::set_video_codec(const string &cod) {
 	video_codec = cod;
 }
 
-
 /**
  * Initialize ffmpeg parameters, audio/video stream and output file
  */
@@ -674,6 +673,7 @@ void Recorder::ConvertVideoFrames() {
 	                                  &wR,
 	                                  &writeFrame);
 }
+
 
 
 
