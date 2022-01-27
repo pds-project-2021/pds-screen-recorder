@@ -106,7 +106,7 @@ void move_file(const string& source, const string& dest){
 	try {
 		auto dest_path = fs::path(dest);
 		auto dest_folder = is_file_str(dest)? dest_path.parent_path(): dest_path;
-		auto dest_file = is_file_str(dest_path.string())? dest_path: dest_path/ fs::path(source).filename();
+		auto dest_file = is_file_str(dest)? dest_path: dest_path/ fs::path(source).filename();
 
 		// create parent folder tree
 		if(!exists(dest_folder)){
