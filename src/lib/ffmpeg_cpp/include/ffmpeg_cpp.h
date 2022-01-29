@@ -3,7 +3,7 @@
 //
 
 /**
- * ffmpeg wrapper with cpp class and utilities
+ * lib wrapper with cpp class and utilities
  */
 
 #pragma once
@@ -22,6 +22,11 @@
 #include <thread>
 #include <atomic>
 
+
+// import top level exceptions
+#include "exceptions.h"
+
+// import ffmpeg C headers
 #include "ffmpegc.h"
 
 #include "platform.h"
@@ -32,8 +37,9 @@
 #include "Rescaler.h"
 #include "Frame.h"
 #include "Packet.h"
+#include "Screen.h"
 
-/* Very low level C-like fuctions */
+/* Very low level C-like functions */
 
 int decode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_frame);
 int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet);

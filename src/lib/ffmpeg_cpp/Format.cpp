@@ -2,7 +2,7 @@
 // Created by gabriele on 31/10/21.
 //
 
-#include "include/Format.h"
+#include "Format.h"
 
 /* Private methods */
 
@@ -35,7 +35,7 @@ void Format::source_video_context() {
 	AVDictionary* options = get_video_options();
 	set_screen_parameters(options);
 
-	videoDevice = get_video_input_device(screen);
+	videoDevice = get_video_input_device(screen.get_offset_str());
 	auto videoCtx = avformat_alloc_context();
 	auto ret = avformat_open_input(&videoCtx, videoDevice.c_str(), video, &options);
 	if (ret != 0) {

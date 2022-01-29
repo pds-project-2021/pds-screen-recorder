@@ -1,5 +1,5 @@
 //
-// Created by gabriele on 23/12/21.
+// Created by gabriele on 29/01/22.
 //
 
 #pragma once
@@ -7,10 +7,10 @@
 #include <filesystem>
 #include <string>
 
+// import top level exceptions
 #include "exceptions.h"
 
 using namespace std;
-namespace fs = filesystem;
 
 /**
  * Useful wrapper for screen parameters
@@ -37,12 +37,11 @@ class Screen{
 	[[nodiscard]] string get_offset_x() const;
 	[[nodiscard]] string get_offset_y() const;
 	[[nodiscard]] string get_offset_str() const;
-    [[nodiscard]] string get_width() const;
-    [[nodiscard]] string get_height() const;
+	[[nodiscard]] string get_width() const;
+	[[nodiscard]] string get_height() const;
 	[[nodiscard]] string get_video_size() const;
 	[[nodiscard]] string get_show_region() const;
 };
 
-bool is_file(char *url);
-bool is_file_str(const string &str);
-void move_file(const string& source, const string &dest);
+
+

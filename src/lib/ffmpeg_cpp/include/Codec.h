@@ -5,7 +5,6 @@
 #pragma once
 
 #include "wrapper.h"
-#include "exceptions.h"
 #include "platform.h"
 
 class Codec {

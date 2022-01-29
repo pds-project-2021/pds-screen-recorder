@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "ffmpegc.h"
 #include "Tracker.h"
 #include "Codec.h"
 

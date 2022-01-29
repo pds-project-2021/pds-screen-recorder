@@ -2,7 +2,7 @@
 // Created by gabriele on 21/11/21.
 //
 
-#include "include/Rescaler.h"
+#include "Rescaler.h"
 
 Rescaler::Rescaler() {
 	swrCtx = swr_alloc();

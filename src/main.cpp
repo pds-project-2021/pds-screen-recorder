@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "Recorder.h"
-#include "ui/include/Interface.h"
+#include "lib/Recorder.h"
+#include "Interface.h"
 
 // todo: this is only for sleep() function, remove it for release
 //#ifdef _WIN32

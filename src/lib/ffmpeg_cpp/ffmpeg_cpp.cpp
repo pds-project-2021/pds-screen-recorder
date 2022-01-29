@@ -2,7 +2,7 @@
 // Created by gabriele on 23/12/21.
 //
 
-#include "ffmpeg.h"
+#include "ffmpeg_cpp.h"
 
 /**
  * Decode a packet and write a frame

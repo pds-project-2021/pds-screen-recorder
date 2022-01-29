@@ -9,8 +9,9 @@
 #include <thread>
 #include <atomic>
 #include <future>
+#include <memory>
 
-#include "../../Recorder.h"
+#include "lib/Recorder.h"
 
 using namespace std;
 

@@ -4,9 +4,11 @@
 
 #pragma once
 
+// import top level exceptions
+#include "exceptions.h"
+
 #include "ffmpegc.h"
 #include "Tracker.h"
-#include "exceptions.h"
 
 template <typename T>
 class ptr_wrapper: public Tracker<ptr_wrapper<T>>{

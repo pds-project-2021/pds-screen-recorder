@@ -12,7 +12,7 @@ if (UNIX)
     include_directories(${GTK4_INCLUDE_DIRS})
     link_directories(${GTK4_LIBRARY_DIRS})
     add_definitions(${GTK4_CFLAGS_OTHER})
-    # ffmpeg
+    # lib
     pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
             libavdevice
             libavfilter
@@ -64,14 +64,13 @@ elseif (WIN32)
     include_directories(${FFMPEG_INCLUDE_DIRS})
 endif ()
 
+# include lib
+add_subdirectory(src/lib)
 
-add_subdirectory(src/ffmpeg)
-add_subdirectory(src/ui)
-
-add_executable(${PROJECT_NAME} src/main.cpp src/Recorder.h src/Recorder.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h)
 
 if(UNIX)
-    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV ffmpegcpp ui)
+    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV lib)
 elseif(WIN32)
-    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES} ffmpegcpp ui)
+    target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES} lib)
 endif()

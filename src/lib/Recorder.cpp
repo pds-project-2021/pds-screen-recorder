@@ -4,7 +4,7 @@
 
 #include "Recorder.h"
 
-/** Initialize ffmpeg codecs and devices */
+/** Initialize lib codecs and devices */
 Recorder::Recorder() {
 	avdevice_register_all();
 }
@@ -42,7 +42,7 @@ void Recorder::set_video_codec(const string &cod) {
 }
 
 /**
- * Initialize ffmpeg parameters, audio/video stream and output file
+ * Initialize lib parameters, audio/video stream and output file
  */
 void Recorder::init(Screen params) {
 #ifdef WIN32

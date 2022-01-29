@@ -9,9 +9,9 @@
 #pragma once
 
 #include "wrapper.h"
-#include "exceptions.h"
 #include "platform.h"
 #include "Dictionary.h"
+#include "Screen.h"
 
 class Format {
   public:

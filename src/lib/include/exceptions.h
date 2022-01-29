@@ -3,7 +3,7 @@
 //
 
 /**
- * ffmpeg runtime exceptions
+ * lib runtime exceptions
  */
 
 #pragma once

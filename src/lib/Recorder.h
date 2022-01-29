@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "ffmpeg/include/ffmpeg.h"
+#include "ffmpeg_cpp.h"
 
 using namespace std;
 
@@ -48,6 +48,7 @@ class Recorder {
 	condition_variable writeFrame;
 
 	/* private functions */
+
 	void join_all();
 	void create_out_file(const string& dest) const;
 

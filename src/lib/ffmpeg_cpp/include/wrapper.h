@@ -4,9 +4,12 @@
 
 #pragma once
 
+// import library top level exceptions
+#include "exceptions.h"
+#include "utils.h"
+
 #include "ffmpegc.h"
 #include "Tracker.h"
-#include "utils.h"
 
 using namespace std;
 

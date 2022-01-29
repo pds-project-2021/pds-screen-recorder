@@ -4,7 +4,7 @@
 
 
 /**
- * Interface to the low level ffmpeg libraries
+ * This file contains all C header file for low level libraries
  */
 
 #pragma once

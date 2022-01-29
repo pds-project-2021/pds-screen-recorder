@@ -117,7 +117,7 @@ std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_device(const Screen &_screen){
+std::string get_video_input_device(const string &_offset){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 
@@ -155,9 +155,9 @@ std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_device(const Screen &_screen){
+std::string get_video_input_device(const string &_offset){
 	auto name = DEFAULT_VIDEO_INPUT_DEVICE;
-	return string(name) + _screen.get_offset_str();
+	return string(name) + _offset;
 }
 
 int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
@@ -192,7 +192,7 @@ std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_device(const Screen &_screen){
+std::string get_video_input_device(const string &_offset){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 
