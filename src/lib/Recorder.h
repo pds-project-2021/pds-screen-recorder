@@ -15,6 +15,7 @@ class Recorder {
 	Format format;
 	Rescaler rescaler;
 	Stream stream;
+    std::string destination_path;
 
 	// output codec
     std::string audio_codec = DEFAULT_AUDIO_CODEC;
@@ -80,7 +81,8 @@ class Recorder {
 	void terminate();
 	bool is_paused();
 	bool is_capturing();
-
+    void set_destination(const std::string&);
+    const std::string get_destination();
 	[[maybe_unused]] void set_threads(unsigned int th);
 
 	// log functions

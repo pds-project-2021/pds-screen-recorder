@@ -4,40 +4,6 @@
 
 #include "Interface.h"
 
-//GtkWidget *window;
-//GtkWidget *selectWindow;
-//GtkWidget *recordWindow;
-//GtkWidget *recordButton;
-//GtkWidget *startRecordButton;
-//GtkWidget *pauseButton;
-//GtkWidget *stopButton;
-//GtkWidget *headerBar;
-//atomic<bool> selection_enabled;
-//GtkWidget *image;
-//GtkTextBuffer *title;
-//GtkGesture *leftGesture;
-//GtkGesture *rightGesture;
-//GtkGesture *moveGesture;
-//GtkEventController *motionController;
-//GtkWidget *selectionArea;
-//GtkCssProvider *cssProvider;
-//GtkStyleContext *context;
-//cairo_surface_t *surface = nullptr;
-//cairo_surface_t *background;
-//GtkWidget *titleView;
-//double startX = 0;
-//double startY = 0;
-//double endX = 0;
-//double endY = 0;
-//atomic<bool> ready;
-//atomic<bool> started;
-//
-//
-//unique_ptr<Recorder> s = nullptr;
-
-// this is used for correct closing gtk windows
-//bool recordered = false;
-
 Interface* t = nullptr;
 
 int Interface::launchUI(int argc, char **argv){
@@ -57,6 +23,22 @@ int Interface::launchUI(int argc, char **argv){
 	status = g_application_run(G_APPLICATION(app), argc, argv);
 	g_object_unref(app);
 	return status;
+}
+
+static void
+on_save_response (GtkDialog *dialog,
+                  int        response)
+{
+    if (response == GTK_RESPONSE_ACCEPT)
+    {
+        GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+        move_file(t->dest, g_file_get_path(gtk_file_chooser_get_file(chooser)));
+    }
+    else if(response == GTK_RESPONSE_CANCEL) {
+
+    }
+
+    gtk_window_close (GTK_WINDOW (dialog));
 }
 
 static void clear_surface(void) {
@@ -386,6 +368,7 @@ void pauseRecording() {
 void stopRecording() {
 	if (!t->ready) return;
     t->s->terminate();
+    t->dest = t->s->get_destination();
     t->s = std::make_unique<Recorder>();
     t->ready = false;
     t->started = false;
@@ -424,6 +407,8 @@ static int handlePause(GtkWidget *widget, gpointer data) {
 static void handleStop(GtkWidget *widget, gpointer data) {
 	std::future<void> foo = std::async(std::launch::async, stopRecording);
 	g_print("Stop button pressed\n");
+    foo.wait();
+    gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
 }
 
 static void handleClose(GtkWidget *widget, gpointer data) {
@@ -490,6 +475,22 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(t->headerBar), t->stopButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(t->headerBar), t->pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(t->headerBar), t->recordButton);
+
+    GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
+    t->fileChoiceDialog = gtk_file_chooser_dialog_new ("Open File",
+                                                       GTK_WINDOW(t->window),
+                                                        action,
+                                                        (const char *) "Cancel",
+                                                        GTK_RESPONSE_CANCEL,
+                                                        (const char *) "Save",
+                                                        GTK_RESPONSE_ACCEPT,
+                                                        NULL);
+    t->fileChooser = GTK_FILE_CHOOSER (t->fileChoiceDialog);
+    gtk_file_chooser_set_current_name (t->fileChooser, "Untitled.mp4");
+    g_signal_connect (t->fileChoiceDialog, "response",
+                      G_CALLBACK (on_save_response),
+                      NULL);
+    gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
 
 //    gtk_widget_set_hexpand(selectionArea, true);
 //    gtk_widget_set_vexpand(selectionArea, true);

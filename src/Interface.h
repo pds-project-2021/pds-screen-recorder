@@ -37,6 +37,8 @@ public:
     GtkStyleContext *context;
     cairo_surface_t *background;
     GtkWidget *titleView;
+    GtkWidget *fileChoiceDialog;
+    GtkFileChooser *fileChooser;
     double startX = 0;
     double startY = 0;
     double endX = 0;
@@ -45,6 +47,7 @@ public:
     std::atomic<bool> started;
     std::unique_ptr<Recorder> s = nullptr;
     bool recordered = false;
+    std::string dest;
 
     Interface();
     cairo_surface_t *surface = nullptr;

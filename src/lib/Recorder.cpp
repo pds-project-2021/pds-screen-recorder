@@ -44,6 +44,16 @@ void Recorder::set_video_codec(const std::string &cod) {
 /**
  * Initialize lib parameters, audio/video stream and output file
  */
+
+void Recorder::set_destination(const std::string& dest_path) {
+    destination_path = dest_path;
+}
+
+const std::string Recorder::get_destination() {
+    return destination_path;
+}
+
+
 void Recorder::init(Screen params) {
 #ifdef WIN32
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -60,8 +70,8 @@ void Recorder::init(Screen params) {
 	codec.setup_source();
 
 	// format
-	auto dest_path = "../media/output.mp4";
-	format.setup_destination(dest_path);
+    if(destination_path == "") destination_path = "../media/output.mp4";
+	format.setup_destination(destination_path);
 
 	codec.find_encoders(audio_codec, video_codec);
 
@@ -74,7 +84,7 @@ void Recorder::init(Screen params) {
 
 	codec.setup_destination();
 
-	create_out_file(dest_path);
+	create_out_file(destination_path);
 	rescaler.set_audio_scaler(codec);
 	rescaler.set_video_scaler(codec);
 
