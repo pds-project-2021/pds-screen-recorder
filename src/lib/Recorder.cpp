@@ -13,7 +13,7 @@ Recorder::Recorder() {
  * Get output audio codec
  * @return
  */
-[[maybe_unused]] string Recorder::get_audio_codec() {
+[[maybe_unused]] std::string Recorder::get_audio_codec() {
 	return audio_codec;
 }
 
@@ -21,7 +21,7 @@ Recorder::Recorder() {
  * Get output video codec
  * @return
  */
-[[maybe_unused]] string Recorder::get_video_codec() {
+[[maybe_unused]] std::string Recorder::get_video_codec() {
 	return video_codec;
 }
 
@@ -29,7 +29,7 @@ Recorder::Recorder() {
  * Set output audio codec
  * @param device
  */
-void Recorder::set_audio_codec(const string &cod) {
+void Recorder::set_audio_codec(const std::string &cod) {
 	audio_codec = cod;
 }
 
@@ -37,7 +37,7 @@ void Recorder::set_audio_codec(const string &cod) {
  * Set output video codec
  * @param device
  */
-void Recorder::set_video_codec(const string &cod) {
+void Recorder::set_video_codec(const std::string &cod) {
 	video_codec = cod;
 }
 
@@ -94,7 +94,7 @@ void Recorder::print_source_info() {
 }
 
 [[maybe_unused]]
-void Recorder::print_destination_info(const string &dest) const {
+void Recorder::print_destination_info(const std::string &dest) const {
 	av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
 }
 
@@ -108,13 +108,13 @@ void Recorder::capture() {
 	capturing = true;
 
 	if(num_core > 2) {
-		th_audio_demux = thread{&Recorder::DemuxAudioInput, this};
-		th_audio_convert = thread{&Recorder::ConvertAudioFrames, this};
-		th_video_demux = thread{&Recorder::DemuxVideoInput, this};
-		th_video_convert = thread{&Recorder::ConvertVideoFrames, this};
+		th_audio_demux = std::thread{&Recorder::DemuxAudioInput, this};
+		th_audio_convert = std::thread{&Recorder::ConvertAudioFrames, this};
+		th_video_demux = std::thread{&Recorder::DemuxVideoInput, this};
+		th_video_convert = std::thread{&Recorder::ConvertVideoFrames, this};
 	}else{
-		th_video = thread{&Recorder::CaptureVideoFrames, this};
-		th_audio = thread{&Recorder::CaptureAudioFrames, this};
+		th_video = std::thread{&Recorder::CaptureVideoFrames, this};
+		th_audio = std::thread{&Recorder::CaptureAudioFrames, this};
 	}
 }
 
@@ -194,7 +194,7 @@ void Recorder::join_all() {
 /**
  * Create output media file
  */
-void Recorder::create_out_file(const string &dest) const {
+void Recorder::create_out_file(const std::string &dest) const {
 	auto ctx = format.outputContext.get_video();
 
 	/* create empty video file */
@@ -378,7 +378,7 @@ void Recorder::DemuxAudioInput() {
 		read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
 		if (stopped.load()) {
-			lock_guard<mutex> ul(vD);
+            std::lock_guard<std::mutex> ul(vD);
 			finishedAudioDemux = true;
 			audioCnv.notify_one(); // notify converter thread if halted
 			break;
@@ -409,7 +409,7 @@ void Recorder::DemuxAudioInput() {
 
 			// Check result
 			if (result == AVERROR(EAGAIN)) {//buffer is full or could not acquire lock, wait and retry
-				unique_lock<mutex> ul(aD);
+                std::unique_lock<std::mutex> ul(aD);
 				audioCnv.notify_one(); // Send sync signal to converter thread
 				audioCnv.wait(ul); // Wait for resume signal
 				result = avcodec_send_packet(inputCodecContext, in_packet.into());
@@ -539,7 +539,7 @@ void Recorder::DemuxVideoInput() {
 		auto pts = packet.into()->pts;
 
 		if (stopped.load()) {
-			lock_guard<mutex> ul(vD);
+            std::lock_guard<std::mutex> ul(vD);
 			finishedVideoDemux = true;
 			videoCnv.notify_one(); // notify converter thread if halted
 			break;
@@ -573,7 +573,7 @@ void Recorder::DemuxVideoInput() {
 
 			// Check result
 			if (result == AVERROR(EAGAIN)) { //buffer is full or could not acquire lock, wait and retry
-				unique_lock<mutex> ul(vD);
+                std::unique_lock<std::mutex> ul(vD);
 				videoCnv.notify_one();// Send sync signal to converter thread
 				videoCnv.wait(ul);// Wait for resume signal
 				result = avcodec_send_packet(inputCodecContext, packet.into());

@@ -61,7 +61,7 @@ void Format::set_screen_parameters(AVDictionary *options) const {
 }
 
 
-void Format::destination_context(const string& dest) {
+void Format::destination_context(const std::string& dest) {
 	auto ctx = outputContext.get_video();
 	avformat_alloc_output_context2(&ctx, nullptr, nullptr, dest.c_str());
 	if (!ctx) {
@@ -113,15 +113,15 @@ void Format::setup_source() {
 	find_source_video_stream_info();
 }
 
-void Format::setup_destination(const string& dest) {
+void Format::setup_destination(const std::string& dest) {
 	destination_context(dest);
 }
 
-string Format::get_audio_device() {
+std::string Format::get_audio_device() {
 	return audioDevice;
 }
 
-string Format::get_video_device() {
+std::string Format::get_video_device() {
 	return videoDevice;
 }
 AVCodecParameters* Format::get_source_audio_codec() const {

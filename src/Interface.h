@@ -13,7 +13,7 @@
 
 #include "lib/Recorder.h"
 
-using namespace std;
+//using namespace std;
 
 class Interface {
 public:
@@ -25,7 +25,7 @@ public:
     GtkWidget *pauseButton;
     GtkWidget *stopButton;
     GtkWidget *headerBar;
-    atomic<bool> selection_enabled;
+    std::atomic<bool> selection_enabled;
     GtkWidget *image;
     GtkTextBuffer *title;
     GtkGesture *leftGesture;
@@ -41,9 +41,9 @@ public:
     double startY = 0;
     double endX = 0;
     double endY = 0;
-    atomic<bool> ready;
-    atomic<bool> started;
-    unique_ptr<Recorder> s = nullptr;
+    std::atomic<bool> ready;
+    std::atomic<bool> started;
+    std::unique_ptr<Recorder> s = nullptr;
     bool recordered = false;
 
     Interface();

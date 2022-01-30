@@ -28,8 +28,8 @@ class Format {
 	int audioStreamIndex = 0;
 
 	// input device
-	string audioDevice;
-	string videoDevice;
+    std::string audioDevice;
+    std::string videoDevice;
 
 	// save screen parameters for initialization of AVDictionary
 	Screen screen;
@@ -40,7 +40,7 @@ class Format {
 	void set_screen_parameters(AVDictionary* options) const;
 
 	/* NOTE: The destination is a file, so it will have the only one context */
-	void destination_context(const string &dest);
+	void destination_context(const std::string &dest);
 
 	void find_source_audio_stream_info();
 	void find_source_video_stream_info();
@@ -51,10 +51,10 @@ class Format {
 
 	void set_screen_params(const Screen &params);
 	void setup_source();
-	void setup_destination(const string &dest);
+	void setup_destination(const std::string &dest);
 
-	string get_audio_device();
-	string get_video_device();
+    std::string get_audio_device();
+    std::string get_video_device();
 
 	[[nodiscard]] AVCodecParameters* get_source_audio_codec() const;
 	[[nodiscard]] AVCodecParameters* get_source_video_codec() const;

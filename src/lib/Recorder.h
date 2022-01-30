@@ -6,7 +6,7 @@
 
 #include "ffmpeg_cpp.h"
 
-using namespace std;
+//using namespace std;
 
 class Recorder {
   private:
@@ -17,40 +17,40 @@ class Recorder {
 	Stream stream;
 
 	// output codec
-	string audio_codec = DEFAULT_AUDIO_CODEC;
-	string video_codec = DEFAULT_VIDEO_CODEC;
+    std::string audio_codec = DEFAULT_AUDIO_CODEC;
+    std::string video_codec = DEFAULT_VIDEO_CODEC;
 
-	thread th_audio_demux;
-	thread th_audio_convert;
-	thread th_video_demux;
-	thread th_video_convert;
-	thread th_video;
-	thread th_audio;
+    std::thread th_audio_demux;
+    std::thread th_audio_convert;
+    std::thread th_video_demux;
+    std::thread th_video_convert;
+    std::thread th_video;
+    std::thread th_audio;
 
 	int64_t ref_time = 0;
-	unsigned int num_core = thread::hardware_concurrency();
+	unsigned int num_core = std::thread::hardware_concurrency();
 
 	// action variable for pause and terminate
-	atomic<bool> stopped = false;
-	atomic<bool> pausedVideo = false;
-	atomic<bool> pausedAudio = false;
-	atomic<bool> finishedVideoDemux = false;
-	atomic<bool> finishedAudioDemux = false;
+    std::atomic<bool> stopped = false;
+    std::atomic<bool> pausedVideo = false;
+    std::atomic<bool> pausedAudio = false;
+    std::atomic<bool> finishedVideoDemux = false;
+    std::atomic<bool> finishedAudioDemux = false;
 
-	atomic<bool> capturing = false;
+    std::atomic<bool> capturing = false;
 
-	mutex vD;
-	mutex aD;
-	mutex wR;
+    std::mutex vD;
+    std::mutex aD;
+    std::mutex wR;
 
-	condition_variable videoCnv;
-	condition_variable audioCnv;
-	condition_variable writeFrame;
+    std::condition_variable videoCnv;
+    std::condition_variable audioCnv;
+    std::condition_variable writeFrame;
 
 	/* private functions */
 
 	void join_all();
-	void create_out_file(const string& dest) const;
+	void create_out_file(const std::string& dest) const;
 
 	// single thread (de)muxing
 	void CaptureAudioFrames();
@@ -67,10 +67,10 @@ class Recorder {
     ~Recorder() = default;
 
 	// recorder parameters functions
-	[[maybe_unused]] string get_audio_codec();
-	[[maybe_unused]] string get_video_codec();
-	[[maybe_unused]] void set_audio_codec(const string &cod);
-	[[maybe_unused]] void set_video_codec(const string &cod);
+	[[maybe_unused]] std::string get_audio_codec();
+	[[maybe_unused]] std::string get_video_codec();
+	[[maybe_unused]] void set_audio_codec(const std::string &cod);
+	[[maybe_unused]] void set_video_codec(const std::string &cod);
 
 	// recorder factions
 	void init(Screen params);
@@ -85,6 +85,6 @@ class Recorder {
 
 	// log functions
 	[[maybe_unused]] void print_source_info();
-	[[maybe_unused]] void print_destination_info(const string& dest) const;
+	[[maybe_unused]] void print_destination_info(const std::string& dest) const;
 };
 

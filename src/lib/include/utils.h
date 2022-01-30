@@ -9,9 +9,9 @@
 
 #include "exceptions.h"
 
-using namespace std;
-namespace fs = filesystem;
+//using namespace std;
+namespace fs = std::filesystem;
 
 bool is_file(char *url);
-bool is_file_str(const string &str);
-void move_file(const string& source, const string &dest);
+bool is_file_str(const std::string &str);
+void move_file(const std::string& source, const std::string &dest);

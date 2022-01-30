@@ -18,7 +18,7 @@ Screen::Screen(int width, int height, int offset_x, int offset_y) {
  *
  * @param dim string containing dimensions
  */
-void Screen::set_dimension(const string &dim) {
+void Screen::set_dimension(const std::string &dim) {
 	width = stoi(dim.substr(0, dim.find('x')));
 	height = stoi(dim.substr( dim.find('x')+1, dim.length()));
 }
@@ -40,7 +40,7 @@ void Screen::set_dimension(int w, int h) {
  *
  * @param offset string containing offset positions
  */
-void Screen::set_offset(const string &offset) {
+void Screen::set_offset(const std::string &offset) {
 	offset_x = stoi(offset.substr(0, offset.find('x')));
 	offset_y = stoi(offset.substr( offset.find('x')+1, offset.length()));
 }
@@ -60,30 +60,30 @@ void Screen::set_show_region(bool val) {
 	show_region = val;
 }
 
-string Screen::get_offset_x() const {
-	return to_string(offset_x);
+std::string Screen::get_offset_x() const {
+	return std::to_string(offset_x);
 }
 
-string Screen::get_offset_y() const {
-	return to_string(offset_y);
+std::string Screen::get_offset_y() const {
+	return std::to_string(offset_y);
 }
 
-string Screen::get_offset_str() const {
-	return "+" + to_string(offset_x) + "," + to_string(offset_y);
+std::string Screen::get_offset_str() const {
+	return "+" + std::to_string(offset_x) + "," + std::to_string(offset_y);
 }
 
-string Screen::get_width() const {
-	return to_string(width);
+std::string Screen::get_width() const {
+	return std::to_string(width);
 }
 
-string Screen::get_height() const {
-	return to_string(height);
+std::string Screen::get_height() const {
+	return std::to_string(height);
 }
 
-string Screen::get_video_size() const {
-	return to_string(width) + "x" + to_string(height);
+std::string Screen::get_video_size() const {
+	return std::to_string(width) + "x" + std::to_string(height);
 }
 
-string Screen::get_show_region() const {
-	return to_string(show_region);
+std::string Screen::get_show_region() const {
+	return std::to_string(show_region);
 }

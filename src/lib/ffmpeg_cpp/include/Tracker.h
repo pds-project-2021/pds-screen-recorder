@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-using namespace std;
+//using namespace std;
 
 template <class T>
 class Tracker {
@@ -18,7 +18,7 @@ class Tracker {
 	~Tracker(){count--;}
 
 	static void print_count(){
-		cout << typeid(T).name() << ": " << count << endl;
+		std::cout << typeid(T).name() << ": " << count << std::endl;
 	}
 };
 

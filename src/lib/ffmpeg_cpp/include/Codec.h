@@ -23,13 +23,13 @@ class Codec {
 	void source_video_context();
 	void destination_audio_context();
 	void destination_video_context();
-	void find_audio_encoder(const string& codec_name);
-	void find_video_encoder(const string& codec_name);
+	void find_audio_encoder(const std::string& codec_name);
+	void find_video_encoder(const std::string& codec_name);
 
   public:
 	void setup_source();
 	void setup_destination();
-	void find_encoders(const string& audio_codec, const string& video_codec);
+	void find_encoders(const std::string& audio_codec, const std::string& video_codec);
 
 	void set_source_audio_parameters(AVCodecParameters *par);
 	void set_source_video_parameters(AVCodecParameters *par);

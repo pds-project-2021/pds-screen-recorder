@@ -84,7 +84,7 @@ int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet
 }
 
 
-void writeFrameToOutput(AVFormatContext *outputFormatContext, AVPacket *outPacket, mutex *wR, condition_variable *writeFrame) {
+void writeFrameToOutput(AVFormatContext *outputFormatContext, AVPacket *outPacket, std::mutex *wR, std::condition_variable *writeFrame) {
 	if (outputFormatContext == nullptr || outPacket == nullptr) {
 		throw avException("Provided null output values, data could not be written");
 	}
@@ -98,7 +98,7 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext, AVPacket *outPacke
 		writeFrame->notify_one(); // Notify other writer thread to resume if halted
 		wR->unlock();
 	} else { //could not acquire lock, wait and retry
-		unique_lock<mutex> ul(*wR);
+        std::unique_lock<std::mutex> ul(*wR);
 
 //        writeFrame->notify_one();// Notify other writer thread to resume if halted
 		writeFrame->wait(ul);// Wait for resume signal
@@ -120,8 +120,8 @@ int convertAndWriteVideoFrame(SwsContext *swsContext,
                               AVFormatContext *outputFormatContext,
                               AVFrame *frame,
                               const int64_t *pts_p,
-                              mutex *wR,
-                              condition_variable *writeFrame) {
+                              std::mutex *wR,
+                              std::condition_variable *writeFrame) {
 
 	auto out_frame =  Frame{outputCodecContext->width, outputCodecContext->height,(AVPixelFormat) outputCodecContext->pix_fmt, 32};
 	auto out_packet = Packet{};
@@ -164,8 +164,8 @@ int convertAndWriteVideoFrame(SwsContext *swsContext,
 int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
                                       AVStream *videoStream,
                                       AVFormatContext *outputFormatContext,
-                                      mutex *wR,
-                                      condition_variable *writeFrame) {
+                                      std::mutex *wR,
+                                      std::condition_variable *writeFrame) {
 
 
 	for (int result;;) {
@@ -204,8 +204,8 @@ int convertAndWriteAudioFrames(SwrContext *swrContext,
                                AVFormatContext *outputFormatContext,
                                AVFrame *frame,
                                int64_t *pts_p,
-                               mutex *wR,
-                               condition_variable *writeFrame) {
+                               std::mutex *wR,
+                               std::condition_variable *writeFrame) {
 	auto out_frame = Frame{outputCodecContext->frame_size, outputCodecContext->sample_fmt, outputCodecContext->channel_layout, 0};
 	auto outputFrame = out_frame.into();
 	auto out_packet = Packet{};
@@ -278,8 +278,8 @@ int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
                                              AVStream *audioStream,
                                              AVFormatContext *outputFormatContext,
                                              int finalSize,
-                                             mutex *wR,
-                                             condition_variable *writeFrame) {
+                                             std::mutex *wR,
+                                             std::condition_variable *writeFrame) {
 	auto out_packet = Packet{};
 	auto outPacket = out_packet.into();
 	auto next_packet = Packet{};
@@ -318,7 +318,7 @@ int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
 			outPacket->duration = av_rescale_q(finalSize, bq,audioStream->time_base);
 			// Write packet to file
 			writeFrameToOutput(outputFormatContext, outPacket, wR, writeFrame);
-			cout << "Final pts value is: " << outPacket->pts << endl;
+            std::cout << "Final pts value is: " << outPacket->pts << std::endl;
 		}
 	}
 	return 0;
@@ -331,8 +331,8 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext,
                                           AVStream *audioStream,
                                           AVFormatContext *outputFormatContext,
                                           int64_t *pts_p,
-                                          mutex *wR,
-                                          condition_variable *writeFrame) {
+                                          std::mutex *wR,
+                                          std::condition_variable *writeFrame) {
 
 	auto out_packet = Packet{};
 	auto outputPacket = out_packet.into();

@@ -5,15 +5,15 @@
 #include "utils.h"
 
 bool is_file(char *url){
-	auto str = string {url};
-	return str.find(".mp4") != string::npos;
+	auto str = std::string {url};
+	return str.find(".mp4") != std::string::npos;
 }
 
-bool is_file_str(const string &str){
-	return str.find(".mp4") != string::npos;
+bool is_file_str(const std::string &str){
+	return str.find(".mp4") != std::string::npos;
 }
 
-void move_file(const string& source, const string& dest){
+void move_file(const std::string& source, const std::string& dest){
 	try {
 		auto dest_path = fs::path(dest);
 		auto dest_folder = is_file_str(dest)? dest_path.parent_path(): dest_path;
@@ -32,7 +32,7 @@ void move_file(const string& source, const string& dest){
 		fs::copy_file(source, dest_file);
 		fs::remove(source);
 
-    } catch (runtime_error& _e) {
+    } catch (std::runtime_error& _e) {
 		throw fsException("Unable to move " + source + " to " + dest);
 	}
 }

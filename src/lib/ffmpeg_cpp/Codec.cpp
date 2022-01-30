@@ -98,7 +98,7 @@ void Codec::destination_video_context() {
 	}
 }
 
-void Codec::find_audio_encoder(const string &codec_name) {
+void Codec::find_audio_encoder(const std::string &codec_name) {
 	auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
 	if (!audio){
 		throw avException("Error in finding the audio av codecs.");
@@ -106,7 +106,7 @@ void Codec::find_audio_encoder(const string &codec_name) {
 	output.set_audio(audio);
 }
 
-void Codec::find_video_encoder(const string &codec_name) {
+void Codec::find_video_encoder(const std::string &codec_name) {
 	auto video = avcodec_find_encoder_by_name(codec_name.c_str());
 	if (!video){
 		throw avException("Error in finding the video av codecs.");
@@ -126,7 +126,7 @@ void Codec::setup_destination() {
 	destination_video_context();
 }
 
-void Codec::find_encoders(const string &audio_codec, const string &video_codec) {
+void Codec::find_encoders(const std::string &audio_codec, const std::string &video_codec) {
 	find_audio_encoder(audio_codec);
 	find_video_encoder(video_codec);
 }

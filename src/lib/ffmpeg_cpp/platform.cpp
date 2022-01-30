@@ -4,7 +4,7 @@
 
 #include "platform.h"
 
-using namespace std;
+//using namespace std;
 
 #ifdef _WIN32
 
@@ -47,8 +47,8 @@ void _getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *a
         }
         if (SUCCEEDED(hr)) {
 //            printf("%S\n", var.bstrVal);
-            wstring ws(var.bstrVal);// Convert to wstring
-            string device_name(ws.begin(), ws.end());// Convert to string
+            std::wstring ws(var.bstrVal);// Convert to wstring
+            std::string device_name(ws.begin(), ws.end());// Convert to string
             audioDevices->push_back(device_name);// Add to device names vector
             VariantClear(&var);
         }
@@ -61,8 +61,8 @@ AVDictionary* get_audio_options(){
 	AVDictionary* options = nullptr;
 
 //	av_dict_set(&options, "rtbufsize", "3M", 0);
-    av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
-    av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
+    av_dict_set(&options, "sample_rate", std::to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
+    av_dict_set(&options, "channels", std::to_string(AUDIO_CHANNELS).c_str(), 0);
 
 	return options;
 }
@@ -82,7 +82,7 @@ std::string get_audio_input_device(){
 	// todo get audio
 		// Set COM to multithreaded model
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    auto audio_devices = vector<string>();
+    auto audio_devices = std::vector<std::string>();
     if (SUCCEEDED(hr))
     {
         IEnumMoniker *pEnum;
@@ -99,7 +99,7 @@ std::string get_audio_input_device(){
     }
     else return nullptr;
     // Prepare dshow command input audio device parameter string
-    string audioInputName;
+    std::string audioInputName;
     audioInputName.append("audio=") ;
     if (audio_devices.empty()) return "";
     auto curr_name = audio_devices.begin();
@@ -117,7 +117,7 @@ std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_device(const string &_offset){
+std::string get_video_input_device(const std::string &_offset){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 
