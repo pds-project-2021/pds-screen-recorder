@@ -36,3 +36,17 @@ void move_file(const std::string& source, const std::string& dest){
 		throw fsException("Unable to move " + source + " to " + dest);
 	}
 }
+
+void delete_file(const std::string& filename) {
+    try {
+        auto dest_path = fs::path(filename);
+
+        // delete file
+        if(exists(dest_path)){
+            fs::remove(dest_path);
+        }
+
+    } catch (std::runtime_error& _e) {
+        throw fsException("Unable to delete " + filename);
+    }
+}

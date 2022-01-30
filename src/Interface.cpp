@@ -29,13 +29,13 @@ static void
 on_save_response (GtkDialog *dialog,
                   int        response)
 {
+    auto destPath = g_file_get_path(gtk_file_chooser_get_file(t->fileChooser));
     if (response == GTK_RESPONSE_ACCEPT)
     {
-        GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
-        move_file(t->dest, g_file_get_path(gtk_file_chooser_get_file(chooser)));
+        move_file(t->dest, destPath);
     }
     else if(response == GTK_RESPONSE_CANCEL) {
-
+        delete_file(t->dest);
     }
 
     gtk_window_close (GTK_WINDOW (dialog));
