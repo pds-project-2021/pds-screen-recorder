@@ -51,7 +51,7 @@ void Format::source_video_context() {
 }
 
 void Format::set_screen_parameters(AVDictionary *options) const {
-    if(screen.get_width()!="0" && screen.get_height()!="0") {
+    if(screen.get_width() != "0" && screen.get_height() != "0") {
         av_dict_set(&options, "offset_x", screen.get_offset_x().c_str(), 0);
         av_dict_set(&options, "offset_y", screen.get_offset_y().c_str(), 0);
         av_dict_set(&options, "video_size", screen.get_video_size().c_str(), 0);

@@ -9,15 +9,16 @@
 
 // import top level exceptions
 #include "exceptions.h"
+#include "utils.h"
 
 /**
  * Useful wrapper for screen parameters
  */
 class Screen{
-	int width = 0.0;
-	int height = 0.0;
-	int offset_x = 0.0;
-	int offset_y = 0.0;
+	int width = 0;
+	int height = 0;
+	int offset_x = 0;
+	int offset_y = 0;
 
 	bool show_region = true;
   public:
@@ -31,6 +32,7 @@ class Screen{
 	void set_offset(const std::string &offset);
 	void set_offset(int x, int y);
 	void set_show_region(bool val);
+	bool fullscreen() const;
 
 	[[nodiscard]] std::string get_offset_x() const;
 	[[nodiscard]] std::string get_offset_y() const;

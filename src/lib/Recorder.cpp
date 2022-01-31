@@ -49,7 +49,7 @@ void Recorder::set_destination(const std::string& dest_path) {
     destination_path = dest_path;
 }
 
-const std::string Recorder::get_destination() {
+std::string Recorder::get_destination() {
     return destination_path;
 }
 
@@ -70,7 +70,6 @@ void Recorder::init(Screen params) {
 	codec.setup_source();
 
 	// format
-    if(destination_path == "") destination_path = "../media/output.mp4";
 	format.setup_destination(destination_path);
 
 	codec.find_encoders(audio_codec, video_codec);

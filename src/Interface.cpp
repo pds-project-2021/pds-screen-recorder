@@ -301,19 +301,28 @@ static void drag(GtkGestureDrag *gesture, double offset_x, double offset_y, gpoi
 }
 
 void recorder(int sX, int sY, int eX, int eY) {
-	if (sX == sY || eX == eY) {
-        t->s->init(Screen(0, 0, 0, 0));
-        std::cout << "Recording area parameters set to 0" << std::endl;
-    }
-	else if (sX > eX) {
-		if (sY > eY) t->s->init(Screen((int) (sX - eX), (int) (sY - eY), (int) eX, (int) eY));
-		else t->s->init(Screen((int) (sX - eX), (int) (eY - sY), (int) eX, (int) sY));
+	auto s = Screen{};
+	auto width = std::abs(sX - eX);
+	auto height = std::abs(sY - eY);
+
+	s.set_dimension(width, height);
+
+	if (s.fullscreen()) {
+		log("Recording full screen area");
+    }else if (sX > eX) {
+		(sY > eY) ? s.set_offset(eX, eY) : s.set_offset(eX, sY);
+
+		log("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str() );
 	} else {
-		if (sY > eY) t->s->init(Screen((int) (eX - sX), (int) (sY - eY), (int) sX, (int) eY));
-		else t->s->init(Screen((int) (eX - sX), (int) (eY - sY), (int) sX, (int) sY));
+		(sY > eY) ? s.set_offset(sX, eY) : s.set_offset(sX, sY);
+
+		log("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str() );
 	}
 
-	std::cout << "Initialized input streams" << std::endl;
+	t->s->init(s);
+
+	log("Initialized input streams");
+
     t->ready = true;
     t->started = false;
 //    if (s.CaptureStart() >= 0) {

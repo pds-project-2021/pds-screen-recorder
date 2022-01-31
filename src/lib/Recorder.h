@@ -6,8 +6,6 @@
 
 #include "ffmpeg_cpp.h"
 
-//using namespace std;
-
 class Recorder {
   private:
 	Codec codec;
@@ -15,11 +13,11 @@ class Recorder {
 	Format format;
 	Rescaler rescaler;
 	Stream stream;
-    std::string destination_path;
 
 	// output codec
     std::string audio_codec = DEFAULT_AUDIO_CODEC;
     std::string video_codec = DEFAULT_VIDEO_CODEC;
+	std::string destination_path = get_default_path();
 
     std::thread th_audio_demux;
     std::thread th_audio_convert;
@@ -81,8 +79,8 @@ class Recorder {
 	void terminate();
 	bool is_paused();
 	bool is_capturing();
-    void set_destination(const std::string&);
-    const std::string get_destination();
+    [[maybe_unused]] void set_destination(const std::string&);
+    std::string get_destination();
 	[[maybe_unused]] void set_threads(unsigned int th);
 
 	// log functions

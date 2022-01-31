@@ -4,6 +4,8 @@
 
 #include "utils.h"
 
+namespace fs = std::filesystem;
+
 bool is_file(char *url){
 	auto str = std::string {url};
 	return str.find(".mp4") != std::string::npos;
@@ -49,4 +51,16 @@ void delete_file(const std::string& filename) {
     } catch (std::runtime_error& _e) {
         throw fsException("Unable to delete " + filename);
     }
+}
+
+std::string get_default_path() {
+	return fs::temp_directory_path()/ "output.mp4";
+}
+
+int set_even(int num) {
+	return num % 2 ? num - 1: num;
+}
+
+void log(const std::string& str) {
+	std::cout << "[INFO] " + str << std::endl;
 }
