@@ -8,7 +8,6 @@ int launchUI(int argc, char **argv){
 	GtkApplication *app;
 	int status;
 
-
 #ifdef WIN32
 	HWND Window;
 	AllocConsole();
@@ -193,7 +192,9 @@ void recorder(int sX, int sY, int eX, int eY) {
 }
 
 void startRecording() {
-	if (!t->ready) recorder(t->startX, t->startY, t->endX, t->endY);
+	if (!t->ready) {
+        recorder(t->startX, t->startY, t->endX, t->endY);
+    }
 	if (t->s->is_paused()) t->s->resume();
 	else {
 		if (!t->started) {
@@ -201,6 +202,10 @@ void startRecording() {
             t->started = true;
 		}
 	}
+    gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
+    gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), true);
+    gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), true);
 }
 
 void pauseRecording() {
@@ -208,9 +213,11 @@ void pauseRecording() {
 	if (t->s->is_paused()) {
         t->s->resume();
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Pause");
+        gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
 	}else {
         t->s->pause();
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Resume");
+        gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Paused");
 	}
 }
 
@@ -221,6 +228,10 @@ void stopRecording() {
     t->s = std::make_unique<Recorder>();
     t->ready = false;
     t->started = false;
+    gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
+    gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
+    gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
 }
 
 void select_record_region(GtkWidget *widget, gpointer data) {
@@ -361,6 +372,8 @@ Interface::Interface(GtkApplication *app) {
                                    GTK_STYLE_PROVIDER_PRIORITY_USER); // I had used wrong priority on first try
     gtk_style_context_save(context);
     s = std::make_unique<Recorder>();
+    gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
 }
 
 static void activate(GtkApplication *app, gpointer user_data) {
