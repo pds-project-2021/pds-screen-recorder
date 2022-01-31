@@ -41,41 +41,17 @@ public:
     std::atomic<bool> started;
     std::unique_ptr<Recorder> s = nullptr;
     unsigned long fileHandler;
-//    bool recordered = false;
     std::string dest;
+    cairo_surface_t *surface = nullptr;
 
     Interface(GtkApplication *app);
     ~Interface(){
         g_print("Interface has been destroyed\n");
-
         // terminate capture if it's running
         if (s->is_capturing()){
             s->terminate();
         }
-//        g_object_unref(recordWindow);
-//        g_object_unref(selectWindow);
-//        g_object_unref(fileChooser);
-//        g_object_unref(window);
-//        g_object_unref(selectWindow);
-//        g_object_unref(recordWindow);
-//        g_object_unref(recordButton);
-//        g_object_unref(startRecordButton);
-//        g_object_unref(pauseButton);
-//        g_object_unref(stopButton);
-//        g_object_unref(headerBar);
-//        g_object_unref(image);
-//        g_object_unref(title);
-//        g_object_unref(leftGesture);
-//        g_object_unref(rightGesture);
-//        g_object_unref(motionController);
-//        g_object_unref(selectionArea);
-//        g_object_unref(cssProvider);
-//        g_object_unref(context);
-//        g_object_unref(titleView);
-//        g_object_unref(fileChoiceDialog);
-//        g_object_unref(fileChooser);
     };
-    cairo_surface_t *surface = nullptr;
     void getRectCoordinates(double&, double&, double&, double&) const;
 };
 
