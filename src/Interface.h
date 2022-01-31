@@ -1,7 +1,3 @@
-//
-// Created by gabriele on 31/10/21.
-//
-
 #pragma once
 
 #include <gtk/gtk.h>
@@ -30,12 +26,10 @@ public:
     GtkTextBuffer *title;
     GtkGesture *leftGesture;
     GtkGesture *rightGesture;
-    GtkGesture *moveGesture;
     GtkEventController *motionController;
     GtkWidget *selectionArea;
     GtkCssProvider *cssProvider;
     GtkStyleContext *context;
-    cairo_surface_t *background;
     GtkWidget *titleView;
     GtkWidget *fileChoiceDialog;
     GtkFileChooser *fileChooser;
@@ -49,13 +43,46 @@ public:
     bool recordered = false;
     std::string dest;
 
-    Interface();
+    Interface(GtkApplication *app);
+    ~Interface(){
+        g_print("Interface has been destroyed\n");
+
+        // terminate capture if it's running
+        if (s->is_capturing()){
+            s->terminate();
+        }
+
+        if(!recordered){
+            gtk_window_destroy(GTK_WINDOW(recordWindow));
+            gtk_window_destroy(GTK_WINDOW(selectWindow));
+        }
+        gtk_window_destroy(GTK_WINDOW(fileChooser));
+//        g_object_unref(window);
+//        g_object_unref(selectWindow);
+//        g_object_unref(recordWindow);
+//        g_object_unref(recordButton);
+//        g_object_unref(startRecordButton);
+//        g_object_unref(pauseButton);
+//        g_object_unref(stopButton);
+//        g_object_unref(headerBar);
+//        g_object_unref(image);
+//        g_object_unref(title);
+//        g_object_unref(leftGesture);
+//        g_object_unref(rightGesture);
+//        g_object_unref(motionController);
+//        g_object_unref(selectionArea);
+//        g_object_unref(cssProvider);
+//        g_object_unref(context);
+//        g_object_unref(titleView);
+//        g_object_unref(fileChoiceDialog);
+//        g_object_unref(fileChooser);
+    };
     cairo_surface_t *surface = nullptr;
-    int launchUI(int argc, char **argv);
-    void getRectCoordinates(double&, double&, double&, double&);
+    void getRectCoordinates(double&, double&, double&, double&) const;
 };
 
 
+int launchUI(int argc, char **argv);
 
 static void handleRecord(GtkWidget *widget, gpointer data);
 

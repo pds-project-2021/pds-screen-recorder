@@ -1,21 +1,17 @@
-//
-// Created by gabriele on 31/10/21.
-//
-
 #include "Interface.h"
 
-Interface* t = nullptr;
+std::unique_ptr<Interface> t = nullptr;
+//Interface* t = nullptr;
 
-int Interface::launchUI(int argc, char **argv){
+int launchUI(int argc, char **argv){
 	GtkApplication *app;
 	int status;
 
-	s = std::make_unique<Recorder>();
 
 #ifdef WIN32
 	HWND Window;
 	AllocConsole();
-	Window = FindWindowA("ConsoleWindowClass", NULL);
+	Window = FindWindowA("ConsoleWindowClass", nullptr);
 	ShowWindow(Window,0);
 #endif
 	app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
@@ -41,16 +37,16 @@ on_save_response (GtkDialog *dialog,
     gtk_window_close (GTK_WINDOW (dialog));
 }
 
-static void clear_surface(void) {
-	cairo_t *cr;
-
-	cr = cairo_create(t->surface);
-
-	cairo_set_source_rgb(cr, 0, 0, 0);
-	cairo_paint(cr);
-
-	cairo_destroy(cr);
-}
+//static void clear_surface(void) {
+//	cairo_t *cr;
+//
+//	cr = cairo_create(t->surface);
+//
+//	cairo_set_source_rgb(cr, 0, 0, 0);
+//	cairo_paint(cr);
+//
+//	cairo_destroy(cr);
+//}
 
 /* Redraw the screen from the surface. Note that the ::draw
  * signal receives a ready-to-be-used cairo_t that is already
@@ -163,7 +159,7 @@ static void clear_surface(void) {
 //}
 //#endif
 
-void Interface::getRectCoordinates(double& offsetX, double& offsetY, double& width, double& height) {
+void Interface::getRectCoordinates(double& offsetX, double& offsetY, double& width, double& height) const {
     if (startX > endX) {
         if (startY > endY) {
             offsetX = startX;
@@ -192,10 +188,6 @@ void Interface::getRectCoordinates(double& offsetX, double& offsetY, double& wid
         }
     }
 }
-
-Interface::Interface() {
-    t = this;
-};
 
 static void draw_rect(cairo_t *cr) {
 //    cairo_set_source_rgb (cr, 1, 1, 1);
@@ -247,8 +239,6 @@ static void right_btn_pressed(GtkGestureClick *gesture, int n_press, double x, d
 //    t->surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, gtk_widget_get_allocated_width (selectWindow), gtk_widget_get_allocated_height (selectWindow));
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 	gtk_window_present(GTK_WINDOW(t->window));
-
-	auto c = gtk_window_get_hide_on_close(GTK_WINDOW(t->window));
 }
 
 static void right_btn_released(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget) {
@@ -380,7 +370,6 @@ void select_record_region(GtkWidget *widget, gpointer data) {
 	gtk_window_fullscreen(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->selectWindow));
 	g_print("Record button pressed\n");
-	auto h = gtk_widget_get_height(t->selectionArea);
 }
 
 void handleRecord(GtkWidget *widget, gpointer data) {
@@ -413,144 +402,142 @@ static void handleStop(GtkWidget *widget, gpointer data) {
 
 static void handleClose(GtkWidget *widget, gpointer data) {
 	g_print("Close button pressed\n");
-
-	// terminate capture if it's running
-	if (t->s->is_capturing()){
-        t->s->terminate();
-	}
-
-	if(!t->recordered){
-		gtk_window_destroy(GTK_WINDOW(t->recordWindow));
-		gtk_window_destroy(GTK_WINDOW(t->selectWindow));
-	}
+    t = nullptr;
 }
+
+Interface::Interface(GtkApplication *app) {
+    window = gtk_application_window_new(app);
+    selectWindow = gtk_application_window_new(app);
+    recordWindow = gtk_application_window_new(app);
+    selectionArea = gtk_drawing_area_new();
+    ready = false;
+    started = false;
+    selection_enabled = false;
+//    gtk_window_fullscreen(GTK_WINDOW(selectWindow));
+    // buttonGrid = gtk_grid_new();
+    headerBar = gtk_header_bar_new();
+    image = gtk_image_new_from_file("../assets/icon_small.png");
+    title = gtk_text_buffer_new(nullptr);
+    gtk_text_buffer_set_text(GTK_TEXT_BUFFER(title), "  ", 2);
+    titleView = gtk_text_view_new_with_buffer(title);
+    gtk_window_set_title(GTK_WINDOW(window), "Screen recorder");
+    gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
+    gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
+    gtk_widget_set_size_request(selectWindow, 2560, 1080);
+    gtk_window_set_decorated(GTK_WINDOW(window), false);
+    gtk_window_set_decorated(GTK_WINDOW(selectWindow), false);
+    gtk_window_set_decorated(GTK_WINDOW(recordWindow), false);
+    gtk_window_set_resizable(GTK_WINDOW(window), false);
+    gtk_window_set_resizable(GTK_WINDOW(selectWindow), false);
+    gtk_window_set_resizable(GTK_WINDOW(recordWindow), false);
+    recordButton = gtk_button_new_with_label("Record");
+    pauseButton = gtk_button_new_with_label("Pause");
+    stopButton = gtk_button_new_with_label("Stop");
+    startRecordButton = gtk_button_new_with_label("Start recording");
+
+    g_signal_connect(recordButton, "clicked", G_CALLBACK(select_record_region), nullptr);
+    g_signal_connect(startRecordButton, "clicked", G_CALLBACK(handleRecord), nullptr);
+    g_signal_connect(pauseButton, "clicked", G_CALLBACK(handlePause), nullptr);
+    g_signal_connect(stopButton, "clicked", G_CALLBACK(handleStop), nullptr);
+
+    // gtk_window_set_child(GTK_WINDOW(window), buttonGrid);
+    gtk_window_set_child(GTK_WINDOW(window), headerBar);
+    gtk_window_set_child(GTK_WINDOW(recordWindow), startRecordButton);
+
+    gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
+    gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(headerBar),":minimize,close");
+    // gtk_header_bar_set_title_widget(GTK_HEADER_BAR(headerBar), titleView);
+    gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
+    // gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), titleView);
+    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
+    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
+    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
+
+    GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
+    fileChoiceDialog = gtk_file_chooser_dialog_new ("Open File",
+                                                       GTK_WINDOW(window),
+                                                       action,
+                                                       (const char *) "Cancel",
+                                                       GTK_RESPONSE_CANCEL,
+                                                       (const char *) "Save",
+                                                       GTK_RESPONSE_ACCEPT,
+                                                       NULL);
+    fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
+    gtk_file_chooser_set_current_name (fileChooser, "Untitled.mp4");
+    g_signal_connect (fileChoiceDialog, "response",
+                      G_CALLBACK (on_save_response),
+                      NULL);
+    gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), true);
+
+//    gtk_widget_set_hexpand(selectionArea, true);
+//    gtk_widget_set_vexpand(selectionArea, true);
+    gtk_window_set_child(GTK_WINDOW(selectWindow), selectionArea);
+//    gtk_widget_action_set_enabled(selectionArea, "button_press_event", true);
+    leftGesture = gtk_gesture_click_new();
+    rightGesture = gtk_gesture_click_new();
+//    moveGesture = gtk_gesture_drag_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE (leftGesture), 1);
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE (rightGesture), 3);
+    motionController = gtk_event_controller_motion_new();
+//    g_signal_connect (selectWindow, "button-press-event",
+//                      G_CALLBACK (deal_mouse_press), NULL);
+    g_signal_connect (motionController, "motion",
+                      G_CALLBACK(motion_detected), selectionArea);
+    g_signal_connect (leftGesture, "pressed",
+                      G_CALLBACK(left_btn_pressed), selectionArea);
+    g_signal_connect (leftGesture, "released",
+                      G_CALLBACK(left_btn_released), selectionArea);
+    g_signal_connect (rightGesture, "pressed",
+                      G_CALLBACK(right_btn_pressed), selectionArea);
+    g_signal_connect (rightGesture, "released",
+                      G_CALLBACK(right_btn_released), selectionArea);
+
+    gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (leftGesture));
+    gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (rightGesture));
+    gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (motionController));
+
+//    gtk_widget_add_controller (selectionArea, GTK_EVENT_CONTROLLER (moveGesture));
+    // gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), closeButton);
+    // gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
+    // gtk_grid_insert_next_to(GTK_GRID(buttonGrid), recordButton, GTK_POS_RIGHT);
+    // gtk_grid_attach_next_to(GTK_GRID(buttonGrid), pauseButton, recordButton,
+    // GTK_POS_RIGHT, 100, 50); gtk_grid_attach_next_to(GTK_GRID(buttonGrid),
+    // stopButton, pauseButton, GTK_POS_RIGHT, 100, 50);
+    // gtk_grid_attach_next_to(GTK_GRID(buttonGrid), closeButton, stopButton,
+    // GTK_POS_RIGHT, 100, 50);
+
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(handleClose), nullptr);
+
+    /* Initialize the surface to white */
+//    clear_surface ();
+//    g_signal_connect (selectWindow, "motion-notify-event",
+//                      G_CALLBACK (deal_motion_notify_event), NULL);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(selectionArea), draw, nullptr, nullptr);
+//    g_signal_connect (G_OBJECT(selectionArea), "draw",
+//                      G_CALLBACK(on_draw_event), NULL);
+    gtk_window_present(GTK_WINDOW(window));
+    gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), true);
+    gtk_window_set_hide_on_close(GTK_WINDOW(recordWindow), true);
+    gtk_widget_set_name(selectWindow, "selector_window");
+
+    cssProvider = gtk_css_provider_new();
+    gtk_css_provider_load_from_path(cssProvider, "../src/style.css");
+    context = gtk_widget_get_style_context(selectWindow);
+    gtk_style_context_add_provider(context,
+                                   GTK_STYLE_PROVIDER(cssProvider),
+                                   GTK_STYLE_PROVIDER_PRIORITY_USER); // I had used wrong priority on first try
+    gtk_style_context_save(context);
+//    gtk_widget_set_opacity(selectWindow, 0.70);
+    s = std::make_unique<Recorder>();
+};
 
 static void activate(GtkApplication *app, gpointer user_data) {
 	// GtkWidget* buttonGrid;
 	// GtkWidget* closeButton;
-    if(t == nullptr) return;
-    t->window = gtk_application_window_new(app);
-    t->selectWindow = gtk_application_window_new(app);
-    t->recordWindow = gtk_application_window_new(app);
-    t->selectionArea = gtk_drawing_area_new();
-    t->ready = false;
-    t->started = false;
-    t->selection_enabled = false;
-//    gtk_window_fullscreen(GTK_WINDOW(selectWindow));
-	// buttonGrid = gtk_grid_new();
-    t->headerBar = gtk_header_bar_new();
-    t->image = gtk_image_new_from_file("../assets/icon_small.png");
-    t->title = gtk_text_buffer_new(NULL);
-	gtk_text_buffer_set_text(GTK_TEXT_BUFFER(t->title), "  ", 2);
-    t->titleView = gtk_text_view_new_with_buffer(t->title);
-	gtk_window_set_title(GTK_WINDOW(t->window), "Screen recorder");
-	gtk_window_set_default_size(GTK_WINDOW(t->window), 463, 50);
-	gtk_window_set_default_size(GTK_WINDOW(t->recordWindow), 120, 30);
-	gtk_widget_set_size_request(t->selectWindow, 2560, 1080);
-	gtk_window_set_decorated(GTK_WINDOW(t->window), false);
-	gtk_window_set_decorated(GTK_WINDOW(t->selectWindow), false);
-	gtk_window_set_decorated(GTK_WINDOW(t->recordWindow), false);
-	gtk_window_set_resizable(GTK_WINDOW(t->window), false);
-	gtk_window_set_resizable(GTK_WINDOW(t->selectWindow), false);
-	gtk_window_set_resizable(GTK_WINDOW(t->recordWindow), false);
-    t->recordButton = gtk_button_new_with_label("Record");
-    t->pauseButton = gtk_button_new_with_label("Pause");
-    t->stopButton = gtk_button_new_with_label("Stop");
-    t->startRecordButton = gtk_button_new_with_label("Start recording");
+    if(t == nullptr) {
+        t = std::make_unique<Interface>(app);
+    }
 
-	auto _rec = g_signal_connect(t->recordButton, "clicked", G_CALLBACK(select_record_region), nullptr);
-	auto recStart = g_signal_connect(t->startRecordButton, "clicked", G_CALLBACK(handleRecord), nullptr);
-	auto p = g_signal_connect(t->pauseButton, "clicked", G_CALLBACK(handlePause), nullptr);
-	auto s = g_signal_connect(t->stopButton, "clicked", G_CALLBACK(handleStop), nullptr);
-
-	// gtk_window_set_child(GTK_WINDOW(window), buttonGrid);
-	gtk_window_set_child(GTK_WINDOW(t->window), t->headerBar);
-	gtk_window_set_child(GTK_WINDOW(t->recordWindow), t->startRecordButton);
-
-	gtk_image_set_pixel_size(GTK_IMAGE(t->image), 32);
-	gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(t->headerBar),":minimize,close");
-	// gtk_header_bar_set_title_widget(GTK_HEADER_BAR(headerBar), titleView);
-	gtk_header_bar_pack_start(GTK_HEADER_BAR(t->headerBar), t->image);
-	// gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), titleView);
-	gtk_header_bar_pack_end(GTK_HEADER_BAR(t->headerBar), t->stopButton);
-	gtk_header_bar_pack_end(GTK_HEADER_BAR(t->headerBar), t->pauseButton);
-	gtk_header_bar_pack_end(GTK_HEADER_BAR(t->headerBar), t->recordButton);
-
-    GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
-    t->fileChoiceDialog = gtk_file_chooser_dialog_new ("Open File",
-                                                       GTK_WINDOW(t->window),
-                                                        action,
-                                                        (const char *) "Cancel",
-                                                        GTK_RESPONSE_CANCEL,
-                                                        (const char *) "Save",
-                                                        GTK_RESPONSE_ACCEPT,
-                                                        NULL);
-    t->fileChooser = GTK_FILE_CHOOSER (t->fileChoiceDialog);
-    gtk_file_chooser_set_current_name (t->fileChooser, "Untitled.mp4");
-    g_signal_connect (t->fileChoiceDialog, "response",
-                      G_CALLBACK (on_save_response),
-                      NULL);
-    gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
-
-//    gtk_widget_set_hexpand(selectionArea, true);
-//    gtk_widget_set_vexpand(selectionArea, true);
-	gtk_window_set_child(GTK_WINDOW(t->selectWindow), t->selectionArea);
-//    gtk_widget_action_set_enabled(selectionArea, "button_press_event", true);
-    t->leftGesture = gtk_gesture_click_new();
-    t->rightGesture = gtk_gesture_click_new();
-//    moveGesture = gtk_gesture_drag_new();
-	gtk_gesture_single_set_button(GTK_GESTURE_SINGLE (t->leftGesture), 1);
-	gtk_gesture_single_set_button(GTK_GESTURE_SINGLE (t->rightGesture), 3);
-    t->motionController = gtk_event_controller_motion_new();
-//    g_signal_connect (selectWindow, "button-press-event",
-//                      G_CALLBACK (deal_mouse_press), NULL);
-	g_signal_connect (t->motionController, "motion",
-	                  G_CALLBACK(motion_detected), t->selectionArea);
-	g_signal_connect (t->leftGesture, "pressed",
-	                  G_CALLBACK(left_btn_pressed), t->selectionArea);
-	g_signal_connect (t->leftGesture, "released",
-	                  G_CALLBACK(left_btn_released), t->selectionArea);
-	g_signal_connect (t->rightGesture, "pressed",
-	                  G_CALLBACK(right_btn_pressed), t->selectionArea);
-	g_signal_connect (t->rightGesture, "released",
-	                  G_CALLBACK(right_btn_released), t->selectionArea);
-
-	gtk_widget_add_controller(t->selectionArea, GTK_EVENT_CONTROLLER (t->leftGesture));
-	gtk_widget_add_controller(t->selectionArea, GTK_EVENT_CONTROLLER (t->rightGesture));
-	gtk_widget_add_controller(t->selectionArea, GTK_EVENT_CONTROLLER (t->motionController));
-
-//    gtk_widget_add_controller (selectionArea, GTK_EVENT_CONTROLLER (moveGesture));
-	// gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), closeButton);
-	// gtk_grid_attach(GTK_GRID(buttonGrid), recordButton, 0, 0, 100, 50);
-	// gtk_grid_insert_next_to(GTK_GRID(buttonGrid), recordButton, GTK_POS_RIGHT);
-	// gtk_grid_attach_next_to(GTK_GRID(buttonGrid), pauseButton, recordButton,
-	// GTK_POS_RIGHT, 100, 50); gtk_grid_attach_next_to(GTK_GRID(buttonGrid),
-	// stopButton, pauseButton, GTK_POS_RIGHT, 100, 50);
-	// gtk_grid_attach_next_to(GTK_GRID(buttonGrid), closeButton, stopButton,
-	// GTK_POS_RIGHT, 100, 50);
-
-	g_signal_connect(G_OBJECT(t->window), "destroy", G_CALLBACK(handleClose), nullptr);
-
-	/* Initialize the surface to white */
-//    clear_surface ();
-//    g_signal_connect (selectWindow, "motion-notify-event",
-//                      G_CALLBACK (deal_motion_notify_event), NULL);
-	gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(t->selectionArea), draw, NULL, NULL);
-//    g_signal_connect (G_OBJECT(selectionArea), "draw",
-//                      G_CALLBACK(on_draw_event), NULL);
-	gtk_window_present(GTK_WINDOW(t->window));
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->selectWindow), true);
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->recordWindow), true);
-	gtk_widget_set_name(t->selectWindow, "selector_window");
-
-    t->cssProvider = gtk_css_provider_new();
-	gtk_css_provider_load_from_path(t->cssProvider, "../src/style.css");
-    t->context = gtk_widget_get_style_context(t->selectWindow);
-	gtk_style_context_add_provider(t->context,
-	                               GTK_STYLE_PROVIDER(t->cssProvider),
-	                               GTK_STYLE_PROVIDER_PRIORITY_USER); // I had used wrong priority on first try
-	gtk_style_context_save(t->context);
-//    gtk_widget_set_opacity(selectWindow, 0.70);
 }
 
 //int gtk_test(int argc, char **argv) {

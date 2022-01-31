@@ -62,8 +62,7 @@
 
 
 int main(int argc, char **argv) {
-    Interface t = Interface();
-	auto res = t.launchUI(argc, argv);
+	auto res = launchUI(argc, argv);
 
 	return res;
 //	try{

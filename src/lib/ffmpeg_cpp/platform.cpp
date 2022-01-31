@@ -130,8 +130,8 @@ int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
 AVDictionary* get_audio_options(){
 	AVDictionary* options = nullptr;
 //	av_dict_set(&options, "rtbufsize", "10M", 0);
-    av_dict_set(&options, "sample_rate", to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
-    av_dict_set(&options, "channels", to_string(AUDIO_CHANNELS).c_str(), 0);
+    av_dict_set(&options, "sample_rate", std::to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
+    av_dict_set(&options, "channels", std::to_string(AUDIO_CHANNELS).c_str(), 0);
 	return options;
 }
 
@@ -155,9 +155,9 @@ std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_device(const string &_offset){
+std::string get_video_input_device(const std::string &_offset){
 	auto name = DEFAULT_VIDEO_INPUT_DEVICE;
-	return string(name) + _offset;
+	return std::string(name) + _offset;
 }
 
 int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
