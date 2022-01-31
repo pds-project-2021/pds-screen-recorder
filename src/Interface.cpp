@@ -303,20 +303,18 @@ static void drag(GtkGestureDrag *gesture, double offset_x, double offset_y, gpoi
 
 void recorder(int sX, int sY, int eX, int eY) {
 	auto s = Screen{};
+
 	auto width = std::abs(sX - eX);
 	auto height = std::abs(sY - eY);
+	auto off_x = std::min(sX, eX);
+	auto off_y = std::min(sY, eY);
 
 	s.set_dimension(width, height);
+	s.set_offset(off_x, off_y);
 
 	if (s.fullscreen()) {
 		log("Recording full screen area");
-    }else if (sX > eX) {
-		(sY > eY) ? s.set_offset(eX, eY) : s.set_offset(eX, sY);
-
-		log("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str() );
-	} else {
-		(sY > eY) ? s.set_offset(sX, eY) : s.set_offset(sX, sY);
-
+    }else {
 		log("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str() );
 	}
 
