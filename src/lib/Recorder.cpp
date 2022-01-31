@@ -232,9 +232,11 @@ void Recorder::CaptureAudioFrames() {
 	bool synced = false;
 	bool sync = false;
 
+#ifdef linux
 	if (inputFormatContext->start_time == ref_time) { // If video started later
 		sync = true; // Video needs to set the ref_time value
 	}
+#endif
 
 	// Handle audio input stream packets
 	avformat_flush(inputFormatContext);
@@ -256,7 +258,7 @@ void Recorder::CaptureAudioFrames() {
 		}
 
 		if (!pausedAudio.load() && in_packet.into()->pts >= ref_time) {
-			auto in_frame = Frame{};
+			auto in_frame = Frame{22050, inputCodecContext->sample_fmt, inputCodecContext->channel_layout, 0};
 
 			// Send packet to decoder
 			decode(inputCodecContext, in_packet.into(), in_frame.into(), &got_frame);
@@ -320,7 +322,9 @@ void Recorder::CaptureVideoFrames() {
 		read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
 		if (!synced && sync && !pausedVideo.load()) {
-			if (in_packet.into()->pts > ref_time) ref_time = in_packet.into()->pts;
+			if (in_packet.into()->pts > ref_time) {
+				ref_time = in_packet.into()->pts;
+			}
 			synced = true;
 		}
 
@@ -376,9 +380,11 @@ void Recorder::DemuxAudioInput() {
 	auto inputFormatContext = format.inputContext.get_audio();
 	auto inputCodecContext = codec.inputContext.get_audio();
 
+#ifdef linux
 	if (inputFormatContext->start_time == ref_time) {// If video started later
 		sync = true;// Video needs to set the ref_time value
 	}
+#endif
 
 	avformat_flush(inputFormatContext);
 	auto read_packet = true;
@@ -394,7 +400,9 @@ void Recorder::DemuxAudioInput() {
 		}
 
 		if (!synced && sync && !pausedAudio.load()) {
-			if (in_packet.into()->pts > ref_time) ref_time = in_packet.into()->pts;
+			if (in_packet.into()->pts > ref_time) {
+				ref_time = in_packet.into()->pts;
+			}
 			synced = true;
 		}
 
@@ -402,7 +410,7 @@ void Recorder::DemuxAudioInput() {
 
 			end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
-//			std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
+			std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
 
 			// Send packet to decoder
 			if (aD.try_lock()) {
@@ -449,7 +457,7 @@ void Recorder::ConvertAudioFrames() {
 	bool finished = false;
 	int result = AVERROR(EAGAIN);
 
-	auto in_frame = Frame{};
+	auto in_frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext-> channel_layout, 0};
 
 	if (aD.try_lock()) {
 		result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
@@ -564,7 +572,7 @@ void Recorder::DemuxVideoInput() {
 				frameNum = 0; // reset every fps frames
 				auto end = std::chrono::system_clock::now();
 				std::chrono::duration<double> elapsed_seconds = end - start;
-//				std::cout << "Received 30 video packets in " << elapsed_seconds.count() << " s\n";
+				std::cout << "Received 30 video packets in " << elapsed_seconds.count() << " s\n";
 				start = std::chrono::system_clock::now();
 			}
 

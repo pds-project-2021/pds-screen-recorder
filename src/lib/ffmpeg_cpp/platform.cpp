@@ -6,7 +6,7 @@
 
 //using namespace std;
 
-#ifdef _WIN32
+#ifdef WIN32
 
 HRESULT _enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
 {
@@ -122,7 +122,8 @@ std::string get_video_input_device(const std::string &_offset){
 }
 
 int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
-	return ctx.get_audio()->start_time * 10 + 50000000;
+//	return ctx.get_audio()->start_time * 10 + 50000000;
+	return 0;
 }
 
 #elif defined linux
@@ -161,9 +162,7 @@ std::string get_video_input_device(const std::string &_offset){
 }
 
 int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
-	auto video_time = ctx.get_video()->start_time;
-	auto audio_time = ctx.get_audio()->start_time;
-	return video_time > audio_time ? video_time : audio_time;
+	return std::max(ctx.get_audio()->start_time, ctx.get_video()->start_time);
 }
 
 #else
