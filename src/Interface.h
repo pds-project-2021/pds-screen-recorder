@@ -40,7 +40,8 @@ public:
     std::atomic<bool> ready;
     std::atomic<bool> started;
     std::unique_ptr<Recorder> s = nullptr;
-    bool recordered = false;
+    unsigned long fileHandler;
+//    bool recordered = false;
     std::string dest;
 
     Interface(GtkApplication *app);
@@ -51,12 +52,9 @@ public:
         if (s->is_capturing()){
             s->terminate();
         }
-
-        if(!recordered){
-            gtk_window_destroy(GTK_WINDOW(recordWindow));
-            gtk_window_destroy(GTK_WINDOW(selectWindow));
-        }
-        gtk_window_destroy(GTK_WINDOW(fileChooser));
+//        g_object_unref(recordWindow);
+//        g_object_unref(selectWindow);
+//        g_object_unref(fileChooser);
 //        g_object_unref(window);
 //        g_object_unref(selectWindow);
 //        g_object_unref(recordWindow);

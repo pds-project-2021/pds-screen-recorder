@@ -54,7 +54,7 @@ void delete_file(const std::string& filename) {
 }
 
 std::string get_default_path() {
-	return fs::temp_directory_path()/ "output.mp4";
+	return (fs::temp_directory_path()/ "output.mp4").string();
 }
 
 int set_even(int num) {

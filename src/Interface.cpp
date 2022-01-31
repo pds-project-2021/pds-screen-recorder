@@ -1,6 +1,7 @@
 #include "Interface.h"
 
 std::unique_ptr<Interface> t = nullptr;
+GtkApplication *application;
 //Interface* t = nullptr;
 
 int launchUI(int argc, char **argv){
@@ -25,9 +26,9 @@ static void
 on_save_response (GtkDialog *dialog,
                   int        response)
 {
-    auto destPath = g_file_get_path(gtk_file_chooser_get_file(t->fileChooser));
     if (response == GTK_RESPONSE_ACCEPT)
     {
+        auto destPath = g_file_get_path(gtk_file_chooser_get_file(t->fileChooser));
         move_file(t->dest, destPath);
     }
     else if(response == GTK_RESPONSE_CANCEL) {
@@ -411,7 +412,29 @@ static void handleStop(GtkWidget *widget, gpointer data) {
 
 static void handleClose(GtkWidget *widget, gpointer data) {
 	g_print("Close button pressed\n");
+//        gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+//        gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
+//    gtk_window_set_hide_on_close(GTK_WINDOW(t->selectWindow), false);
+//    gtk_window_set_hide_on_close(GTK_WINDOW(t->recordWindow), false);
+//        g_signal_handler_disconnect(fileChoiceDialog, fileHandler);
+//        gtk_window_present(GTK_WINDOW(fileChoiceDialog));
+//    gtk_window_present(GTK_WINDOW(t->selectWindow));
+//    gtk_window_present(GTK_WINDOW(t->recordWindow));
+//        gtk_window_close(GTK_WINDOW(fileChoiceDialog));
+//    gtk_window_close(GTK_WINDOW(t->selectWindow));
+//    gtk_window_close(GTK_WINDOW(t->recordWindow));
+
+//
+//    g_object_unref(t->recordWindow);
+//    g_object_unref(t->selectWindow);
+//    g_object_unref(t->fileChooser);
+
     t = nullptr;
+//    gtk_window_destroy(GTK_WINDOW(t->recordWindow));
+//    gtk_window_destroy(GTK_WINDOW(t->selectWindow));
+//    gtk_window_destroy(GTK_WINDOW(t->fileChooser));
+    g_application_quit(G_APPLICATION(application));
+
 }
 
 Interface::Interface(GtkApplication *app) {
@@ -473,7 +496,7 @@ Interface::Interface(GtkApplication *app) {
                                                        NULL);
     fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
     gtk_file_chooser_set_current_name (fileChooser, "Untitled.mp4");
-    g_signal_connect (fileChoiceDialog, "response",
+    fileHandler = g_signal_connect (fileChoiceDialog, "response",
                       G_CALLBACK (on_save_response),
                       NULL);
     gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), true);
@@ -543,6 +566,7 @@ Interface::Interface(GtkApplication *app) {
 static void activate(GtkApplication *app, gpointer user_data) {
 	// GtkWidget* buttonGrid;
 	// GtkWidget* closeButton;
+    application = app;
     if(t == nullptr) {
         t = std::make_unique<Interface>(app);
     }
