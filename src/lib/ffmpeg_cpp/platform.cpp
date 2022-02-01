@@ -138,7 +138,6 @@ AVDictionary* get_audio_options(){
 
 AVDictionary* get_video_options(){
 	AVDictionary* options = nullptr;
-
 	av_dict_set(&options, "framerate", "30", 0);
 	av_dict_set(&options, "preset", "medium", 0);
 	return options;

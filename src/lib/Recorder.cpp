@@ -230,13 +230,6 @@ void Recorder::CaptureAudioFrames() {
 	int got_frame = 0;
 	int64_t pts = 0;
 	bool synced = false;
-	bool sync = false;
-
-#ifdef linux
-	if (inputFormatContext->start_time == ref_time) { // If video started later
-		sync = true; // Video needs to set the ref_time value
-	}
-#endif
 
 	// Handle audio input stream packets
 	avformat_flush(inputFormatContext);
@@ -250,7 +243,7 @@ void Recorder::CaptureAudioFrames() {
 			break;
 		}
 
-		if (!synced && sync && !pausedAudio.load()) {
+		if (!synced && !pausedAudio.load()) {
 			if (in_packet.into()->pts > ref_time) {
 				ref_time = in_packet.into()->pts;
 			}
@@ -258,7 +251,7 @@ void Recorder::CaptureAudioFrames() {
 		}
 
 		if (!pausedAudio.load() && in_packet.into()->pts >= ref_time) {
-			auto in_frame = Frame{22050, inputCodecContext->sample_fmt, inputCodecContext->channel_layout, 0};
+			auto in_frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout, 0};
 
 			// Send packet to decoder
 			decode(inputCodecContext, in_packet.into(), in_frame.into(), &got_frame);
@@ -374,17 +367,10 @@ void Recorder::DemuxAudioInput() {
 	auto start = std::chrono::system_clock::now();
 	auto end = start;
 	bool synced = false;
-	bool sync = false;
 	int result;
 
 	auto inputFormatContext = format.inputContext.get_audio();
 	auto inputCodecContext = codec.inputContext.get_audio();
-
-#ifdef linux
-	if (inputFormatContext->start_time == ref_time) {// If video started later
-		sync = true;// Video needs to set the ref_time value
-	}
-#endif
 
 	avformat_flush(inputFormatContext);
 	auto read_packet = true;
@@ -399,7 +385,7 @@ void Recorder::DemuxAudioInput() {
 			break;
 		}
 
-		if (!synced && sync && !pausedAudio.load()) {
+		if (!synced && !pausedAudio.load()) {
 			if (in_packet.into()->pts > ref_time) {
 				ref_time = in_packet.into()->pts;
 			}

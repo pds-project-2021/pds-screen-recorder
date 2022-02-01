@@ -182,14 +182,14 @@ void recorder(int sX, int sY, int eX, int eY) {
 	s.set_offset(off_x, off_y);
 
 	if (s.fullscreen()) {
-		log("Recording full screen area");
+		log_info("Recording full screen area");
     }else {
-		log("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str() );
+		log_info("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str() );
 	}
 
 	t->s->init(s);
 
-	log("Initialized input streams");
+	log_info("Initialized input streams");
 
     t->ready = true;
     t->started = false;

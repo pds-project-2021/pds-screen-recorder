@@ -61,6 +61,6 @@ int set_even(int num) {
 	return num % 2 ? num - 1: num;
 }
 
-void log(const std::string& str) {
+void log_info(const std::string& str) {
 	std::cout << "[INFO] " + str << std::endl;
 }

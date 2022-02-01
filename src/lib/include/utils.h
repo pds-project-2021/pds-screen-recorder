@@ -16,4 +16,4 @@ void move_file(const std::string& source, const std::string &dest);
 void delete_file(const std::string&);
 std::string get_default_path();
 int set_even(int num);
-void log(const std::string& str);
+void log_info(const std::string& str);
