@@ -16,14 +16,13 @@
 
 /** platform agnostic attributes */
 
-#define AUDIO_CHANNELS      1
 #define AUDIO_SAMPLE_RATE   44100
 #define VIDEO_BITRATE       8*1000*1000
 #define AUDIO_BITRATE       192*1000
 
 #define DEFAULT_AUDIO_CODEC "aac"
 
-#ifdef _WIN32
+#ifdef WIN32
 /** WINDOWS platform specific attributes */
 
 #include <iostream>

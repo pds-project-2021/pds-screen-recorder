@@ -15,8 +15,9 @@ class Recorder {
 	Stream stream;
 
 	// output codec
-    std::string audio_codec = DEFAULT_AUDIO_CODEC;
-    std::string video_codec = DEFAULT_VIDEO_CODEC;
+	enum AudioLayout audio_layout = MONO;
+	std::string audio_codec = DEFAULT_AUDIO_CODEC;
+	std::string video_codec = DEFAULT_VIDEO_CODEC;
 	std::string destination_path = get_default_path();
 
     std::thread th_audio_demux;
@@ -66,6 +67,9 @@ class Recorder {
     ~Recorder() = default;
 
 	// recorder parameters functions
+	[[maybe_unused]] enum AudioLayout get_audio_layout();
+	[[maybe_unused]] void set_video_layout(enum AudioLayout layout);
+
 	[[maybe_unused]] std::string get_audio_codec();
 	[[maybe_unused]] std::string get_video_codec();
 	[[maybe_unused]] void set_audio_codec(const std::string &cod);

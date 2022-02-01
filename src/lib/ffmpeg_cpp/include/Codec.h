@@ -18,6 +18,9 @@ class Codec {
 	wrapper<AVCodecParameters> inputPar;
 	wrapper<AVCodecParameters> outputPar;
 
+	uint64_t channel_layout;
+	uint16_t channels;
+
   private:
 	void source_audio_context();
 	void source_video_context();
@@ -31,6 +34,7 @@ class Codec {
 	void setup_destination();
 	void find_encoders(const std::string& audio_codec, const std::string& video_codec);
 
+	void set_source_audio_layout(enum AudioLayout);
 	void set_source_audio_parameters(AVCodecParameters *par);
 	void set_source_video_parameters(AVCodecParameters *par);
 	void set_destination_audio_parameters(AVCodecParameters *par);

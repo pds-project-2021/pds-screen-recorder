@@ -10,6 +10,22 @@ Recorder::Recorder() {
 }
 
 /**
+ * Get audio layout
+ * @return
+ */
+[[maybe_unused]] enum AudioLayout Recorder::get_audio_layout() {
+	return audio_layout;
+}
+
+/**
+ * Set audio layout [choices: MONO, STEREO]
+ * @return
+ */
+[[maybe_unused]] void Recorder::set_video_layout(enum AudioLayout layout) {
+	audio_layout = layout;
+}
+
+/**
  * Get output audio codec
  * @return
  */
@@ -60,11 +76,13 @@ void Recorder::init(Screen params) {
 #endif
 
 	format.set_screen_params(params);
+	format.set_audio_layout(audio_layout);
 	format.setup_source();
 
 	auto audioPar = format.get_source_audio_codec();
 	auto videoPar = format.get_source_video_codec();
 
+	codec.set_source_audio_layout(audio_layout);
 	codec.set_source_audio_parameters(audioPar);
 	codec.set_source_video_parameters(videoPar);
 	codec.setup_source();
@@ -96,7 +114,7 @@ void Recorder::init(Screen params) {
 #endif
 }
 
-[[maybe_unused]] [[maybe_unused]]
+[[maybe_unused]]
 void Recorder::print_source_info() {
 	av_dump_format(format.inputContext.get_audio(), 0, format.get_audio_device().c_str(), 0);
 	av_dump_format(format.inputContext.get_video(), 0 , format.get_video_device().c_str(), 0);
@@ -106,7 +124,6 @@ void Recorder::print_source_info() {
 void Recorder::print_destination_info(const std::string &dest) const {
 	av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
 }
-
 
 /**
  * Start the capture of the screen

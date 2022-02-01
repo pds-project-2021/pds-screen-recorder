@@ -59,11 +59,8 @@ void _getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *a
 
 AVDictionary* get_audio_options(){
 	AVDictionary* options = nullptr;
-
 //	av_dict_set(&options, "rtbufsize", "3M", 0);
     av_dict_set(&options, "sample_rate", std::to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
-    av_dict_set(&options, "channels", std::to_string(AUDIO_CHANNELS).c_str(), 0);
-
 	return options;
 }
 
@@ -132,7 +129,6 @@ AVDictionary* get_audio_options(){
 	AVDictionary* options = nullptr;
 //	av_dict_set(&options, "rtbufsize", "10M", 0);
     av_dict_set(&options, "sample_rate", std::to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
-    av_dict_set(&options, "channels", std::to_string(AUDIO_CHANNELS).c_str(), 0);
 	return options;
 }
 

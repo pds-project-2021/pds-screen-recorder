@@ -131,16 +131,26 @@ void Codec::find_encoders(const std::string &audio_codec, const std::string &vid
 	find_video_encoder(video_codec);
 }
 
+void Codec::set_source_audio_layout(enum AudioLayout layout) {
+	if(layout == MONO){
+		channel_layout = AV_CH_LAYOUT_MONO;
+		channels = 1;
+	}else if(layout == STEREO){
+		channel_layout = AV_CH_LAYOUT_STEREO;
+		channels = 2;
+	}
+}
+
 void Codec::set_source_audio_parameters(AVCodecParameters *par) {
 	inputPar.set_audio(par);
 
 	par->format = AV_SAMPLE_FMT_S16;
 	par->sample_rate = AUDIO_SAMPLE_RATE;
-	par->channel_layout = AUDIO_CHANNELS==2?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
-	par->channels = AUDIO_CHANNELS;
 	par->codec_id = AV_CODEC_ID_PCM_S16LE;
 	par->codec_type = AVMEDIA_TYPE_AUDIO;
 	par->frame_size = 22050; // set number of audio samples in each frame
+	par->channel_layout = channel_layout;
+	par->channels = channels;
 
 	auto audioCodec = avcodec_find_decoder(par->codec_id);
 	if (audioCodec == nullptr) {
@@ -177,7 +187,6 @@ void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
 void Codec::set_destination_video_parameters(AVCodecParameters *par) {
 	outputPar.set_video(par);
 
-	// todo cambiare codec id
 	par->codec_id = output.get_video()->id; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
 	par->codec_type = AVMEDIA_TYPE_VIDEO;
 	par->format = AV_PIX_FMT_YUV420P;
