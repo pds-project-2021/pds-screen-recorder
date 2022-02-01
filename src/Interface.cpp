@@ -35,6 +35,10 @@ on_save_response (GtkDialog *dialog,
     }
 
     gtk_window_close (GTK_WINDOW (dialog));
+    gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+    gtk_window_minimize(GTK_WINDOW(t->window));
+    gtk_window_present(GTK_WINDOW(t->window));
+    gtk_window_unminimize(GTK_WINDOW(t->window));
 }
 
 //static void clear_surface(void) {
@@ -267,6 +271,8 @@ static void handleStop(GtkWidget *widget, gpointer data) {
 	std::future<void> foo = std::async(std::launch::async, stopRecording);
 	g_print("Stop button pressed\n");
     foo.wait();
+    gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
+    gtk_window_close(GTK_WINDOW(t->window));
     gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
 }
 
@@ -322,7 +328,7 @@ Interface::Interface(GtkApplication *app) {
 
     GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
     fileChoiceDialog = gtk_file_chooser_dialog_new ("Open File",
-                                                       GTK_WINDOW(window),
+                                                    nullptr,
                                                        action,
                                                        (const char *) "Cancel",
                                                        GTK_RESPONSE_CANCEL,
@@ -335,6 +341,7 @@ Interface::Interface(GtkApplication *app) {
                       G_CALLBACK (on_save_response),
                       NULL);
     gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), true);
+    gtk_window_set_title(GTK_WINDOW(fileChoiceDialog), "Choose video capture file destination");
 
     gtk_window_set_child(GTK_WINDOW(selectWindow), selectionArea);
     leftGesture = gtk_gesture_click_new();
