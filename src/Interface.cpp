@@ -56,35 +56,16 @@ on_save_response (GtkDialog *dialog,
  * signal receives a ready-to-be-used cairo_t that is already
  * clipped to only draw the exposed areas of the widget
  */
-
 void Interface::getRectCoordinates(double& offsetX, double& offsetY, double& width, double& height) const {
-    if (startX > endX) {
-        if (startY > endY) {
-            offsetX = startX;
-            offsetY = startY;
-            width = endX - startX;
-            height = endY - startY;
-        }
-        else {
-            offsetX = startX;
-            offsetY = endY;
-            width = endX - startX;
-            height = startY - endY;
-        }
-    } else {
-        if (startY > endY) {
-            offsetX = endX;
-            offsetY = startY;
-            width = startX - endX;
-            height = endY - startY;
-        }
-        else {
-            offsetX = endX;
-            offsetY = endY;
-            width = startX - endX;
-            height = startY - endY;
-        }
-    }
+	width = std::abs(startX - endX);
+	height = std::abs(startY - endY);
+#ifdef WIN32
+    auto offsetX = min(startX, endX);
+    auto offsetY = min(startY, endY);
+#else
+	offsetX = std::min(startX, endX);
+	offsetY = std::min(startY, endY);
+#endif
 }
 
 static void draw_rect(cairo_t *cr) {
@@ -166,7 +147,7 @@ static void left_btn_released(GtkGestureClick *gesture, int n_press, double x, d
 	gtk_window_present(GTK_WINDOW(t->recordWindow));
 }
 
-void recorder(int sX, int sY, int eX, int eY) {
+void recorder(double sX, double sY, double eX, double eY) {
 	auto s = Screen{};
 
 	auto width = std::abs(sX - eX);

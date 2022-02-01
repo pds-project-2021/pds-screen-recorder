@@ -57,10 +57,6 @@ std::string get_default_path() {
 	return (fs::temp_directory_path()/ "output.mp4").string();
 }
 
-int set_even(int num) {
-	return num % 2 ? num - 1: num;
-}
-
 void log_info(const std::string& str) {
 	std::cout << "[INFO] " + str << std::endl;
 }

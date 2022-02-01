@@ -20,18 +20,7 @@ Screen::Screen(int width, int height, int offset_x, int offset_y) {
  */
 void Screen::set_dimension(const std::string &dim) {
 	width = set_even(stoi(dim.substr(0, dim.find('x'))));
-	height = set_even(stoi(dim.substr( dim.find('x')+1, dim.length())));
-}
-
-/**
- * Set capture window dimension
- *
- * @param w Width of the window
- * @param h Height of the window
- */
-void Screen::set_dimension(int w, int h) {
-	width = set_even(w);
-	height = set_even(h);
+	height = set_even(stoi(dim.substr(dim.find('x') + 1, dim.length())));
 }
 
 /**
@@ -42,18 +31,7 @@ void Screen::set_dimension(int w, int h) {
  */
 void Screen::set_offset(const std::string &offset) {
 	offset_x = set_even(stoi(offset.substr(0, offset.find('x'))));
-	offset_y = set_even(stoi(offset.substr( offset.find('x')+1, offset.length())));
-}
-
-/**
- * Set capture window offset position
- *
- * @param x Position relative of the x axis
- * @param y Position relative of the y axis
- */
-void Screen::set_offset(int x, int y) {
-	offset_x = set_even(x);
-	offset_y = set_even(y);
+	offset_y = set_even(stoi(offset.substr(offset.find('x') + 1, offset.length())));
 }
 
 /**

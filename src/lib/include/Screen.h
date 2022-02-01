@@ -28,12 +28,13 @@ class Screen{
 	~Screen() = default;
 
 	void set_dimension(const std::string &dim);
-	void set_dimension(int w, int h);
+	template <typename T> void set_dimension(T w, T h);
 	void set_offset(const std::string &offset);
-	void set_offset(int x, int y);
+	template <typename T> void set_offset(T x, T y);
 	void set_show_region(bool val);
-	bool fullscreen() const;
 
+
+	[[nodiscard]] bool fullscreen() const;
 	[[nodiscard]] std::string get_offset_x() const;
 	[[nodiscard]] std::string get_offset_y() const;
 	[[nodiscard]] std::string get_offset_str() const;
@@ -44,4 +45,24 @@ class Screen{
 };
 
 
+/**
+ * Set capture window offset position
+ *
+ * @param x Position relative of the x axis
+ * @param y Position relative of the y axis
+ */
+template <typename T> void Screen::set_offset(T x, T y){
+	offset_x = set_even(x);
+	offset_y = set_even(y);
+}
 
+/**
+ * Set capture window dimension
+ *
+ * @param w Width of the window
+ * @param h Height of the window
+ */
+template <typename T> void Screen::set_dimension(T w, T h){
+	width = set_even(w);
+	height = set_even(h);
+}
