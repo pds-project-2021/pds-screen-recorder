@@ -92,8 +92,7 @@ AVFormatContext * wrapper<AVFormatContext>::get_audio() const {
 /**
  * Destructor of `AVFormatContext`
  */
-template<>
-inline
+template<> inline
 wrapper<AVFormatContext>::~wrapper() {
 	if (audio != nullptr) {
 		avformat_close_input(&audio);

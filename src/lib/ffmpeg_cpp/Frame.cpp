@@ -55,9 +55,11 @@ Frame::Frame(int nb_samples, AVSampleFormat format, uint64_t channel_layout, int
 	if (av_frame_get_buffer(inner, align) < 0) {
 		throw avException("Could not allocate audio data buffers");
 	}
-
 }
 
+/**
+ * Constructor for output frame (both audio and video)
+ */
 Frame::Frame() {
 	inner = av_frame_alloc();
 	if (!inner) {

@@ -53,8 +53,8 @@ void delete_file(const std::string& filename) {
     }
 }
 
-std::string get_default_path() {
-	return (fs::temp_directory_path()/ "output.mp4").string();
+std::string get_default_path(const fs::path& path) {
+	return (path/ "output.mp4").string();
 }
 
 void log_info(const std::string& str) {

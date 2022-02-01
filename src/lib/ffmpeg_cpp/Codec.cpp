@@ -79,8 +79,8 @@ void Codec::destination_video_context() {
 	if (!videoCtx) {
 		throw avException("Error in allocating the video codec context");
 	}
-	videoCtx->gop_size = 5;
-	videoCtx->max_b_frames = 1;
+	videoCtx->gop_size = 15;
+	videoCtx->max_b_frames = 10;
 	videoCtx->time_base = {1, 30};
 
 	outputContext.set_video(videoCtx);
@@ -161,7 +161,8 @@ void Codec::set_source_audio_parameters(AVCodecParameters *par) {
 
 void Codec::set_source_video_parameters(AVCodecParameters *par) {
 	inputPar.set_video(par);
-	//inputCodecPar->format = AV_PIX_FMT_BGR0;
+
+	par->format = AV_PIX_FMT_BGR0;
 
 	auto videoCodec = avcodec_find_decoder(par->codec_id);
 	if (videoCodec == nullptr) {
@@ -173,7 +174,6 @@ void Codec::set_source_video_parameters(AVCodecParameters *par) {
 void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
 	outputPar.set_audio(par);
 
-	// todo cambiare codec id
 	par->codec_id = output.get_audio()->id;
 	par->codec_type = AVMEDIA_TYPE_AUDIO;
 	par->bit_rate = AUDIO_BITRATE;

@@ -62,7 +62,15 @@ void Recorder::set_video_codec(const std::string &cod) {
  */
 
 void Recorder::set_destination(const std::string& dest_path) {
-    destination_path = dest_path;
+	auto path = std::filesystem::path(dest_path);
+
+	if(is_file_str(dest_path)) {
+		std::filesystem::create_directories(path.parent_path());
+		destination_path = dest_path;
+	}else{
+		std::filesystem::create_directories(path);
+		destination_path = get_default_path(path);
+	}
 }
 
 std::string Recorder::get_destination() {
