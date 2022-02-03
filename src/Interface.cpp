@@ -64,14 +64,14 @@ Interface::Interface(GtkApplication *app) {
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
 
 	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
-	fileChoiceDialog = gtk_file_chooser_dialog_new("Open File",
-	                                               nullptr,
-	                                               action,
-	                                               (const char *) "Cancel",
-	                                               GTK_RESPONSE_CANCEL,
-	                                               (const char *) "Save",
-	                                               GTK_RESPONSE_ACCEPT,
-	                                               NULL);
+    fileChoiceDialog = gtk_file_chooser_dialog_new("Open File",
+                                                   nullptr,
+                                                   action,
+                                                   (const char *) "Cancel",
+                                                   GTK_RESPONSE_CANCEL,
+                                                   (const char *) "Save",
+                                                   GTK_RESPONSE_ACCEPT,
+                                                   NULL);
 	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
 	gtk_file_chooser_set_current_name(fileChooser, "Untitled.mp4");
 	fileHandler = g_signal_connect (fileChoiceDialog, "response",
@@ -136,8 +136,8 @@ Interface::~Interface() {
 //    gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
 //    gtk_window_close(GTK_WINDOW(fileChoiceDialog));
 #else
-	gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
-	gtk_window_close(GTK_WINDOW(window));
+//	gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+//	gtk_window_close(GTK_WINDOW(window));
 #endif
 }
 
@@ -167,9 +167,13 @@ void Interface::on_save_response(GtkDialog *dialog, int response) {
 
 	gtk_window_close(GTK_WINDOW (t->fileChoiceDialog));
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
-//	gtk_window_minimize(GTK_WINDOW(t->window));
-	gtk_window_present(GTK_WINDOW(t->window));
-	gtk_window_unminimize(GTK_WINDOW(t->window));
+#ifdef WIN32
+	gtk_window_minimize(GTK_WINDOW(t->window));
+    gtk_window_present(GTK_WINDOW(t->window));
+    gtk_window_unminimize(GTK_WINDOW(t->window));
+#else
+    gtk_window_present(GTK_WINDOW(t->window));
+#endif
 }
 
 //static void clear_surface(void) {
@@ -374,6 +378,9 @@ void Interface::handleStop(GtkWidget *widget, gpointer data) {
 
 void Interface::handleClose(GtkWidget *widget, gpointer data) {
 	g_print("Close button pressed\n");
+//#ifdef WIN32
+//    t = nullptr;
+//#endif
 	g_application_quit(G_APPLICATION(t->g_application));
 }
 
