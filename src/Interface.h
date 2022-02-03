@@ -8,74 +8,77 @@
 #include <memory>
 
 #include "lib/Recorder.h"
-
-//using namespace std;
+#include "lib/include/exceptions.h"
 
 class Interface {
-public:
-    GtkWidget *window;
-    GtkWidget *selectWindow;
-    GtkWidget *recordWindow;
-    GtkWidget *recordButton;
-    GtkWidget *startRecordButton;
-    GtkWidget *pauseButton;
-    GtkWidget *stopButton;
-    GtkWidget *headerBar;
-    std::atomic<bool> selection_enabled;
-    GtkWidget *image;
-    GtkTextBuffer *title;
-    GtkGesture *leftGesture;
-    GtkGesture *rightGesture;
-    GtkEventController *motionController;
-    GtkWidget *selectionArea;
-    GtkCssProvider *cssProvider;
-    GtkStyleContext *context;
-    GtkWidget *titleView;
-    GtkWidget *fileChoiceDialog;
-    GtkFileChooser *fileChooser;
-    double startX = 0;
-    double startY = 0;
-    double endX = 0;
-    double endY = 0;
-    std::atomic<bool> ready;
-    std::atomic<bool> started;
-    std::unique_ptr<Recorder> s = nullptr;
-    unsigned long fileHandler;
-    std::string dest;
-    cairo_surface_t *surface = nullptr;
+  public:
+	GtkApplication *g_application = nullptr;
 
-    Interface(GtkApplication *app);
-    ~Interface(){
-        g_print("Interface has been destroyed\n");
-        // terminate capture if it's running
-        if (s->is_capturing()){
-            s->terminate();
-        }
-#ifdef linux
-        gtk_window_destroy(GTK_WINDOW(window));
-//        gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), false);
-//        gtk_window_close(GTK_WINDOW(selectWindow));
-//        gtk_window_set_hide_on_close(GTK_WINDOW(recordWindow), false);
-//        gtk_window_close(GTK_WINDOW(recordWindow));
-//        gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
-//        gtk_window_close(GTK_WINDOW(fileChoiceDialog));
-#else
-        gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
-        gtk_window_close(GTK_WINDOW(window));
-#endif
-    };
-    void getRectCoordinates(double&, double&, double&, double&) const;
+	GtkWidget *window = nullptr;
+	GtkWidget *selectWindow = nullptr;
+	GtkWidget *recordWindow = nullptr;
+	GtkWidget *recordButton = nullptr;
+	GtkWidget *startRecordButton = nullptr;
+	GtkWidget *pauseButton = nullptr;
+	GtkWidget *stopButton = nullptr;
+	GtkWidget *headerBar = nullptr;
+	GtkWidget *selectionArea = nullptr;
+	GtkWidget *titleView = nullptr;
+	GtkWidget *fileChoiceDialog = nullptr;
+	GtkWidget *image = nullptr;
+
+	std::atomic<bool> selection_enabled{};
+	std::atomic<bool> ready{};
+	std::atomic<bool> started{};
+
+	GtkTextBuffer *title = nullptr;
+	GtkGesture *leftGesture = nullptr;
+	GtkGesture *rightGesture = nullptr;
+	GtkEventController *motionController = nullptr;
+	GtkCssProvider *cssProvider = nullptr;
+	GtkStyleContext *context = nullptr;
+	GtkFileChooser *fileChooser = nullptr;
+
+	double startX = 0;
+	double startY = 0;
+	double endX = 0;
+	double endY = 0;
+
+	std::unique_ptr<Recorder> s = nullptr;
+	unsigned long fileHandler;
+	std::string dest;
+	cairo_surface_t *surface = nullptr;
+
+	Interface() = default;
+	explicit Interface(GtkApplication *app);
+	~Interface();
+
+	// utility functions
+	void getRectCoordinates(double &, double &, double &, double &) const;
+	static void recorder(double sX, double sY, double eX, double eY);
+	static void startRecording();
+	static void pauseRecording();
+	static void stopRecording();
+
+	// callback
+	static void on_save_response(GtkDialog *dialog, int response);
+	static void motion_detected(GtkEventControllerMotion *controller, double x, double y, gpointer user_data);
+	static void select_record_region(GtkWidget *widget, gpointer data);
+	static void draw_rect(cairo_t *cr);
+	static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width, int height, gpointer data);
+
+	// button functions
+	static void handleRecord(GtkWidget *widget, gpointer data);
+	static void handlePause(GtkWidget *widget, gpointer data);
+	static void handleStop(GtkWidget *widget, gpointer data);
+	static void handleClose(GtkWidget *widget, gpointer data);
+	static void activate(GtkApplication *app, gpointer user_data);
+
+	static void right_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
+	static void left_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
+	static void right_btn_released(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
+	static void left_btn_released(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
 };
-
 
 int launchUI(int argc, char **argv);
 
-static void handleRecord(GtkWidget *widget, gpointer data);
-
-static int handlePause(GtkWidget *widget, gpointer data);
-
-static void handleStop(GtkWidget *widget, gpointer data);
-
-static void handleClose(GtkWidget *widget, gpointer data);
-
-static void activate(GtkApplication *app, gpointer user_data);

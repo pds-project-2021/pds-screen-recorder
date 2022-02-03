@@ -24,3 +24,8 @@ class fsException: public std::runtime_error{
   public:
 	explicit fsException(const std::string &arg) : runtime_error(arg){}
 };
+
+class uiException: public std::runtime_error{
+  public:
+	explicit uiException(const std::string &arg) : runtime_error(arg){}
+};
