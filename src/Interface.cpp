@@ -126,7 +126,7 @@ Interface::~Interface() {
 	if (s->is_capturing()) {
 		s->terminate();
 	}
-    if (surface) cairo_surface_destroy(surface);
+//    if (surface) cairo_surface_destroy(surface);
 
 #ifdef linux
 //	gtk_window_destroy(GTK_WINDOW(window));
@@ -215,7 +215,8 @@ void Interface::motion_detected(GtkEventControllerMotion *controller, double x, 
 		draw_rect(cr);
 		cairo_destroy(cr);
 		gtk_widget_queue_draw(GTK_WIDGET(t->selectionArea));
-	} else if (!gtk_window_is_active(GTK_WINDOW(t->recordWindow))) gtk_window_present(GTK_WINDOW(t->recordWindow));
+	}
+//    else if (!gtk_window_is_active(GTK_WINDOW(t->recordWindow))) gtk_window_present(GTK_WINDOW(t->recordWindow));
 }
 
 void Interface::right_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget) {
@@ -345,6 +346,7 @@ void Interface::select_record_region(GtkWidget *widget, gpointer data) {
 	gtk_window_close(GTK_WINDOW(t->window));
 	gtk_window_fullscreen(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->selectWindow));
+    gtk_window_present(GTK_WINDOW(t->recordWindow));
 	g_print("Record button pressed\n");
 }
 
