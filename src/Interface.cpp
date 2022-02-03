@@ -260,9 +260,6 @@ static void handleStop(GtkWidget *widget, gpointer data) {
 static void handleClose(GtkWidget *widget, gpointer data) {
 	g_print("Close button pressed\n");
     t = nullptr;
-#ifdef LINUX
-    gtk_window_close(GTK_WINDOW(t->window));
-#endif
     g_application_quit(G_APPLICATION(application));
 
 }

@@ -51,6 +51,9 @@ public:
         if (s->is_capturing()){
             s->terminate();
         }
+#ifdef LINUX
+        gtk_window_close(GTK_WINDOW(t->window));
+#endif
     };
     void getRectCoordinates(double&, double&, double&, double&) const;
 };
