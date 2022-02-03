@@ -60,8 +60,8 @@ void Interface::getRectCoordinates(double& offsetX, double& offsetY, double& wid
 	width = std::abs(startX - endX);
 	height = std::abs(startY - endY);
 #ifdef WIN32
-    auto offsetX = min(startX, endX);
-    auto offsetY = min(startY, endY);
+    offsetX = min(startX, endX);
+    offsetY = min(startY, endY);
 #else
 	offsetX = std::min(startX, endX);
 	offsetY = std::min(startY, endY);
@@ -260,6 +260,9 @@ static void handleStop(GtkWidget *widget, gpointer data) {
 static void handleClose(GtkWidget *widget, gpointer data) {
 	g_print("Close button pressed\n");
     t = nullptr;
+#ifdef LINUX
+    gtk_window_close(GTK_WINDOW(t->window));
+#endif
     g_application_quit(G_APPLICATION(application));
 
 }
