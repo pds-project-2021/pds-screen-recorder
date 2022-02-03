@@ -126,6 +126,7 @@ Interface::~Interface() {
 	if (s->is_capturing()) {
 		s->terminate();
 	}
+    if (surface) cairo_surface_destroy(surface);
 
 #ifdef linux
 //	gtk_window_destroy(GTK_WINDOW(window));
