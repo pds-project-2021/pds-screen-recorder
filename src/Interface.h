@@ -52,7 +52,7 @@ public:
             s->terminate();
         }
 #ifdef LINUX
-        gtk_window_close(GTK_WINDOW(t->window));
+        gtk_window_close(GTK_WINDOW(window));
 #endif
     };
     void getRectCoordinates(double&, double&, double&, double&) const;
