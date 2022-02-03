@@ -51,7 +51,7 @@ public:
         if (s->is_capturing()){
             s->terminate();
         }
-#ifdef LINUX
+#ifdef linux
         gtk_window_destroy(GTK_WINDOW(window));
 //        gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), false);
 //        gtk_window_close(GTK_WINDOW(selectWindow));
@@ -63,8 +63,6 @@ public:
         gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
         gtk_window_close(GTK_WINDOW(window));
 #endif
-        gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
-        gtk_window_close(GTK_WINDOW(window));
     };
     void getRectCoordinates(double&, double&, double&, double&) const;
 };
