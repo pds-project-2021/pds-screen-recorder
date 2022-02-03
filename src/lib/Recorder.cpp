@@ -518,9 +518,13 @@ void Recorder::ConvertAudioFrames() {
 					audioCnv.notify_one();// Signal demuxer thread to resume if halted
 				}
 			} else if (finished) {
-				break;
+                break;
 			}
-			finished = true;
+            else {
+                result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
+                if(result == AVERROR(EAGAIN)) break;
+                finished = true;
+            }
 		}
 
 		if (result < 0 && result != AVERROR(EAGAIN)) {
@@ -678,11 +682,15 @@ void Recorder::ConvertVideoFrames() {
 				videoCnv.wait(ul);// Wait for resume signal
 				result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
 				if (result >= 0) videoCnv.notify_one();// Signal demuxer thread to resume if halted
-			} else if (finished) {
-				break;
-			}
-			finished = true;
-		}
+            } else if (finished) {
+                break;
+            }
+            else {
+                result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
+                if(result == AVERROR(EAGAIN)) break;
+                finished = true;
+            }
+        }
 
 		if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
 			throw avException("Audio Converter/Writer threads syncronization error");
