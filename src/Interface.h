@@ -52,8 +52,15 @@ public:
             s->terminate();
         }
 #ifdef LINUX
-        gtk_window_close(GTK_WINDOW(window));
+//        gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), false);
+//        gtk_window_close(GTK_WINDOW(selectWindow));
+//        gtk_window_set_hide_on_close(GTK_WINDOW(recordWindow), false);
+//        gtk_window_close(GTK_WINDOW(recordWindow));
+//        gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
+//        gtk_window_close(GTK_WINDOW(fileChoiceDialog));
 #endif
+        gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+        gtk_window_close(GTK_WINDOW(window));
     };
     void getRectCoordinates(double&, double&, double&, double&) const;
 };
