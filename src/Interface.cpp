@@ -19,7 +19,7 @@ int launchUI(int argc, char **argv) {
 }
 
 gboolean Interface::switchImageRec() {
-    if (t->window == NULL) return FALSE;
+    if (t->window == nullptr) return FALSE;
 
     if(t->started && !(t->s->is_paused())) {
         if(t->img_on) t->setImageRecOff();
@@ -172,7 +172,7 @@ void Interface::getRectCoordinates(double &offsetX, double &offsetY, double &wid
 #endif
 }
 
-void Interface::on_save_response(GtkDialog *dialog, int response) {
+void Interface::on_save_response(GtkDialog *, int response) {
 	if (response == GTK_RESPONSE_ACCEPT) {
 		auto destPath = g_file_get_path(gtk_file_chooser_get_file(t->fileChooser));
 		move_file(t->dest, destPath);
@@ -228,14 +228,14 @@ void Interface::draw_rect(cairo_t *cr) {
 	cairo_fill(cr);                            /* fill rectangle */
 }
 
-void Interface::draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width, int height, gpointer data) {
+void Interface::draw(GtkDrawingArea *, cairo_t *cr, int, int, gpointer) {
 	if (!t->surface) {
 		cairo_set_source_rgba(cr, 0, 0, 0, 0.7);   /* set fill color */
 	} else cairo_set_source_surface(cr, t->surface, 0, 0);
 	cairo_paint(cr);
 }
 
-void Interface::motion_detected(GtkEventControllerMotion *controller, double x, double y, gpointer user_data) {
+void Interface::motion_detected(GtkEventControllerMotion *, double x, double y, gpointer) {
 	if (t->selection_enabled) {
 		if (!t->surface) return;
 		t->endX = x;
@@ -251,7 +251,7 @@ void Interface::motion_detected(GtkEventControllerMotion *controller, double x, 
 //    else if (!gtk_window_is_active(GTK_WINDOW(t->recordWindow))) gtk_window_present(GTK_WINDOW(t->recordWindow));
 }
 
-void Interface::right_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget) {
+void Interface::right_btn_pressed(GtkGestureClick *, int, double x, double y, GtkWidget *) {
 	g_print("Left button pressed\n");
 	std::cout << "Start coordinates: " << x << ", " << y << std::endl;
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
@@ -261,13 +261,13 @@ void Interface::right_btn_pressed(GtkGestureClick *gesture, int n_press, double 
 	gtk_window_present(GTK_WINDOW(t->window));
 }
 
-void Interface::right_btn_released(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget) {
+void Interface::right_btn_released(GtkGestureClick *gesture, int , double x, double y, GtkWidget *) {
 	g_print("Right button released\n");
 	std::cout << "End coordinates: " << x << ", " << y << std::endl;
 	gtk_gesture_set_state(GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
-void Interface::left_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget) {
+void Interface::left_btn_pressed(GtkGestureClick *, int , double x, double y, GtkWidget *) {
 	g_print("Left button pressed\n");
 	std::cout << "Start coordinates: " << x << ", " << y << std::endl;
 	t->startX = x;
@@ -281,7 +281,7 @@ void Interface::left_btn_pressed(GtkGestureClick *gesture, int n_press, double x
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
 }
 
-void Interface::left_btn_released(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget) {
+void Interface::left_btn_released(GtkGestureClick *gesture, int , double x, double y, GtkWidget *) {
 	g_print("Left button released\n");
 	std::cout << "End coordinates: " << x << ", " << y << std::endl;
 	t->selection_enabled = false;
@@ -373,7 +373,7 @@ void Interface::stopRecording() {
 	gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
 }
 
-void Interface::select_record_region(GtkWidget *widget, gpointer data) {
+void Interface::select_record_region(GtkWidget *, gpointer) {
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
 	gtk_window_close(GTK_WINDOW(t->window));
 	gtk_window_fullscreen(GTK_WINDOW(t->selectWindow));
@@ -382,7 +382,7 @@ void Interface::select_record_region(GtkWidget *widget, gpointer data) {
 	g_print("Record button pressed\n");
 }
 
-void Interface::handleRecord(GtkWidget *widget, gpointer data) {
+void Interface::handleRecord(GtkWidget *, gpointer) {
 	if (t->s->is_capturing()) {
 		std::future<void> foo = std::async(std::launch::async, stopRecording);
 	}
@@ -399,12 +399,12 @@ void Interface::handleRecord(GtkWidget *widget, gpointer data) {
 	g_print("Start recording button pressed\n");
 }
 
-void Interface::handlePause(GtkWidget *widget, gpointer data) {
+void Interface::handlePause(GtkWidget *, gpointer) {
 	std::future<void> foo = std::async(std::launch::async, pauseRecording);
 	g_print("Pause button pressed\n");
 }
 
-void Interface::handleStop(GtkWidget *widget, gpointer data) {
+void Interface::handleStop(GtkWidget *, gpointer) {
 	std::future<void> foo = std::async(std::launch::async, stopRecording);
 	g_print("Stop button pressed\n");
 	foo.wait();
@@ -413,20 +413,16 @@ void Interface::handleStop(GtkWidget *widget, gpointer data) {
 	gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
 }
 
-void Interface::handleClose(GtkWidget *widget, gpointer data) {
+void Interface::handleClose(GtkWidget *, gpointer) {
 	g_print("Close button pressed\n");
-//#ifdef WIN32
-//    t = nullptr;
-//#endif
 	g_application_quit(G_APPLICATION(t->g_application));
 }
 
-void Interface::activate(GtkApplication *app, gpointer user_data) {
+void Interface::activate(GtkApplication *app, gpointer) {
 	if (app == nullptr) {
 		throw uiException("Invalid application window");
 	}
 
 	t = std::make_unique<Interface>(app);
-//	application = t->g_application;
 }
 
