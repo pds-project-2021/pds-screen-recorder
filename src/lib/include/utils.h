@@ -21,6 +21,7 @@ void move_file(const std::string& source, const std::string &dest);
 void delete_file(const std::string&);
 std::string get_default_path(const std::filesystem::path& path=std::filesystem::temp_directory_path());
 void log_info(const std::string& str);
+std::string get_current_time_str();
 
 /* generic functions */
 

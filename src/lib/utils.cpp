@@ -60,3 +60,11 @@ std::string get_default_path(const fs::path& path) {
 void log_info(const std::string& str) {
 	std::cout << "[INFO] " + str << std::endl;
 }
+
+std::string get_current_time_str(){
+	char buff[100];
+	auto time_ref = std::time(nullptr);
+	std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H:%M:%S", std::localtime(&time_ref));
+
+	return buff;
+}

@@ -84,7 +84,7 @@ Interface::Interface(GtkApplication *app) {
                                                    GTK_RESPONSE_ACCEPT,
                                                    NULL);
 	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
-	gtk_file_chooser_set_current_name(fileChooser, "Untitled.mp4");
+//	gtk_file_chooser_set_current_name(fileChooser, "Untitled.mp4");
 	fileHandler = g_signal_connect (fileChoiceDialog, "response",
 	                                G_CALLBACK(on_save_response),
 	                                NULL);
@@ -369,9 +369,17 @@ void Interface::stopRecording() {
 
 	t->s->terminate();
 	t->dest = t->s->get_destination();
+
+	// set temporary name to current time
+	auto file_name = get_current_time_str() + ".mp4";
+	gtk_file_chooser_set_current_name(t->fileChooser, file_name.c_str());
+
+	// reset recorder
 	t->s = std::make_unique<Recorder>();
 	t->ready = false;
 	t->started = false;
+
+	// reset action buttons
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
 //	gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
