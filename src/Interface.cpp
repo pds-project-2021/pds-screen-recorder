@@ -18,6 +18,19 @@ int launchUI(int argc, char **argv) {
 	return status;
 }
 
+gboolean Interface::switchImageRec() {
+    if (t->window == NULL) return FALSE;
+
+    if(t->started && !(t->s->is_paused())) {
+        if(t->img_on) t->setImageRecOff();
+        else t->setImageRecOn();
+    }
+    else if(!t->img_on) t->setImageRecOn();
+    gtk_widget_queue_draw(t->window);
+
+    return TRUE;
+}
+
 Interface::Interface(GtkApplication *app) {
 	g_application = app;
 
@@ -62,7 +75,6 @@ Interface::Interface(GtkApplication *app) {
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
-
 	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
     fileChoiceDialog = gtk_file_chooser_dialog_new("Open File",
                                                    nullptr,
@@ -118,6 +130,8 @@ Interface::Interface(GtkApplication *app) {
 	s = std::make_unique<Recorder>();
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
+    g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
+    img_on = true;
 }
 
 Interface::~Interface() {
@@ -175,6 +189,24 @@ void Interface::on_save_response(GtkDialog *dialog, int response) {
 #else
     gtk_window_present(GTK_WINDOW(t->window));
 #endif
+}
+
+void Interface::setImageRecOff() {
+
+    gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
+    image = gtk_image_new_from_file("../assets/icon_small_off.png");
+    gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
+    gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
+    img_on = false;
+}
+
+void Interface::setImageRecOn() {
+
+    gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
+    image = gtk_image_new_from_file("../assets/icon_small.png");
+    gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
+    gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
+    img_on = true;
 }
 
 //static void clear_surface(void) {
@@ -358,6 +390,8 @@ void Interface::handleRecord(GtkWidget *widget, gpointer data) {
 	if (t->surface) cairo_surface_destroy(t->surface);
 	t->surface = nullptr;
 	std::future<void> foo = std::async(std::launch::async, startRecording);
+    std::thread img(Interface::switchImageRec);
+    img.detach();
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);

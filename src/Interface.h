@@ -30,6 +30,7 @@ class Interface {
 	std::atomic<bool> selection_enabled{};
 	std::atomic<bool> ready{};
 	std::atomic<bool> started{};
+    std::atomic<bool> img_on{};
 
 	GtkTextBuffer *title = nullptr;
 	GtkGesture *leftGesture = nullptr;
@@ -59,6 +60,9 @@ class Interface {
 	static void startRecording();
 	static void pauseRecording();
 	static void stopRecording();
+    static gboolean switchImageRec();
+    void setImageRecOff();
+    void setImageRecOn();
 
 	// callback
 	static void on_save_response(GtkDialog *dialog, int response);
