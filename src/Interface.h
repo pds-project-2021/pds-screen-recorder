@@ -49,6 +49,8 @@ class Interface {
 	unsigned long fileHandler;
 	std::string dest;
 	cairo_surface_t *surface = nullptr;
+	std::future<gboolean> blink_img;
+	std::future<void> rec;
 
 	Interface() = default;
 	explicit Interface(GtkApplication *app);

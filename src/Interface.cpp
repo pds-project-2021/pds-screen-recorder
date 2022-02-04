@@ -131,6 +131,8 @@ Interface::Interface(GtkApplication *app) {
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
     g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
     img_on = true;
+
+	blink_img = std::async(std::launch::async, switchImageRec);
 }
 
 Interface::~Interface() {
@@ -363,7 +365,8 @@ void Interface::pauseRecording() {
 }
 
 void Interface::stopRecording() {
-	if (!t->ready) return;
+	if (!t->ready) { return; }
+
 	t->s->terminate();
 	t->dest = t->s->get_destination();
 	t->s = std::make_unique<Recorder>();
@@ -388,14 +391,12 @@ void Interface::select_record_region(GtkWidget *, gpointer) {
 
 void Interface::handleRecord(GtkWidget *, gpointer) {
 	if (t->s->is_capturing()) {
-		std::future<void> foo = std::async(std::launch::async, stopRecording);
+		t->rec = std::async(std::launch::async, stopRecording);
 	}
 
 	if (t->surface) cairo_surface_destroy(t->surface);
 	t->surface = nullptr;
-	std::future<void> foo = std::async(std::launch::async, startRecording);
-    std::thread img(Interface::switchImageRec);
-    img.detach();
+	t->rec = std::async(std::launch::async, startRecording);
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
 //	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
@@ -405,14 +406,17 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 }
 
 void Interface::handlePause(GtkWidget *, gpointer) {
-	std::future<void> foo = std::async(std::launch::async, pauseRecording);
+	t->rec = std::async(std::launch::async, pauseRecording);
 	g_print("Pause button pressed\n");
 }
 
 void Interface::handleStop(GtkWidget *, gpointer) {
-	std::future<void> foo = std::async(std::launch::async, stopRecording);
+	t->rec = std::async(std::launch::async, stopRecording);
 	g_print("Stop button pressed\n");
-//	foo.wait();
+
+	// wait until the registration is completed
+	t->rec.wait();
+
 //	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
 //	gtk_window_close(GTK_WINDOW(t->window));
 	gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
