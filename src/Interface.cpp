@@ -1,8 +1,7 @@
 #include "Interface.h"
 
+// global ref of the interface for gtk callbacks
 std::unique_ptr<Interface> t = nullptr;
-//GtkApplication *application = nullptr;
-//Interface* t = nullptr;
 
 int launchUI(int argc, char **argv) {
 #ifdef WIN32
@@ -181,7 +180,7 @@ void Interface::on_save_response(GtkDialog *, int response) {
 	}
 
 	gtk_window_close(GTK_WINDOW (t->fileChoiceDialog));
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+//	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 #ifdef WIN32
 	gtk_window_minimize(GTK_WINDOW(t->window));
     gtk_window_present(GTK_WINDOW(t->window));
@@ -189,6 +188,9 @@ void Interface::on_save_response(GtkDialog *, int response) {
 #else
     gtk_window_present(GTK_WINDOW(t->window));
 #endif
+
+	// the user can record again only if the file dialog window is closed
+	gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
 }
 
 void Interface::setImageRecOff() {
@@ -368,14 +370,16 @@ void Interface::stopRecording() {
 	t->ready = false;
 	t->started = false;
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
-	gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
+//	gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
 }
 
 void Interface::select_record_region(GtkWidget *, gpointer) {
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
-	gtk_window_close(GTK_WINDOW(t->window));
+//	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
+//	gtk_window_close(GTK_WINDOW(t->window));
+	gtk_window_minimize(GTK_WINDOW(t->window));
+
 	gtk_window_fullscreen(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->selectWindow));
     gtk_window_present(GTK_WINDOW(t->recordWindow));
@@ -392,10 +396,11 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 	std::future<void> foo = std::async(std::launch::async, startRecording);
     std::thread img(Interface::switchImageRec);
     img.detach();
-	gtk_window_close(GTK_WINDOW(t->selectWindow));
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+	gtk_window_close(GTK_WINDOW(t->selectWindow));
+//	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 	gtk_window_present(GTK_WINDOW(t->window));
+
 	g_print("Start recording button pressed\n");
 }
 
@@ -407,9 +412,9 @@ void Interface::handlePause(GtkWidget *, gpointer) {
 void Interface::handleStop(GtkWidget *, gpointer) {
 	std::future<void> foo = std::async(std::launch::async, stopRecording);
 	g_print("Stop button pressed\n");
-	foo.wait();
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
-	gtk_window_close(GTK_WINDOW(t->window));
+//	foo.wait();
+//	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
+//	gtk_window_close(GTK_WINDOW(t->window));
 	gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
 }
 

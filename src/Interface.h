@@ -70,13 +70,13 @@ class Interface {
 	static void select_record_region(GtkWidget *widget, gpointer data);
 	static void draw_rect(cairo_t *cr);
 	static void draw(GtkDrawingArea *drawing_area, cairo_t *cr, int width, int height, gpointer data);
+	static void activate(GtkApplication *app, gpointer user_data);
 
 	// button functions
 	static void handleRecord(GtkWidget *widget, gpointer data);
 	static void handlePause(GtkWidget *widget, gpointer data);
 	static void handleStop(GtkWidget *widget, gpointer data);
 	static void handleClose(GtkWidget *widget, gpointer data);
-	static void activate(GtkApplication *app, gpointer user_data);
 
 	static void right_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
 	static void left_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
