@@ -182,8 +182,8 @@ void Interface::on_save_response(GtkDialog *, int response) {
 	}
 
 	gtk_window_close(GTK_WINDOW (t->fileChoiceDialog));
-//	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 #ifdef WIN32
+	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 	gtk_window_minimize(GTK_WINDOW(t->window));
     gtk_window_present(GTK_WINDOW(t->window));
     gtk_window_unminimize(GTK_WINDOW(t->window));
@@ -387,9 +387,12 @@ void Interface::stopRecording() {
 }
 
 void Interface::select_record_region(GtkWidget *, gpointer) {
-//	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
-//	gtk_window_close(GTK_WINDOW(t->window));
+#ifdef WIN32
+	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
+	gtk_window_close(GTK_WINDOW(t->window));
+#else
 	gtk_window_minimize(GTK_WINDOW(t->window));
+#endif
 
 	gtk_window_fullscreen(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->selectWindow));
@@ -407,7 +410,9 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 	t->rec = std::async(std::launch::async, startRecording);
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
-//	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+#ifdef WIN32
+	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+#endif
 	gtk_window_present(GTK_WINDOW(t->window));
 
 	g_print("Start recording button pressed\n");
@@ -425,8 +430,10 @@ void Interface::handleStop(GtkWidget *, gpointer) {
 	// wait until the registration is completed
 	t->rec.wait();
 
-//	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
-//	gtk_window_close(GTK_WINDOW(t->window));
+#ifdef WIN32
+	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
+	gtk_window_close(GTK_WINDOW(t->window));
+#endif
 	gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
 }
 
