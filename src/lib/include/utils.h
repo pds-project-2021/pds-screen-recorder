@@ -10,22 +10,23 @@
 
 #include "exceptions.h"
 
-enum AudioLayout: unsigned int {
-	MONO=1,
-	STEREO=2
+enum AudioLayout : unsigned int {
+	MONO = 1,
+	STEREO = 2
 };
 
 bool is_file(char *url);
 bool is_file_str(const std::string &str);
-void move_file(const std::string& source, const std::string &dest);
-void delete_file(const std::string&);
-std::string get_default_path(const std::filesystem::path& path=std::filesystem::temp_directory_path());
-void log_info(const std::string& str);
+void move_file(const std::string &source, const std::string &dest);
+void delete_file(const std::string &);
+std::string get_default_path(const std::filesystem::path &path = std::filesystem::temp_directory_path());
+void log_info(const std::string &str);
 std::string get_current_time_str();
 
 /* generic functions */
 
-template<typename T> int set_even(T num){
+template<typename T>
+int set_even(T num) {
 	int i = static_cast<int>(num);
-	return i % 2 ? i - 1: i;
+	return i % 2 ? i - 1 : i;
 }

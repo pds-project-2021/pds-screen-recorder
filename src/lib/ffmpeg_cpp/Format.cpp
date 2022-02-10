@@ -34,7 +34,7 @@ void Format::source_video_context() {
 	auto video = av_find_input_format(videoFormat.c_str());
 	input.set_video(video);
 
-	AVDictionary* options = get_video_options();
+	AVDictionary *options = get_video_options();
 	set_screen_parameters(options);
 
 	videoDevice = get_video_input_device(screen.get_offset_str());
@@ -53,11 +53,11 @@ void Format::source_video_context() {
 }
 
 void Format::set_screen_parameters(AVDictionary *options) const {
-    if(screen.get_width() != "0" && screen.get_height() != "0") {
-        av_dict_set(&options, "offset_x", screen.get_offset_x().c_str(), 0);
-        av_dict_set(&options, "offset_y", screen.get_offset_y().c_str(), 0);
-        av_dict_set(&options, "video_size", screen.get_video_size().c_str(), 0);
-    }
+	if (screen.get_width() != "0" && screen.get_height() != "0") {
+		av_dict_set(&options, "offset_x", screen.get_offset_x().c_str(), 0);
+		av_dict_set(&options, "offset_y", screen.get_offset_y().c_str(), 0);
+		av_dict_set(&options, "video_size", screen.get_video_size().c_str(), 0);
+	}
 
 	av_dict_set(&options, "show_region", screen.get_show_region().c_str(), 0);
 }
@@ -66,7 +66,7 @@ void Format::set_audio_parameters(AVDictionary *options) const {
 	av_dict_set(&options, "channels", std::to_string(channels).c_str(), 0);
 }
 
-void Format::destination_context(const std::string& dest) {
+void Format::destination_context(const std::string &dest) {
 	auto ctx = outputContext.get_video();
 	avformat_alloc_output_context2(&ctx, nullptr, nullptr, dest.c_str());
 	if (!ctx) {
@@ -82,7 +82,7 @@ void Format::destination_context(const std::string& dest) {
 	outputContext.set_video(ctx);
 
 	auto fmt = av_guess_format(nullptr, dest.c_str(), nullptr);
-	if(!fmt){
+	if (!fmt) {
 		throw avException("Error in guessing the video format. try with correct format");
 	}
 	output.set_video(fmt);
@@ -90,7 +90,7 @@ void Format::destination_context(const std::string& dest) {
 
 void Format::find_source_audio_stream_info() {
 	auto audio = inputContext.get_audio();
-	audioStreamIndex = av_find_best_stream(audio,AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+	audioStreamIndex = av_find_best_stream(audio, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (audioStreamIndex == -1) {
 		throw avException("Unable to find the audio stream index. (-1)");
 	}
@@ -98,7 +98,7 @@ void Format::find_source_audio_stream_info() {
 
 void Format::find_source_video_stream_info() {
 	auto video = inputContext.get_video();
-	videoStreamIndex = av_find_best_stream(video, AVMEDIA_TYPE_VIDEO, -1,-1, nullptr, 0);
+	videoStreamIndex = av_find_best_stream(video, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
 	if (videoStreamIndex == -1) {
 		throw avException("Unable to find the video stream index. (-1)");
 	}
@@ -122,7 +122,7 @@ void Format::setup_source() {
 	find_source_video_stream_info();
 }
 
-void Format::setup_destination(const std::string& dest) {
+void Format::setup_destination(const std::string &dest) {
 	destination_context(dest);
 }
 
@@ -133,17 +133,17 @@ std::string Format::get_audio_device() {
 std::string Format::get_video_device() {
 	return videoDevice;
 }
-AVCodecParameters* Format::get_source_audio_codec() const {
+AVCodecParameters *Format::get_source_audio_codec() const {
 	auto audio = inputContext.get_audio();
 	return audio->streams[audioStreamIndex]->codecpar;
 }
 
-AVCodecParameters* Format::get_source_video_codec() const {
+AVCodecParameters *Format::get_source_video_codec() const {
 	auto video = inputContext.get_video();
 	return video->streams[videoStreamIndex]->codecpar;
 }
 
-void Format::write_header(const Dictionary& options) const {
+void Format::write_header(const Dictionary &options) const {
 	/* imp: mp4 container or some advanced container file required header
 	 * information */
 	auto opt = options.get_video();

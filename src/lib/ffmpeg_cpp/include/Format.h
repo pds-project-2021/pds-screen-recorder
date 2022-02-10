@@ -28,8 +28,8 @@ class Format {
 	int audioStreamIndex = 0;
 
 	// input device
-    std::string audioDevice;
-    std::string videoDevice;
+	std::string audioDevice;
+	std::string videoDevice;
 
 	enum AudioLayout channels = MONO;
 
@@ -39,8 +39,8 @@ class Format {
   private:
 	void source_audio_context();
 	void source_video_context();
-	void set_screen_parameters(AVDictionary* options) const;
-	void set_audio_parameters(AVDictionary* options) const;
+	void set_screen_parameters(AVDictionary *options) const;
+	void set_audio_parameters(AVDictionary *options) const;
 
 	/* NOTE: The destination is a file, so it will have the only one context */
 	void destination_context(const std::string &dest);
@@ -57,13 +57,13 @@ class Format {
 	void setup_source();
 	void setup_destination(const std::string &dest);
 
-    std::string get_audio_device();
-    std::string get_video_device();
+	std::string get_audio_device();
+	std::string get_video_device();
 
-	[[nodiscard]] AVCodecParameters* get_source_audio_codec() const;
-	[[nodiscard]] AVCodecParameters* get_source_video_codec() const;
+	[[nodiscard]] AVCodecParameters *get_source_audio_codec() const;
+	[[nodiscard]] AVCodecParameters *get_source_video_codec() const;
 
-	void write_header(const Dictionary& options) const;
+	void write_header(const Dictionary &options) const;
 };
 
 

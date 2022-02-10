@@ -18,16 +18,15 @@ int launchUI(int argc, char **argv) {
 }
 
 gboolean Interface::switchImageRec() {
-    if (t->window == nullptr) return FALSE;
+	if (t->window == nullptr) return FALSE;
 
-    if(t->started && !(t->s->is_paused())) {
-        if(t->img_on) t->setImageRecOff();
-        else t->setImageRecOn();
-    }
-    else if(!t->img_on) t->setImageRecOn();
-    gtk_widget_queue_draw(t->window);
+	if (t->started && !(t->s->is_paused())) {
+		if (t->img_on) t->setImageRecOff();
+		else t->setImageRecOn();
+	} else if (!t->img_on) t->setImageRecOn();
+	gtk_widget_queue_draw(t->window);
 
-    return TRUE;
+	return TRUE;
 }
 
 Interface::Interface(GtkApplication *app) {
@@ -75,14 +74,14 @@ Interface::Interface(GtkApplication *app) {
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
 	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
-    fileChoiceDialog = gtk_file_chooser_dialog_new("Open File",
-                                                   nullptr,
-                                                   action,
-                                                   (const char *) "Cancel",
-                                                   GTK_RESPONSE_CANCEL,
-                                                   (const char *) "Save",
-                                                   GTK_RESPONSE_ACCEPT,
-                                                   NULL);
+	fileChoiceDialog = gtk_file_chooser_dialog_new("Open File",
+	                                               nullptr,
+	                                               action,
+	                                               (const char *) "Cancel",
+	                                               GTK_RESPONSE_CANCEL,
+	                                               (const char *) "Save",
+	                                               GTK_RESPONSE_ACCEPT,
+	                                               NULL);
 	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
 //	gtk_file_chooser_set_current_name(fileChooser, "Untitled.mp4");
 	fileHandler = g_signal_connect (fileChoiceDialog, "response",
@@ -129,8 +128,8 @@ Interface::Interface(GtkApplication *app) {
 	s = std::make_unique<Recorder>();
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
-    g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
-    img_on = true;
+	g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
+	img_on = true;
 
 	blink_img = std::async(std::launch::async, switchImageRec);
 }
@@ -152,8 +151,8 @@ Interface::~Interface() {
 //    gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
 //    gtk_window_close(GTK_WINDOW(fileChoiceDialog));
 #else
-//	gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
-//	gtk_window_close(GTK_WINDOW(window));
+	//	gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+	//	gtk_window_close(GTK_WINDOW(window));
 #endif
 }
 
@@ -185,10 +184,10 @@ void Interface::on_save_response(GtkDialog *, int response) {
 #ifdef WIN32
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 	gtk_window_minimize(GTK_WINDOW(t->window));
-    gtk_window_present(GTK_WINDOW(t->window));
-    gtk_window_unminimize(GTK_WINDOW(t->window));
+	gtk_window_present(GTK_WINDOW(t->window));
+	gtk_window_unminimize(GTK_WINDOW(t->window));
 #else
-    gtk_window_present(GTK_WINDOW(t->window));
+	gtk_window_present(GTK_WINDOW(t->window));
 #endif
 
 	// the user can record again only if the file dialog window is closed
@@ -197,20 +196,20 @@ void Interface::on_save_response(GtkDialog *, int response) {
 
 void Interface::setImageRecOff() {
 
-    gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
-    image = gtk_image_new_from_file("../assets/icon_small_off.png");
-    gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
-    gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
-    img_on = false;
+	gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
+	image = gtk_image_new_from_file("../assets/icon_small_off.png");
+	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
+	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
+	img_on = false;
 }
 
 void Interface::setImageRecOn() {
 
-    gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
-    image = gtk_image_new_from_file("../assets/icon_small.png");
-    gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
-    gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
-    img_on = true;
+	gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
+	image = gtk_image_new_from_file("../assets/icon_small.png");
+	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
+	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
+	img_on = true;
 }
 
 //static void clear_surface(void) {
@@ -265,13 +264,13 @@ void Interface::right_btn_pressed(GtkGestureClick *, int, double x, double y, Gt
 	gtk_window_present(GTK_WINDOW(t->window));
 }
 
-void Interface::right_btn_released(GtkGestureClick *gesture, int , double x, double y, GtkWidget *) {
+void Interface::right_btn_released(GtkGestureClick *gesture, int, double x, double y, GtkWidget *) {
 	g_print("Right button released\n");
 	std::cout << "End coordinates: " << x << ", " << y << std::endl;
 	gtk_gesture_set_state(GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
-void Interface::left_btn_pressed(GtkGestureClick *, int , double x, double y, GtkWidget *) {
+void Interface::left_btn_pressed(GtkGestureClick *, int, double x, double y, GtkWidget *) {
 	g_print("Left button pressed\n");
 	std::cout << "Start coordinates: " << x << ", " << y << std::endl;
 	t->startX = x;
@@ -285,7 +284,7 @@ void Interface::left_btn_pressed(GtkGestureClick *, int , double x, double y, Gt
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
 }
 
-void Interface::left_btn_released(GtkGestureClick *gesture, int , double x, double y, GtkWidget *) {
+void Interface::left_btn_released(GtkGestureClick *gesture, int, double x, double y, GtkWidget *) {
 	g_print("Left button released\n");
 	std::cout << "End coordinates: " << x << ", " << y << std::endl;
 	t->selection_enabled = false;
@@ -381,7 +380,6 @@ void Interface::stopRecording() {
 
 	// reset action buttons
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
-//	gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
 }
@@ -396,7 +394,7 @@ void Interface::select_record_region(GtkWidget *, gpointer) {
 
 	gtk_window_fullscreen(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->selectWindow));
-    gtk_window_present(GTK_WINDOW(t->recordWindow));
+	gtk_window_present(GTK_WINDOW(t->recordWindow));
 	g_print("Record button pressed\n");
 }
 

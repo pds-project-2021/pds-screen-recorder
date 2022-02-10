@@ -1,12 +1,13 @@
 #include <iostream>
 #include "Interface.h"
+#include "lib/Recorder.h"
 
 int main(int argc, char **argv) {
 	int result;
 
-	try{
+	try {
 		result = launchUI(argc, argv);
-	}catch(std::runtime_error &_e){
+	} catch (std::runtime_error &_e) {
 		std::cerr << _e.what() << std::endl;
 		exit(-1);
 	}

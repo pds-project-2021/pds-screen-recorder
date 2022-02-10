@@ -8,16 +8,16 @@
 
 //using namespace std;
 
-template <class T>
+template<class T>
 class Tracker {
 	static inline unsigned int count = 0;
 	friend T;
 
   public:
-	Tracker(){count++;}
-	~Tracker(){count--;}
+	Tracker() { count++; }
+	~Tracker() { count--; }
 
-	static void print_count(){
+	static void print_count() {
 		std::cout << typeid(T).name() << ": " << count << std::endl;
 	}
 };

@@ -44,7 +44,6 @@
 int decode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_frame);
 int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet);
 
-
 void writeFrameToOutput(AVFormatContext *outputFormatContext,
                         AVPacket *outPacket,
                         std::mutex *wR,
@@ -70,14 +69,14 @@ int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
 // Audio functions
 
 int convertAndWriteAudioFrames(SwrContext *swrContext,
-                                      AVCodecContext *outputCodecContext,
-                                      AVCodecContext *inputCodecContext,
-                                      AVStream *audioStream,
-                                      AVFormatContext *outputFormatContext,
-                                      AVFrame *audioFrame,
-                                      int64_t *pts_p,
-                                      std::mutex *wR,
-                                      std::condition_variable *writeFrame);
+                               AVCodecContext *outputCodecContext,
+                               AVCodecContext *inputCodecContext,
+                               AVStream *audioStream,
+                               AVFormatContext *outputFormatContext,
+                               AVFrame *audioFrame,
+                               int64_t *pts_p,
+                               std::mutex *wR,
+                               std::condition_variable *writeFrame);
 
 int convertAndWriteLastAudioFrames(SwrContext *swrContext,
                                    AVCodecContext *outputCodecContext,
@@ -87,7 +86,6 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext,
                                    int64_t *pts_p,
                                    std::mutex *wR,
                                    std::condition_variable *writeFrame);
-
 
 int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
                                       AVCodecContext *outputCodecContext,

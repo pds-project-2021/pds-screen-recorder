@@ -6,62 +6,62 @@
 
 namespace fs = std::filesystem;
 
-bool is_file(char *url){
-	auto str = std::string {url};
+bool is_file(char *url) {
+	auto str = std::string{url};
 	return str.find(".mp4") != std::string::npos;
 }
 
-bool is_file_str(const std::string &str){
+bool is_file_str(const std::string &str) {
 	return str.find(".mp4") != std::string::npos;
 }
 
-void move_file(const std::string& source, const std::string& dest){
+void move_file(const std::string &source, const std::string &dest) {
 	try {
 		auto dest_path = fs::path(dest);
-		auto dest_folder = is_file_str(dest)? dest_path.parent_path(): dest_path;
-		auto dest_file = is_file_str(dest)? dest_path: dest_path/ fs::path(source).filename();
+		auto dest_folder = is_file_str(dest) ? dest_path.parent_path() : dest_path;
+		auto dest_file = is_file_str(dest) ? dest_path : dest_path / fs::path(source).filename();
 
 		// create parent folder tree
-		if(!exists(dest_folder)){
+		if (!exists(dest_folder)) {
 			fs::create_directories(dest_folder);
 		}
 
 		// overwrite destination file
-		if(exists(dest_file)){
+		if (exists(dest_file)) {
 			fs::remove(dest_file);
 		}
 
 		fs::copy_file(source, dest_file);
 		fs::remove(source);
 
-    } catch (std::runtime_error& _e) {
+	} catch (std::runtime_error &_e) {
 		throw fsException("Unable to move " + source + " to " + dest);
 	}
 }
 
-void delete_file(const std::string& filename) {
-    try {
-        auto dest_path = fs::path(filename);
+void delete_file(const std::string &filename) {
+	try {
+		auto dest_path = fs::path(filename);
 
-        // delete file
-        if(exists(dest_path)){
-            fs::remove(dest_path);
-        }
+		// delete file
+		if (exists(dest_path)) {
+			fs::remove(dest_path);
+		}
 
-    } catch (std::runtime_error& _e) {
-        throw fsException("Unable to delete " + filename);
-    }
+	} catch (std::runtime_error &_e) {
+		throw fsException("Unable to delete " + filename);
+	}
 }
 
-std::string get_default_path(const fs::path& path) {
-	return (path/ "output.mp4").string();
+std::string get_default_path(const fs::path &path) {
+	return (path / "output.mp4").string();
 }
 
-void log_info(const std::string& str) {
+void log_info(const std::string &str) {
 	std::cout << "[INFO] " + str << std::endl;
 }
 
-std::string get_current_time_str(){
+std::string get_current_time_str() {
 	char buff[100];
 	auto time_ref = std::time(nullptr);
 	std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H:%M:%S", std::localtime(&time_ref));

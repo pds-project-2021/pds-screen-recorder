@@ -55,7 +55,7 @@ std::string Screen::get_offset_str() const {
 	auto offy = std::to_string(offset_y);
 
 	// In full screen capture the capture area can't be outside the screen size
-	if (this->fullscreen()){
+	if (this->fullscreen()) {
 		offx = offy = "0";
 	}
 

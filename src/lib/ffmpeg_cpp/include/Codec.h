@@ -12,7 +12,7 @@ class Codec {
 	wrapper<AVCodec> input;
 	wrapper<AVCodec> output;
 
-	wrapper<AVCodecContext>  inputContext;
+	wrapper<AVCodecContext> inputContext;
 	wrapper<AVCodecContext> outputContext;
 
 	wrapper<AVCodecParameters> inputPar;
@@ -26,13 +26,13 @@ class Codec {
 	void source_video_context();
 	void destination_audio_context();
 	void destination_video_context();
-	void find_audio_encoder(const std::string& codec_name);
-	void find_video_encoder(const std::string& codec_name);
+	void find_audio_encoder(const std::string &codec_name);
+	void find_video_encoder(const std::string &codec_name);
 
   public:
 	void setup_source();
 	void setup_destination();
-	void find_encoders(const std::string& audio_codec, const std::string& video_codec);
+	void find_encoders(const std::string &audio_codec, const std::string &video_codec);
 
 	void set_source_audio_layout(enum AudioLayout);
 	void set_source_audio_parameters(AVCodecParameters *par);

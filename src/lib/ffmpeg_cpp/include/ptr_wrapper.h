@@ -10,17 +10,17 @@
 #include "ffmpegc.h"
 #include "Tracker.h"
 
-template <typename T>
-class ptr_wrapper: public Tracker<ptr_wrapper<T>>{
+template<typename T>
+class ptr_wrapper : public Tracker<ptr_wrapper<T>> {
   protected:
-	T* inner = nullptr;
+	T *inner = nullptr;
 
   public:
 	ptr_wrapper();
 	~ptr_wrapper();
 
 	void unref();
-	T* into();
+	T *into();
 };
 
 /* General template functions */
@@ -38,19 +38,21 @@ T *ptr_wrapper<T>::into() {
 
 /* Specialized template functions */
 
-template<> inline
+template<>
+inline
 ptr_wrapper<AVPacket>::~ptr_wrapper() {
-	if(inner != nullptr) {
+	if (inner != nullptr) {
 		av_packet_unref(inner);
 		av_packet_free(&inner);
 	}
 }
 
-template<> inline
+template<>
+inline
 ptr_wrapper<AVFrame>::~ptr_wrapper() {
 
-	if(inner != nullptr) {
-		if(inner->data[1] != nullptr){
+	if (inner != nullptr) {
+		if (inner->data[1] != nullptr) {
 			av_freep(&inner->data[0]);
 		}
 
@@ -58,21 +60,24 @@ ptr_wrapper<AVFrame>::~ptr_wrapper() {
 	}
 }
 
-template<> inline
+template<>
+inline
 ptr_wrapper<AVPacket>::ptr_wrapper() {
 	inner = av_packet_alloc();
 
-	if(!inner){
+	if (!inner) {
 		throw avException("Error on packet initialization");
 	}
 }
 
-template<> inline
+template<>
+inline
 void ptr_wrapper<AVPacket>::unref() {
 	av_packet_unref(inner);
 }
 
-template<> inline
+template<>
+inline
 void ptr_wrapper<AVFrame>::unref() {
 	av_frame_unref(inner);
 }

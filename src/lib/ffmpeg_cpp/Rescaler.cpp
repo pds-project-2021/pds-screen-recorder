@@ -18,10 +18,17 @@ Rescaler::~Rescaler() {
 }
 
 void Rescaler::set_video_scaler(const Codec &codec) {
-	swsCtx = sws_getCachedContext(swsCtx, codec.inputPar.get_video()->width, codec.inputPar.get_video()->height,
-	                              (AVPixelFormat) codec.inputPar.get_video()->format, codec.outputPar.get_video()->width,
-	                              codec.outputPar.get_video()->height, (AVPixelFormat) codec.outputPar.get_video()->format,
-	                              SWS_BICUBIC, nullptr, nullptr, nullptr);
+	swsCtx = sws_getCachedContext(swsCtx,
+	                              codec.inputPar.get_video()->width,
+	                              codec.inputPar.get_video()->height,
+	                              (AVPixelFormat) codec.inputPar.get_video()->format,
+	                              codec.outputPar.get_video()->width,
+	                              codec.outputPar.get_video()->height,
+	                              (AVPixelFormat) codec.outputPar.get_video()->format,
+	                              SWS_BICUBIC,
+	                              nullptr,
+	                              nullptr,
+	                              nullptr);
 	if (!swsCtx) {
 		throw avException("Impossible to create scale context for video conversion");
 	}
@@ -39,7 +46,7 @@ void Rescaler::set_audio_scaler(const Codec &codec) {
 	}
 
 	auto res = swr_init(swrCtx);
-	if (res < 0){
+	if (res < 0) {
 		throw avException("Impossible to initialize resample context for audio conversion");
 	}
 }

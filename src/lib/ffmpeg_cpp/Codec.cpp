@@ -70,7 +70,7 @@ void Codec::destination_audio_context() {
 
 void Codec::destination_video_context() {
 	auto video = output.get_video();
-	if (!video){
+	if (!video) {
 		throw avException("Error in finding the video av codecs.");
 	}
 	output.set_video(video);
@@ -100,7 +100,7 @@ void Codec::destination_video_context() {
 
 void Codec::find_audio_encoder(const std::string &codec_name) {
 	auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
-	if (!audio){
+	if (!audio) {
 		throw avException("Error in finding the audio av codecs.");
 	}
 	output.set_audio(audio);
@@ -108,7 +108,7 @@ void Codec::find_audio_encoder(const std::string &codec_name) {
 
 void Codec::find_video_encoder(const std::string &codec_name) {
 	auto video = avcodec_find_encoder_by_name(codec_name.c_str());
-	if (!video){
+	if (!video) {
 		throw avException("Error in finding the video av codecs.");
 	}
 	output.set_video(video);
@@ -132,10 +132,10 @@ void Codec::find_encoders(const std::string &audio_codec, const std::string &vid
 }
 
 void Codec::set_source_audio_layout(enum AudioLayout layout) {
-	if(layout == MONO){
+	if (layout == MONO) {
 		channel_layout = AV_CH_LAYOUT_MONO;
 		channels = 1;
-	}else if(layout == STEREO){
+	} else if (layout == STEREO) {
 		channel_layout = AV_CH_LAYOUT_STEREO;
 		channels = 2;
 	}
@@ -187,7 +187,8 @@ void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
 void Codec::set_destination_video_parameters(AVCodecParameters *par) {
 	outputPar.set_video(par);
 
-	par->codec_id = output.get_video()->id; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
+	par->codec_id = output.get_video()
+		->id; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
 	par->codec_type = AVMEDIA_TYPE_VIDEO;
 	par->format = AV_PIX_FMT_YUV420P;
 	par->bit_rate = VIDEO_BITRATE; // 2500000

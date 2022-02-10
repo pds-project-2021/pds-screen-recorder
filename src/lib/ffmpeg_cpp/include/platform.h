@@ -18,9 +18,7 @@
 
 #define AUDIO_SAMPLE_RATE   44100
 #define VIDEO_BITRATE       8*1000*1000
-#define AUDIO_BITRATE       192*1000
-
-#define DEFAULT_AUDIO_CODEC "aac"
+#define AUDIO_BITRATE       128*1000
 
 #ifdef WIN32
 /** WINDOWS platform specific attributes */
@@ -34,6 +32,7 @@
 #define DEFAULT_VIDEO_INPUT_FORMAT  "gdigrab"
 #define DEFAULT_VIDEO_INPUT_DEVICE  "desktop"
 #define DEFAULT_VIDEO_CODEC         "h264_mf"
+#define DEFAULT_AUDIO_CODEC "aac"
 
 
 #elif defined linux
@@ -44,6 +43,7 @@
 #define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
 #define DEFAULT_VIDEO_INPUT_DEVICE  ":0.0"
 #define DEFAULT_VIDEO_CODEC         "libx264"
+#define DEFAULT_AUDIO_CODEC         "aac"
 
 #else
 /** MACOS platform specific attributes */
@@ -55,15 +55,16 @@
 #define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
 #define DEFAULT_VIDEO_INPUT_DEVICE  ":0.0"
 #define DEFAULT_VIDEO_CODEC         "libx264"
+#define DEFAULT_AUDIO_CODEC         "aac"
 
 #endif
 
-AVDictionary* get_audio_options();
-AVDictionary* get_video_options();
+AVDictionary *get_audio_options();
+AVDictionary *get_video_options();
 
 std::string get_audio_input_format();
 std::string get_audio_input_device();
 std::string get_video_input_format();
 std::string get_video_input_device(const std::string &offset);
 
-int64_t get_ref_time(const wrapper<AVFormatContext>& ctx);
+int64_t get_ref_time(const wrapper<AVFormatContext> &ctx);

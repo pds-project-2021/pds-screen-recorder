@@ -6,7 +6,7 @@
 
 #include "ptr_wrapper.h"
 
-class Frame: public ptr_wrapper<AVFrame>{
+class Frame : public ptr_wrapper<AVFrame> {
   public:
 	Frame();
 	Frame(int width, int height, AVPixelFormat format, int align);
