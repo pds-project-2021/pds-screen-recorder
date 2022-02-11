@@ -83,7 +83,9 @@ Interface::Interface(GtkApplication *app) {
 	                                               GTK_RESPONSE_ACCEPT,
 	                                               NULL);
 	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
-//	gtk_file_chooser_set_current_name(fileChooser, "Untitled.mp4");
+
+	gtk_file_chooser_set_current_name(fileChooser, "Untitled.mp4");
+
 	fileHandler = g_signal_connect (fileChoiceDialog, "response",
 	                                G_CALLBACK(on_save_response),
 	                                NULL);

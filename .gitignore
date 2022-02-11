@@ -12,3 +12,4 @@ x64
 media
 config.h
 build
+/output.txt
