@@ -64,7 +64,11 @@ void log_info(const std::string &str) {
 std::string get_current_time_str() {
 	char buff[100];
 	auto time_ref = std::time(nullptr);
-	std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H:%M:%S", std::localtime(&time_ref));
+#ifdef WIN32
+    std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H.%M.%S", std::localtime(&time_ref));
+#else
+    std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H:%M:%S", std::localtime(&time_ref));
+#endif
 
 	return buff;
 }

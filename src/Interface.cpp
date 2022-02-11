@@ -29,6 +29,28 @@ gboolean Interface::switchImageRec() {
 	return TRUE;
 }
 
+gboolean
+on_widget_deleted(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+    gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
+    delete_file(t->dest);
+
+    gtk_window_close(GTK_WINDOW (t->fileChoiceDialog));
+    #ifdef WIN32
+    gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+    gtk_window_minimize(GTK_WINDOW(t->window));
+    gtk_window_present(GTK_WINDOW(t->window));
+    gtk_window_unminimize(GTK_WINDOW(t->window));
+    #else
+    gtk_window_present(GTK_WINDOW(t->window));
+    #endif
+
+    // the user can record again only if the file dialog window is closed
+    gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
+    std::cout << "File window closed" << std::endl;
+    return TRUE;
+}
+
 Interface::Interface(GtkApplication *app) {
 	g_application = app;
 
@@ -89,6 +111,9 @@ Interface::Interface(GtkApplication *app) {
 	fileHandler = g_signal_connect (fileChoiceDialog, "response",
 	                                G_CALLBACK(on_save_response),
 	                                NULL);
+    fileHandler = g_signal_connect (fileChoiceDialog, "destroy",
+                                    G_CALLBACK(on_widget_deleted),
+                                    NULL);
 	gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), true);
 	gtk_window_set_title(GTK_WINDOW(fileChoiceDialog), "Choose video capture file destination");
 
@@ -429,6 +454,7 @@ void Interface::handleStop(GtkWidget *, gpointer) {
 
 	// wait until the registration is completed
 	t->rec.wait();
+    gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), false);
 
 #ifdef WIN32
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
