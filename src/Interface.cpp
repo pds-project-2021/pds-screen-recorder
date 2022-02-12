@@ -368,6 +368,7 @@ void Interface::recorder(double sX, double sY, double eX, double eY) {
         g_signal_connect (dialog, "response",
                           G_CALLBACK (gtk_window_destroy),
                           NULL);
+        std::cerr << "Error initializing recorder structures : " << e.what() << std::endl;
         t->ready = false;
     }
     catch(std::exception e) {// handle unexpected exceptions during initialization
@@ -381,6 +382,7 @@ void Interface::recorder(double sX, double sY, double eX, double eY) {
         g_signal_connect (dialog, "response",
                           G_CALLBACK (gtk_window_destroy),
                           NULL);
+        std::cerr << "Unexpected error : " << e.what() << std::endl;
         t->ready = false;
     }
 }
