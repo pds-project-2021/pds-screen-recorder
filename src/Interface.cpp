@@ -369,21 +369,20 @@ void Interface::recorder(double sX, double sY, double eX, double eY) {
                           G_CALLBACK (gtk_window_destroy),
                           NULL);
         std::cerr << "Error initializing recorder structures : " << e.what() << std::endl;
-        t->ready = false;
+        t->s = std::make_unique<Recorder>();
     }
-    catch(std::exception e) {// handle unexpected exceptions during initialization
+    catch(...) {// handle unexpected exceptions during initialization
         GtkDialogFlags flags = static_cast<GtkDialogFlags>(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL);
         dialog = gtk_message_dialog_new (GTK_WINDOW(window),
                                          flags,
                                          GTK_MESSAGE_ERROR,
                                          GTK_BUTTONS_CLOSE,
-                                         "Unexpected error : %s",
-                                         e.what());
+                                         "Unexpected error!");
         g_signal_connect (dialog, "response",
                           G_CALLBACK (gtk_window_destroy),
                           NULL);
-        std::cerr << "Unexpected error : " << e.what() << std::endl;
-        t->ready = false;
+        std::cerr << "Unexpected error!" << std::endl;
+        t->s = std::make_unique<Recorder>();
     }
 }
 
@@ -393,7 +392,7 @@ void Interface::startRecording() {
 	}
 	if (t->s->is_paused()) t->s->resume();
 	else {
-		if (!t->started) {
+		if (!t->started && t->ready) {
 			t->s->capture();
 			t->started = true;
 		}
