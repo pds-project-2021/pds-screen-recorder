@@ -461,15 +461,14 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 
 	if (t->surface) cairo_surface_destroy(t->surface);
 	t->surface = nullptr;
-	t->rec = std::async(std::launch::async, startRecording);
-	gtk_window_close(GTK_WINDOW(t->recordWindow));
-	gtk_window_close(GTK_WINDOW(t->selectWindow));
+    gtk_window_close(GTK_WINDOW(t->recordWindow));
+    gtk_window_close(GTK_WINDOW(t->selectWindow));
 #ifdef WIN32
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+    gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 #endif
-	gtk_window_present(GTK_WINDOW(t->window));
-
-	g_print("Start recording button pressed\n");
+    gtk_window_present(GTK_WINDOW(t->window));
+    g_print("Start recording button pressed\n");
+	t->rec = std::async(std::launch::async, startRecording);
 }
 
 void Interface::handlePause(GtkWidget *, gpointer) {
