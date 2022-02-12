@@ -9,6 +9,7 @@
 
 #include "lib/Recorder.h"
 #include "lib/include/exceptions.h"
+#include "libavutil/avutil.h"
 
 class Interface {
   public:
@@ -26,6 +27,7 @@ class Interface {
 	GtkWidget *titleView = nullptr;
 	GtkWidget *fileChoiceDialog = nullptr;
 	GtkWidget *image = nullptr;
+    GtkWidget *dialog = nullptr;
 
 	std::atomic<bool> selection_enabled{};
 	std::atomic<bool> ready{};
@@ -58,7 +60,7 @@ class Interface {
 
 	// utility functions
 	void getRectCoordinates(double &, double &, double &, double &) const;
-	static void recorder(double sX, double sY, double eX, double eY);
+	void recorder(double sX, double sY, double eX, double eY);
 	static void startRecording();
 	static void pauseRecording();
 	static void stopRecording();

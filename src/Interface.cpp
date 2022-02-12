@@ -351,18 +351,43 @@ void Interface::recorder(double sX, double sY, double eX, double eY) {
 	} else {
 		log_info("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str());
 	}
-
-	t->s->init(s);
-
-	log_info("Initialized input streams");
-
-	t->ready = true;
-	t->started = false;
+    try {
+        t->s->init(s);
+        log_info("Initialized input streams");
+        t->ready = true;
+        t->started = false;
+    }
+    catch(avException e) {// handle recoverable libav exceptions during initialization
+        GtkDialogFlags flags = static_cast<GtkDialogFlags>(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL);
+        dialog = gtk_message_dialog_new (GTK_WINDOW(window),
+                                         flags,
+                                         GTK_MESSAGE_ERROR,
+                                         GTK_BUTTONS_CLOSE,
+                                         "Error initializing recorder structures : %s",
+                                         e.what());
+        g_signal_connect (dialog, "response",
+                          G_CALLBACK (gtk_window_destroy),
+                          NULL);
+        t->ready = false;
+    }
+    catch(std::exception e) {// handle unexpected exceptions during initialization
+        GtkDialogFlags flags = static_cast<GtkDialogFlags>(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL);
+        dialog = gtk_message_dialog_new (GTK_WINDOW(window),
+                                         flags,
+                                         GTK_MESSAGE_ERROR,
+                                         GTK_BUTTONS_CLOSE,
+                                         "Unexpected error : %s",
+                                         e.what());
+        g_signal_connect (dialog, "response",
+                          G_CALLBACK (gtk_window_destroy),
+                          NULL);
+        t->ready = false;
+    }
 }
 
 void Interface::startRecording() {
 	if (!t->ready) {
-		recorder(t->startX, t->startY, t->endX, t->endY);
+		t->recorder(t->startX, t->startY, t->endX, t->endY);
 	}
 	if (t->s->is_paused()) t->s->resume();
 	else {
@@ -371,10 +396,12 @@ void Interface::startRecording() {
 			t->started = true;
 		}
 	}
-	gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
-	gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), false);
-	gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), true);
-	gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), true);
+    if(t->ready) {
+        gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
+        gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), false);
+        gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), true);
+        gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), true);
+    }
 }
 
 void Interface::pauseRecording() {
