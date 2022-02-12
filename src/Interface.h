@@ -61,7 +61,7 @@ class Interface {
 
 	// utility functions
 	void getRectCoordinates(double &, double &, double &, double &) const;
-	void recorder(double sX, double sY, double eX, double eY);
+	static void recorder(double sX, double sY, double eX, double eY);
 	static void startRecording();
 	static void pauseRecording();
 	static void stopRecording();

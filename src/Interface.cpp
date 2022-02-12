@@ -31,7 +31,7 @@ gboolean Interface::switchImageRec() {
 
 void Interface::init_error_dialog() {
     GtkWidget *content_area;
-    GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
+    auto flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
     dialog = gtk_dialog_new_with_buttons ("Error",
                                           GTK_WINDOW(window),
                                           flags,
@@ -69,7 +69,7 @@ void Interface::set_error_dialog_msg(const char* msg) const {
 
 gboolean Interface::on_dialog_deleted() {
     gtk_window_destroy(GTK_WINDOW(t->dialog));
-    GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
+    auto flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
     t->dialog = gtk_message_dialog_new (GTK_WINDOW(t->window),
                                      flags,
                                      GTK_MESSAGE_ERROR,
@@ -107,28 +107,39 @@ gboolean Interface::on_widget_deleted() {
 Interface::Interface(GtkApplication *app) {
 	g_application = app;
 
+	// allocation for gtk window object
 	window = gtk_application_window_new(app);
 	selectWindow = gtk_application_window_new(app);
 	recordWindow = gtk_application_window_new(app);
 	selectionArea = gtk_drawing_area_new();
+
 	ready = false;
 	started = false;
 	selection_enabled = false;
+
+	// main window setup
 	headerBar = gtk_header_bar_new();
 	image = gtk_image_new_from_file("../assets/icon_small.png");
 	title = gtk_text_buffer_new(nullptr);
 	gtk_text_buffer_set_text(GTK_TEXT_BUFFER(title), "  ", 2);
 	titleView = gtk_text_view_new_with_buffer(title);
 	gtk_window_set_title(GTK_WINDOW(window), "Screen recorder");
+
+	// setup windows' size
 	gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
 	gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
-	gtk_widget_set_size_request(selectWindow, 2560, 1080);
+
+	// this size is due glitch on large screens
+	// in some systems can be useless due `set_fullscreen` call later
+	gtk_window_set_default_size(GTK_WINDOW(selectWindow), 2560, 1440);
+
 	gtk_window_set_decorated(GTK_WINDOW(window), false);
 	gtk_window_set_decorated(GTK_WINDOW(selectWindow), false);
 	gtk_window_set_decorated(GTK_WINDOW(recordWindow), false);
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
 	gtk_window_set_resizable(GTK_WINDOW(selectWindow), false);
 	gtk_window_set_resizable(GTK_WINDOW(recordWindow), false);
+
 	recordButton = gtk_button_new_with_label("Record");
 	pauseButton = gtk_button_new_with_label("Pause");
 	stopButton = gtk_button_new_with_label("Stop");
@@ -148,6 +159,8 @@ Interface::Interface(GtkApplication *app) {
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
+
+	// file choice dialog
 	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 	fileChoiceDialog = gtk_file_chooser_dialog_new("Open File",
 	                                               nullptr,
@@ -158,9 +171,7 @@ Interface::Interface(GtkApplication *app) {
 	                                               GTK_RESPONSE_ACCEPT,
 	                                               NULL);
 	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
-
 	gtk_file_chooser_set_current_name(fileChooser, "Untitled.mp4");
-
 	fileHandler = g_signal_connect (fileChoiceDialog, "response",
 	                                G_CALLBACK(on_save_response),
 	                                NULL);
@@ -170,6 +181,7 @@ Interface::Interface(GtkApplication *app) {
 	gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), true);
 	gtk_window_set_title(GTK_WINDOW(fileChoiceDialog), "Choose video capture file destination");
 
+	// selection area with a controller for mouse click
 	gtk_window_set_child(GTK_WINDOW(selectWindow), selectionArea);
 	leftGesture = gtk_gesture_click_new();
 	rightGesture = gtk_gesture_click_new();
@@ -186,11 +198,9 @@ Interface::Interface(GtkApplication *app) {
 	                  G_CALLBACK(right_btn_pressed), selectionArea);
 	g_signal_connect (rightGesture, "released",
 	                  G_CALLBACK(right_btn_released), selectionArea);
-
 	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (leftGesture));
 	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (rightGesture));
 	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (motionController));
-
 	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(handleClose), nullptr);
 	gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(selectionArea), draw, nullptr, nullptr);
 	gtk_window_present(GTK_WINDOW(window));
@@ -198,25 +208,34 @@ Interface::Interface(GtkApplication *app) {
 	gtk_window_set_hide_on_close(GTK_WINDOW(recordWindow), true);
 	gtk_widget_set_name(selectWindow, "selector_window");
 
+	// custom css for selectionArea transparency
 	cssProvider = gtk_css_provider_new();
-	gtk_css_provider_load_from_path(cssProvider, "../src/style.css");
+	auto css = "* { background-color: transparent; opacity: 0.7; }";
+	gtk_css_provider_load_from_data(cssProvider, css,  static_cast<gssize>(strlen(css)));
+
 	context = gtk_widget_get_style_context(selectWindow);
 	gtk_style_context_add_provider(context,
 	                               GTK_STYLE_PROVIDER(cssProvider),
 	                               GTK_STYLE_PROVIDER_PRIORITY_USER); // I had used wrong priority on first try
 	gtk_style_context_save(context);
+
+	// allocate `Recorder` and enable gui buttons
 	s = std::make_unique<Recorder>();
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
 	g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
-	img_on = true;
 
+	// error dialog for runtime exceptions
     init_error_dialog();
+
+	// release blink image future for feedback when app is recording
+	img_on = true;
 	blink_img = std::async(std::launch::async, switchImageRec);
 }
 
 Interface::~Interface() {
-	g_print("Interface has been destroyed\n");
+	log_info("Interface has been destroyed");
+
 	// terminate capture if it's running
 	if (s->is_capturing()) {
 		s->terminate();
@@ -224,7 +243,7 @@ Interface::~Interface() {
 //    gtk_window_destroy(GTK_WINDOW(dialog));
 //    if (surface) cairo_surface_destroy(surface);
 
-#ifdef linux
+//#ifdef linux
 //	gtk_window_destroy(GTK_WINDOW(window));
 //    gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), false);
 //    gtk_window_close(GTK_WINDOW(selectWindow));
@@ -232,10 +251,10 @@ Interface::~Interface() {
 //    gtk_window_close(GTK_WINDOW(recordWindow));
 //    gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
 //    gtk_window_close(GTK_WINDOW(fileChoiceDialog));
-#else
+//#else
 	//	gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
 	//	gtk_window_close(GTK_WINDOW(window));
-#endif
+//#endif
 }
 
 /* Redraw the screen from the surface. Note that the ::draw
@@ -337,7 +356,7 @@ void Interface::motion_detected(GtkEventControllerMotion *, double x, double y, 
 }
 
 void Interface::right_btn_pressed(GtkGestureClick *, int, double x, double y, GtkWidget *) {
-	g_print("Left button pressed\n");
+	log_info("Left button pressed");
 	std::cout << "Start coordinates: " << x << ", " << y << std::endl;
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
@@ -347,13 +366,13 @@ void Interface::right_btn_pressed(GtkGestureClick *, int, double x, double y, Gt
 }
 
 void Interface::right_btn_released(GtkGestureClick *gesture, int, double x, double y, GtkWidget *) {
-	g_print("Right button released\n");
+	log_info("Right button released");
 	std::cout << "End coordinates: " << x << ", " << y << std::endl;
 	gtk_gesture_set_state(GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
 void Interface::left_btn_pressed(GtkGestureClick *, int, double x, double y, GtkWidget *) {
-	g_print("Left button pressed\n");
+	log_info("Left button pressed");
 	std::cout << "Start coordinates: " << x << ", " << y << std::endl;
 	t->startX = x;
 	t->startY = y;
@@ -367,7 +386,7 @@ void Interface::left_btn_pressed(GtkGestureClick *, int, double x, double y, Gtk
 }
 
 void Interface::left_btn_released(GtkGestureClick *gesture, int, double x, double y, GtkWidget *) {
-	g_print("Left button released\n");
+	log_info("Left button released");
 	std::cout << "End coordinates: " << x << ", " << y << std::endl;
 	t->selection_enabled = false;
 	t->endX = x;
@@ -387,7 +406,7 @@ void Interface::left_btn_released(GtkGestureClick *gesture, int, double x, doubl
 }
 
 void Interface::recorder(double sX, double sY, double eX, double eY) {
-	auto s = Screen{};
+	auto screen = Screen{};
 
 	auto width = std::abs(sX - eX);
 	auto height = std::abs(sY - eY);
@@ -398,15 +417,15 @@ void Interface::recorder(double sX, double sY, double eX, double eY) {
 	auto off_x = std::min(sX, eX);
 	auto off_y = std::min(sY, eY);
 #endif
-	s.set_dimension(width, height);
-	s.set_offset(off_x, off_y);
+	screen.set_dimension(width, height);
+	screen.set_offset(off_x, off_y);
 
-	if (s.fullscreen()) {
+	if (screen.fullscreen()) {
 		log_info("Recording full screen area");
 	} else {
-		log_info("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str());
+		log_info("Recording " + screen.get_video_size() + " area, with offset " + screen.get_offset_str());
 	}
-    t->s->init(s);
+    t->s->init(screen);
     log_info("Initialized input streams");
     t->ready = true;
     t->started = false;
@@ -474,7 +493,7 @@ void Interface::select_record_region(GtkWidget *, gpointer) {
 	gtk_window_fullscreen(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->recordWindow));
-	g_print("Record button pressed\n");
+	log_info("Record button pressed");
 }
 
 void Interface::handleRecord(GtkWidget *, gpointer) {
@@ -491,11 +510,12 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
     gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 #endif
     gtk_window_present(GTK_WINDOW(t->window));
-    g_print("Start recording button pressed\n");
+    log_info("Start recording button pressed");
+
     try {
         t->rec.get();
     }
-    catch(avException e) {// handle recoverable libav exceptions during initialization
+    catch(avException &e) {// handle recoverable libav exceptions during initialization
         std::cerr << "Error initializing recorder structures : " << e.what() << std::endl;
         t->s = std::make_unique<Recorder>();
         if(t->dialog) t->set_error_dialog_msg(e.what());
@@ -511,16 +531,16 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 
 void Interface::handlePause(GtkWidget *, gpointer) {
 	t->rec = std::async(std::launch::async, pauseRecording);
-	g_print("Pause button pressed\n");
+	log_info("Pause button pressed");
 }
 
 void Interface::handleStop(GtkWidget *, gpointer) {
 	t->rec = std::async(std::launch::async, stopRecording);
-	g_print("Stop button pressed\n");
+	log_info("Stop button pressed");
 
 	// wait until the registration is completed
 	t->rec.wait();
-    gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), false);
+    gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
 
 #ifdef WIN32
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
@@ -530,7 +550,7 @@ void Interface::handleStop(GtkWidget *, gpointer) {
 }
 
 void Interface::handleClose(GtkWidget *, gpointer) {
-	g_print("Close button pressed\n");
+	log_info("Close button pressed");
 	g_application_quit(G_APPLICATION(t->g_application));
 }
 
