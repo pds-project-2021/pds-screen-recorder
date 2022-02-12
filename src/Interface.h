@@ -28,6 +28,7 @@ class Interface {
 	GtkWidget *fileChoiceDialog = nullptr;
 	GtkWidget *image = nullptr;
     GtkWidget *dialog = nullptr;
+    GtkWidget *label = nullptr;
 
 	std::atomic<bool> selection_enabled{};
 	std::atomic<bool> ready{};
@@ -67,8 +68,12 @@ class Interface {
 	static gboolean switchImageRec();
 	void setImageRecOff();
 	void setImageRecOn();
+    void init_error_dialog();
+    void set_error_dialog_msg(const char*) const;
 
 	// callback
+    static gboolean on_dialog_deleted();
+    static gboolean on_widget_deleted();
 	static void on_save_response(GtkDialog *dialog, int response);
 	static void motion_detected(GtkEventControllerMotion *controller, double x, double y, gpointer user_data);
 	static void select_record_region(GtkWidget *widget, gpointer data);

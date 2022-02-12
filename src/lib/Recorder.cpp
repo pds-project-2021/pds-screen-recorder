@@ -119,7 +119,7 @@ void Recorder::init(Screen params) {
 #ifdef WIN32
 	CoUninitialize();
 #endif
-//    throw "error";
+//    throw avException("Error");
 }
 
 [[maybe_unused]]

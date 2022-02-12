@@ -28,8 +28,46 @@ gboolean Interface::switchImageRec() {
 
 	return TRUE;
 }
-gboolean
-on_dialog_deleted() {
+
+void Interface::init_error_dialog() {
+    GtkWidget *content_area;
+    GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
+    dialog = gtk_dialog_new_with_buttons ("Error",
+                                          GTK_WINDOW(window),
+                                          flags,
+                                          "_OK",
+                                          GTK_RESPONSE_CLOSE,
+                                          NULL);
+    content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+    label = gtk_label_new ("Unexpected error!");
+//    dialog = gtk_message_dialog_new (GTK_WINDOW(window),
+//                                     flags,
+//                                     GTK_MESSAGE_ERROR,
+//                                     GTK_BUTTONS_CLOSE,
+//                                     "Unexpected error!");
+    g_signal_connect (dialog, "response",
+                      G_CALLBACK (gtk_widget_hide),
+                      NULL);
+    g_signal_connect (dialog, "destroy",
+                      G_CALLBACK (gtk_widget_hide),
+                      NULL);
+    gtk_window_set_deletable(GTK_WINDOW(dialog), false);
+    gtk_box_append (GTK_BOX (content_area), label);
+    gtk_widget_show(dialog);
+    gtk_widget_hide(dialog);
+}
+
+void Interface::set_error_dialog_msg(const char* msg) const {
+    if(msg != nullptr) {
+        GtkWidget *content_area;
+        content_area = gtk_dialog_get_content_area (GTK_DIALOG (t->dialog));
+        gtk_box_remove(GTK_BOX (content_area), t->label);
+        t->label = gtk_label_new (msg);
+        gtk_box_append (GTK_BOX (content_area), label);
+    }
+}
+
+gboolean Interface::on_dialog_deleted() {
     gtk_window_destroy(GTK_WINDOW(t->dialog));
     GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
     t->dialog = gtk_message_dialog_new (GTK_WINDOW(t->window),
@@ -38,7 +76,7 @@ on_dialog_deleted() {
                                      GTK_BUTTONS_CLOSE,
                                      "Unexpected error!");
     g_signal_connect (t->dialog, "response",
-                      G_CALLBACK (on_dialog_deleted),
+                      G_CALLBACK (Interface::on_dialog_deleted),
                       NULL);
     std::cout << "Error dialog closed" << std::endl;
     gtk_widget_show(t->dialog);
@@ -46,8 +84,7 @@ on_dialog_deleted() {
     return TRUE;
 }
 
-gboolean
-on_widget_deleted(GtkWidget *widget, GdkEvent *event, gpointer data) {
+gboolean Interface::on_widget_deleted() {
     gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
     delete_file(t->dest);
 
@@ -174,17 +211,7 @@ Interface::Interface(GtkApplication *app) {
 	g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
 	img_on = true;
 
-    GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
-    dialog = gtk_message_dialog_new (GTK_WINDOW(window),
-                                     flags,
-                                     GTK_MESSAGE_ERROR,
-                                     GTK_BUTTONS_CLOSE,
-                                     "Unexpected error!");
-    g_signal_connect (dialog, "response",
-                      G_CALLBACK (on_dialog_deleted),
-                      NULL);
-    gtk_widget_show(dialog);
-    gtk_widget_hide(dialog);
+    init_error_dialog();
 	blink_img = std::async(std::launch::async, switchImageRec);
 }
 
@@ -379,22 +406,10 @@ void Interface::recorder(double sX, double sY, double eX, double eY) {
 	} else {
 		log_info("Recording " + s.get_video_size() + " area, with offset " + s.get_offset_str());
 	}
-    try {
-        t->s->init(s);
-        log_info("Initialized input streams");
-        t->ready = true;
-        t->started = false;
-    }
-    catch(avException e) {// handle recoverable libav exceptions during initialization
-        if(dialog) gtk_widget_show(dialog);
-        std::cerr << "Error initializing recorder structures : " << e.what() << std::endl;
-        t->s = std::make_unique<Recorder>();
-    }
-    catch(...) {// handle unexpected exceptions during initialization
-        if(dialog) gtk_widget_show(dialog);
-        std::cerr << "Unexpected error!" << std::endl;
-        t->s = std::make_unique<Recorder>();
-    }
+    t->s->init(s);
+    log_info("Initialized input streams");
+    t->ready = true;
+    t->started = false;
 }
 
 void Interface::startRecording() {
@@ -403,17 +418,15 @@ void Interface::startRecording() {
 	}
 	if (t->s->is_paused()) t->s->resume();
 	else {
-		if (!t->started && t->ready) {
+		if (!t->started) {
 			t->s->capture();
 			t->started = true;
 		}
 	}
-    if(t->ready) {
-        gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
-        gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), false);
-        gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), true);
-        gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), true);
-    }
+    gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
+    gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), true);
+    gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), true);
 }
 
 void Interface::pauseRecording() {
@@ -471,6 +484,7 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 
 	if (t->surface) cairo_surface_destroy(t->surface);
 	t->surface = nullptr;
+    t->rec = std::async(std::launch::async, startRecording);
     gtk_window_close(GTK_WINDOW(t->recordWindow));
     gtk_window_close(GTK_WINDOW(t->selectWindow));
 #ifdef WIN32
@@ -478,7 +492,21 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 #endif
     gtk_window_present(GTK_WINDOW(t->window));
     g_print("Start recording button pressed\n");
-	t->rec = std::async(std::launch::async, startRecording);
+    try {
+        t->rec.get();
+    }
+    catch(avException e) {// handle recoverable libav exceptions during initialization
+        std::cerr << "Error initializing recorder structures : " << e.what() << std::endl;
+        t->s = std::make_unique<Recorder>();
+        if(t->dialog) t->set_error_dialog_msg(e.what());
+        gtk_widget_show(t->dialog);
+    }
+    catch(...) {// handle unexpected exceptions during initialization
+        std::cerr << "Unexpected error!" << std::endl;
+        t->s = std::make_unique<Recorder>();
+        if(t->dialog) t->set_error_dialog_msg(nullptr);
+        gtk_widget_show(t->dialog);
+    }
 }
 
 void Interface::handlePause(GtkWidget *, gpointer) {
