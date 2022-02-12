@@ -28,10 +28,26 @@ gboolean Interface::switchImageRec() {
 
 	return TRUE;
 }
+gboolean
+on_dialog_deleted() {
+    gtk_window_destroy(GTK_WINDOW(t->dialog));
+    GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
+    t->dialog = gtk_message_dialog_new (GTK_WINDOW(t->window),
+                                     flags,
+                                     GTK_MESSAGE_ERROR,
+                                     GTK_BUTTONS_CLOSE,
+                                     "Unexpected error!");
+    g_signal_connect (t->dialog, "response",
+                      G_CALLBACK (on_dialog_deleted),
+                      NULL);
+    std::cout << "Error dialog closed" << std::endl;
+    gtk_widget_show(t->dialog);
+    gtk_widget_hide(t->dialog);
+    return TRUE;
+}
 
 gboolean
-on_widget_deleted(GtkWidget *widget, GdkEvent *event, gpointer data)
-{
+on_widget_deleted(GtkWidget *widget, GdkEvent *event, gpointer data) {
     gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
     delete_file(t->dest);
 
@@ -158,14 +174,14 @@ Interface::Interface(GtkApplication *app) {
 	g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
 	img_on = true;
 
-    GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL);
+    GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
     dialog = gtk_message_dialog_new (GTK_WINDOW(window),
                                      flags,
                                      GTK_MESSAGE_ERROR,
                                      GTK_BUTTONS_CLOSE,
                                      "Unexpected error!");
     g_signal_connect (dialog, "response",
-                      G_CALLBACK (gtk_widget_hide),
+                      G_CALLBACK (on_dialog_deleted),
                       NULL);
     gtk_widget_show(dialog);
     gtk_widget_hide(dialog);
@@ -178,6 +194,7 @@ Interface::~Interface() {
 	if (s->is_capturing()) {
 		s->terminate();
 	}
+//    gtk_window_destroy(GTK_WINDOW(dialog));
 //    if (surface) cairo_surface_destroy(surface);
 
 #ifdef linux
