@@ -158,6 +158,17 @@ Interface::Interface(GtkApplication *app) {
 	g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
 	img_on = true;
 
+    GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL);
+    dialog = gtk_message_dialog_new (GTK_WINDOW(window),
+                                     flags,
+                                     GTK_MESSAGE_ERROR,
+                                     GTK_BUTTONS_CLOSE,
+                                     "Unexpected error!");
+    g_signal_connect (dialog, "response",
+                      G_CALLBACK (gtk_widget_hide),
+                      NULL);
+    gtk_widget_show(dialog);
+    gtk_widget_hide(dialog);
 	blink_img = std::async(std::launch::async, switchImageRec);
 }
 
@@ -358,29 +369,12 @@ void Interface::recorder(double sX, double sY, double eX, double eY) {
         t->started = false;
     }
     catch(avException e) {// handle recoverable libav exceptions during initialization
-        GtkDialogFlags flags = static_cast<GtkDialogFlags>(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL);
-        dialog = gtk_message_dialog_new (GTK_WINDOW(window),
-                                         flags,
-                                         GTK_MESSAGE_ERROR,
-                                         GTK_BUTTONS_CLOSE,
-                                         "Error initializing recorder structures : %s",
-                                         e.what());
-        g_signal_connect (dialog, "response",
-                          G_CALLBACK (gtk_window_destroy),
-                          NULL);
+        if(dialog) gtk_widget_show(dialog);
         std::cerr << "Error initializing recorder structures : " << e.what() << std::endl;
         t->s = std::make_unique<Recorder>();
     }
     catch(...) {// handle unexpected exceptions during initialization
-        GtkDialogFlags flags = static_cast<GtkDialogFlags>(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL);
-        dialog = gtk_message_dialog_new (GTK_WINDOW(window),
-                                         flags,
-                                         GTK_MESSAGE_ERROR,
-                                         GTK_BUTTONS_CLOSE,
-                                         "Unexpected error!");
-        g_signal_connect (dialog, "response",
-                          G_CALLBACK (gtk_window_destroy),
-                          NULL);
+        if(dialog) gtk_widget_show(dialog);
         std::cerr << "Unexpected error!" << std::endl;
         t->s = std::make_unique<Recorder>();
     }
