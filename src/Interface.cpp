@@ -126,12 +126,20 @@ Interface::Interface(GtkApplication *app) {
 	gtk_window_set_title(GTK_WINDOW(window), "Screen recorder");
 
 	// setup windows' size
+#ifdef WIN32
 	gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
+#else
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 50);
+#endif
 	gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
 
 	// this size is due glitch on large screens
 	// in some systems can be useless due `set_fullscreen` call later
-	gtk_window_set_default_size(GTK_WINDOW(selectWindow), 2560, 1440);
+    gtk_window_set_default_size(GTK_WINDOW(selectWindow), 8640, 4320);
+    auto monitor =(GdkMonitor*) g_list_model_get_item(gdk_display_get_monitors(gtk_widget_get_display(selectWindow)), 0);
+    auto width = gdk_monitor_get_width_mm(monitor);
+    auto height = gdk_monitor_get_width_mm(monitor);
+    gtk_window_set_default_size(GTK_WINDOW(selectWindow), width, height);
 
 	gtk_window_set_decorated(GTK_WINDOW(window), false);
 	gtk_window_set_decorated(GTK_WINDOW(selectWindow), false);
