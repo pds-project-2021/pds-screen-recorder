@@ -30,10 +30,9 @@ class Interface {
     GtkWidget *dialog = nullptr;
     GtkWidget *label = nullptr;
 
-	std::atomic<bool> selection_enabled{};
-	std::atomic<bool> ready{};
-	std::atomic<bool> started{};
-	std::atomic<bool> img_on{};
+	std::atomic<bool> selection_enabled = false;
+	std::atomic<bool> ready = false;
+	std::atomic<bool> img_on = true;
 
 	GtkTextBuffer *title = nullptr;
 	GtkGesture *leftGesture = nullptr;
@@ -61,7 +60,7 @@ class Interface {
 
 	// utility functions
 	void getRectCoordinates(double &, double &, double &, double &) const;
-	static void recorder(double sX, double sY, double eX, double eY);
+	static void init_recorder(double sX, double sY, double eX, double eY);
 	static void startRecording();
 	static void pauseRecording();
 	static void stopRecording();
