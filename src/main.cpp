@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 	}else if (argc > 2){
-		log_error("Unable to parse so much arguments");
+		log_error("Too many arguments");
 		print_helper();
 		return 0;
 	}
