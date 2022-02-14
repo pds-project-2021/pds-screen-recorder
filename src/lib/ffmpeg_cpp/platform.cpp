@@ -163,14 +163,22 @@ int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
 #else
 
 AVDictionary* get_audio_options(){
+    /* Enumerate the codecs*/
+    AVCodec * codec = av_codec_next(NULL);
+    while(codec != NULL)
+    {
+        fprintf(stderr, "%s\n", codec->long_name);
+        codec = av_codec_next(codec);
+    }
 	AVDictionary* options = nullptr;
-
+	av_dict_set(&options, "sample_rate", std::to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
 	return options;
 }
 
 AVDictionary* get_video_options(){
 	AVDictionary* options = nullptr;
-
+	av_dict_set(&options, "framerate", "30", 0);
+	av_dict_set(&options, "preset", "medium", 0);
 	return options;
 }
 

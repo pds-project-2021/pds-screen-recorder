@@ -50,12 +50,12 @@
 
 // todo: add macOs default parameters
 
-#define DEFAULT_AUDIO_INPUT_FORMAT  "pulse"
-#define DEFAULT_AUDIO_INPUT_DEVICE  "default"
-#define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
-#define DEFAULT_VIDEO_INPUT_DEVICE  ":0.0"
+#define DEFAULT_AUDIO_INPUT_FORMAT  "avfoundation"
+#define DEFAULT_AUDIO_INPUT_DEVICE  ":0"
+#define DEFAULT_VIDEO_INPUT_FORMAT  "avfoundation"
+#define DEFAULT_VIDEO_INPUT_DEVICE  "0"
 #define DEFAULT_VIDEO_CODEC         "libx264"
-#define DEFAULT_AUDIO_CODEC         "aac"
+#define DEFAULT_AUDIO_CODEC         "mp3"
 
 #endif
 
