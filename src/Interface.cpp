@@ -432,7 +432,7 @@ void Interface::init_recorder(double sX, double sY, double eX, double eY) {
 	} else {
 		log_info("Recording " + screen.get_video_size() + " area, with offset " + screen.get_offset_str());
 	}
-	t->s->set_audio_codec("ciao");
+//	t->s->set_audio_codec("ciao");
 
     t->s->init(screen);
     log_info("Initialized input streams");
@@ -479,6 +479,7 @@ void Interface::pauseRecording() {
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
 	} else {
 		t->s->pause();
+        throw "error";
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Resume");
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Paused");
 	}
@@ -486,22 +487,18 @@ void Interface::pauseRecording() {
 
 void Interface::stopRecording() {
 	if (!t->ready) { return; }
-
-	t->s->terminate();
-	t->dest = t->s->get_destination();
-
-	// set temporary name to current time
-	auto file_name = get_current_time_str() + ".mp4";
-	gtk_file_chooser_set_current_name(t->fileChooser, file_name.c_str());
-
-	// reset recorder
-	t->s = std::make_unique<Recorder>();
-	t->ready = false;
-
-	// reset action buttons
-	gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
-	gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
-	gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
+    //get temporary file location
+    t->dest = t->s->get_destination();
+    // reset recorder
+    t->s = std::make_unique<Recorder>();
+    t->ready = false;
+    // set temporary name to current time
+    auto file_name = get_current_time_str() + ".mp4";
+    gtk_file_chooser_set_current_name(t->fileChooser, file_name.c_str());
+    // reset action buttons
+    gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
+    gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
 }
 
 void Interface::select_record_region(GtkWidget *, gpointer) {
@@ -516,6 +513,46 @@ void Interface::select_record_region(GtkWidget *, gpointer) {
 	gtk_window_present(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->recordWindow));
 	log_info("Record button pressed");
+}
+
+void Interface::reset_gui_from_exec() {
+    // delete recorder if necessary
+    if(ready) {
+        s = std::make_unique<Recorder>();
+        ready = false;
+    }
+    // reset action buttons
+    gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
+    gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
+    gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
+#ifdef WIN32
+    gtk_window_minimize(GTK_WINDOW(window));
+    gtk_window_present(GTK_WINDOW(window));
+    gtk_window_unminimize(GTK_WINDOW(window));
+#endif
+}
+
+void Interface::reset_gui_from_stop() {
+    // delete recorder if necessary
+    if(ready) {
+        s = std::make_unique<Recorder>();
+        ready = false;
+    }
+    // reset action buttons
+    gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
+    gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
+    gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
+    // restore windows' states
+    gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
+    gtk_window_close(GTK_WINDOW(fileChoiceDialog));
+#ifdef WIN32
+    gtk_window_minimize(GTK_WINDOW(window));
+    gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+    gtk_window_present(GTK_WINDOW(window));
+    gtk_window_unminimize(GTK_WINDOW(window));
+#endif
 }
 
 void Interface::handleRecord(GtkWidget *, gpointer) {
@@ -539,23 +576,56 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 }
 
 void Interface::handlePause(GtkWidget *, gpointer) {
-	t->rec = std::async(std::launch::async, pauseRecording);
-	log_info("Pause button pressed");
+    try {
+        t->rec = std::async(std::launch::async, pauseRecording);
+        log_info("Pause button pressed");
+        t->rec.get();
+    }
+    catch(avException &e) {// handle recoverable libav exceptions during pausing
+        std::cerr << "Error closing output streams : " << e.what() << std::endl;
+        t->reset_gui_from_exec();
+        //show error message dialog
+        if(t->dialog) t->set_error_dialog_msg(e.what());
+        gtk_widget_show(t->dialog);
+    }
+    catch(...) {// handle unexpected exceptions during pausing
+        std::cerr << "Unexpected error!" << std::endl;
+        t->reset_gui_from_exec();
+        //show error message dialog
+        if(t->dialog) t->set_error_dialog_msg(nullptr);
+        gtk_widget_show(t->dialog);
+    }
 }
 
 void Interface::handleStop(GtkWidget *, gpointer) {
-	t->rec = std::async(std::launch::async, stopRecording);
-	log_info("Stop button pressed");
-
-	// wait until the registration is completed
-	t->rec.wait();
-    gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
-
-#ifdef WIN32
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
-	gtk_window_close(GTK_WINDOW(t->window));
-#endif
-	gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
+    try {
+        t->rec = std::async(std::launch::async, stopRecording);
+        log_info("Stop button pressed");
+        // variable to check if windows' states need to be restored
+        // wait until the registration is completed
+	    t->rec.get();
+        // set windows' states for file saving
+        gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
+    #ifdef WIN32
+        gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
+        gtk_window_close(GTK_WINDOW(t->window));
+    #endif
+        gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
+    }
+    catch(avException &e) {// handle recoverable libav exceptions during termination
+        std::cerr << "Error closing output streams : " << e.what() << std::endl;
+        t->reset_gui_from_stop();
+        //show error message dialog
+        if(t->dialog) t->set_error_dialog_msg(e.what());
+        gtk_widget_show(t->dialog);
+    }
+    catch(...) {// handle unexpected exceptions during termination
+        std::cerr << "Unexpected error!" << std::endl;
+        t->reset_gui_from_stop();
+        //show error message dialog
+        if(t->dialog) t->set_error_dialog_msg(nullptr);
+        gtk_widget_show(t->dialog);
+    }
 }
 
 void Interface::handleClose(GtkWidget *, gpointer) {

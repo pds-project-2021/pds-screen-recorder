@@ -69,6 +69,8 @@ class Interface {
 	void setImageRecOn();
     void init_error_dialog();
     void set_error_dialog_msg(const char*) const;
+    void reset_gui_from_exec();
+    void reset_gui_from_stop();
 
 	// callback
     static gboolean on_dialog_deleted();

@@ -64,7 +64,7 @@ class Recorder {
 
   public:
 	Recorder();
-	~Recorder() = default;
+	~Recorder();
 
 	// recorder parameters functions
 	[[maybe_unused]] enum AudioLayout get_audio_layout();

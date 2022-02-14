@@ -9,6 +9,11 @@ Recorder::Recorder() {
 	avdevice_register_all();
 }
 
+Recorder::~Recorder() {
+    if(capturing) terminate();
+    std::cout << "[INFO] Recorder destroyed" << std::endl;
+}
+
 /**
  * Get audio layout
  * @return
