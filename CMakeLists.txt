@@ -90,8 +90,7 @@ endif ()
 
 # include lib
 add_subdirectory(src/lib)
-
-add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h)
+add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h src/icon_on.cpp src/icon_off.cpp)
 
 if(LINUX)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV lib)

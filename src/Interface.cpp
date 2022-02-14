@@ -1,5 +1,4 @@
 #include "Interface.h"
-
 // global ref of the interface for gtk callbacks
 std::unique_ptr<Interface> t = nullptr;
 
@@ -120,8 +119,9 @@ Interface::Interface(GtkApplication *app) {
 
 	// main window setup
 	headerBar = gtk_header_bar_new();
-	image = gtk_image_new_from_file("../assets/icon_small.png");
-	title = gtk_text_buffer_new(nullptr);
+    auto pix = gdk_pixbuf_new_from_inline(-1, icon_on, false, NULL);
+    image = gtk_image_new_from_pixbuf(pix);
+    title = gtk_text_buffer_new(nullptr);
 	gtk_text_buffer_set_text(GTK_TEXT_BUFFER(title), "  ", 2);
 	titleView = gtk_text_view_new_with_buffer(title);
 	gtk_window_set_title(GTK_WINDOW(window), "Screen recorder");
@@ -171,7 +171,17 @@ Interface::Interface(GtkApplication *app) {
 
 	// file choice dialog
 	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
+#ifdef WIN32
 	fileChoiceDialog = gtk_file_chooser_dialog_new("Save File",
+	                                               nullptr,
+	                                               action,
+	                                               ("_Cancel"),
+												   GTK_RESPONSE_CANCEL,
+												   ("_Save"),
+	                                               GTK_RESPONSE_ACCEPT,
+	                                               NULL);
+#else
+    fileChoiceDialog = gtk_file_chooser_dialog_new("Save File",
 	                                               GTK_WINDOW(window),
 	                                               action,
 	                                               ("_Cancel"),
@@ -179,7 +189,7 @@ Interface::Interface(GtkApplication *app) {
 												   ("_Save"),
 	                                               GTK_RESPONSE_ACCEPT,
 	                                               NULL);
-
+#endif
 	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
 	auto filter = gtk_file_filter_new();
     gtk_file_filter_add_pattern(filter, "*.mp4");
@@ -303,6 +313,7 @@ void Interface::on_save_response(GtkDialog *, int response) {
 	gtk_window_close(GTK_WINDOW (t->fileChoiceDialog));
 #ifdef WIN32
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+    //prevents freeze on windows (nvidia)
 	gtk_window_minimize(GTK_WINDOW(t->window));
 	gtk_window_present(GTK_WINDOW(t->window));
 	gtk_window_unminimize(GTK_WINDOW(t->window));
@@ -316,7 +327,8 @@ void Interface::on_save_response(GtkDialog *, int response) {
 
 void Interface::setImageRecOff() {
 	gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
-	image = gtk_image_new_from_file("../assets/icon_small_off.png");
+    auto pix = gdk_pixbuf_new_from_inline(-1, icon_off, false, NULL);
+    image = gtk_image_new_from_pixbuf(pix);
 	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
 	img_on = false;
@@ -324,7 +336,8 @@ void Interface::setImageRecOff() {
 
 void Interface::setImageRecOn() {
 	gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
-	image = gtk_image_new_from_file("../assets/icon_small.png");
+    auto pix = gdk_pixbuf_new_from_inline(-1, icon_on, false, NULL);
+    image = gtk_image_new_from_pixbuf(pix);
 	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
 	img_on = true;

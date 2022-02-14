@@ -7,6 +7,8 @@
 #include <future>
 #include <memory>
 
+#include "icon_on.cpp"
+#include "icon_off.cpp"
 #include "lib/Recorder.h"
 #include "lib/include/exceptions.h"
 #include "libavutil/avutil.h"
