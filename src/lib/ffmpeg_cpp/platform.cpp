@@ -186,7 +186,7 @@ std::string get_video_input_format(){
 	return DEFAULT_VIDEO_INPUT_FORMAT;
 }
 
-std::string get_video_input_device(const string &_offset){
+std::string get_video_input_device(const std::string &_offset){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 

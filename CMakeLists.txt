@@ -5,7 +5,7 @@ configure_file(config.h.in config.h)
 
 set(CMAKE_CXX_STANDARD 17)
 
-if (UNIX)
+if (LINUX)
     find_package(PkgConfig REQUIRED)
     # GTK4
     pkg_check_modules(GTK4 REQUIRED gtk4)
@@ -28,6 +28,8 @@ if (UNIX)
     set(CMAKE_USE_WIN32_THREADS_INIT 0)
     set(CMAKE_USE_PTHREADS_INIT 1)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
+
+    include_directories(${FFMPEG_INCLUDE_DIRS})
 elseif (WIN32)
     find_package(GTK REQUIRED)
     set(VCPKG_INCLUDE_PATH C:/src/vcpkg/installed/x64-windows)
@@ -62,6 +64,24 @@ elseif (WIN32)
     link_directories("${VCPKG_INCLUDE_PATH}/lib" "${VCPKG_INCLUDE_PATH}/bin")
     find_package(FFMPEG REQUIRED)
     include_directories(${FFMPEG_INCLUDE_DIRS})
+else()
+    find_package(PkgConfig REQUIRED)
+    # GTK4
+    pkg_check_modules(GTK4 REQUIRED gtk4)
+    include_directories(${GTK4_INCLUDE_DIRS})
+    link_directories(${GTK4_LIBRARY_DIRS})
+    add_definitions(${GTK4_CFLAGS_OTHER})
+    pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+            libavdevice
+            libavfilter
+            libavformat
+            libavcodec
+            libswresample
+            libswscale
+            libavutil
+            )
+    include_directories(${FFMPEG_INCLUDE_DIRS})
+    link_directories(${FFMPEG_LIBRARY_DIRS})
 endif ()
 
 # include lib
@@ -69,8 +89,10 @@ add_subdirectory(src/lib)
 
 add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h)
 
-if(UNIX)
+if(LINUX)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV lib)
 elseif(WIN32)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES} lib)
+else()
+    target_link_libraries(${PROJECT_NAME} PkgConfig::FFMPEG ${GTK4_LIBRARIES} lib)
 endif()
