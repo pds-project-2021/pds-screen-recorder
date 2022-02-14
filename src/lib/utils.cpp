@@ -58,7 +58,33 @@ std::string get_default_path(const fs::path &path) {
 }
 
 void log_info(const std::string &str) {
-	std::cout << "[INFO] " + str << std::endl;
+	if (LOGGING > 1) {
+		std::cout << "[INFO] " + str << std::endl;
+	}
+}
+
+void log_debug(const std::string &str) {
+	if (LOGGING > 2) {
+		std::cout << "[DEBUG] " + str << std::endl;
+	}
+}
+
+void log_error(const std::string &str) {
+	std::cout << "[ERROR] " + str << std::endl;
+}
+
+void print_version(){
+	std::cout << PROJECT_NAME << " version: " << PROJECT_VER << std::endl;
+}
+
+void print_helper(){
+	print_version();
+
+	std::cout << "\nUSAGE: recs <args>" << std::endl;
+	std::cout << "  -v              For INFO level logging" << std::endl;
+	std::cout << "  -vv             For DEBUG level logging" << std::endl;
+	std::cout << "  -V, --version   For show current software version" << std::endl;
+
 }
 
 std::string get_current_time_str() {

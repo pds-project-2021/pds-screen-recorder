@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(recs VERSION 0.0.1)
-
-configure_file(config.h.in config.h)
-
 set(CMAKE_CXX_STANDARD 17)
+
+configure_file(${PROJECT_SOURCE_DIR}/config.h.in ${PROJECT_BINARY_DIR}/config.h)
+include_directories("${PROJECT_BINARY_DIR}")
 
 if (LINUX)
     find_package(PkgConfig REQUIRED)

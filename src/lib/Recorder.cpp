@@ -7,7 +7,7 @@ Recorder::Recorder() {
 
 Recorder::~Recorder() {
     if(capturing) terminate();
-    std::cout << "[INFO] Recorder destroyed" << std::endl;
+    log_info("Recorder destroyed");
 }
 
 /**
@@ -424,7 +424,7 @@ void Recorder::DemuxAudioInput() {
 
 			end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
-			std::cout << "Received audio packet after " << elapsed_seconds.count() << " s\n";
+			log_debug("Received audio packet after " + std::to_string(elapsed_seconds.count()) + " s");
 
 			// Send packet to decoder
 			if (aD.try_lock()) {
@@ -593,7 +593,7 @@ void Recorder::DemuxVideoInput() {
 				frameNum = 0; // reset every fps frames
 				auto end = std::chrono::system_clock::now();
 				std::chrono::duration<double> elapsed_seconds = end - start;
-				std::cout << "Received 30 video packets in " << elapsed_seconds.count() << " s\n";
+				log_debug("Received 30 video packets in " + std::to_string(elapsed_seconds.count())+ " s");
 				start = std::chrono::system_clock::now();
 			}
 
@@ -699,7 +699,7 @@ void Recorder::ConvertVideoFrames() {
 		}
 
 		if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
-			throw avException("Audio Converter/Writer threads syncronization error");
+			throw avException("Audio Converter/Writer threads synchronization error");
 		}
 	}
 

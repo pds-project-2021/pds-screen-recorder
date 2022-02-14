@@ -83,7 +83,7 @@ gboolean Interface::on_dialog_deleted() {
     g_signal_connect (t->dialog, "response",
                       G_CALLBACK (Interface::on_dialog_deleted),
                       NULL);
-    std::cout << "Error dialog closed" << std::endl;
+    log_info("Error dialog closed");
     gtk_widget_show(t->dialog);
     gtk_widget_hide(t->dialog);
     return TRUE;
@@ -105,7 +105,7 @@ gboolean Interface::on_widget_deleted() {
 
     // the user can record again only if the file dialog window is closed
     gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
-    std::cout << "File window closed" << std::endl;
+    log_info("File window closed");
     return TRUE;
 }
 
@@ -374,7 +374,8 @@ void Interface::motion_detected(GtkEventControllerMotion *, double x, double y, 
 
 void Interface::right_btn_pressed(GtkGestureClick *, int, double x, double y, GtkWidget *) {
 	log_info("Left button pressed");
-	std::cout << "Start coordinates: " << x << ", " << y << std::endl;
+	log_info("Start coordinates: " + std::to_string(x) + ", " + std::to_string(y) );
+
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
 	if (t->surface) cairo_surface_destroy(t->surface);
@@ -384,13 +385,15 @@ void Interface::right_btn_pressed(GtkGestureClick *, int, double x, double y, Gt
 
 void Interface::right_btn_released(GtkGestureClick *gesture, int, double x, double y, GtkWidget *) {
 	log_info("Right button released");
-	std::cout << "End coordinates: " << x << ", " << y << std::endl;
+	log_info("End coordinates: " + std::to_string(x) + ", " + std::to_string(y) );
+
 	gtk_gesture_set_state(GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
 void Interface::left_btn_pressed(GtkGestureClick *, int, double x, double y, GtkWidget *) {
 	log_info("Left button pressed");
-	std::cout << "Start coordinates: " << x << ", " << y << std::endl;
+	log_info("Start coordinates: " + std::to_string(x) + ", " + std::to_string(y) );
+
 	t->startX = x;
 	t->startY = y;
 	t->endX = x;
@@ -404,7 +407,8 @@ void Interface::left_btn_pressed(GtkGestureClick *, int, double x, double y, Gtk
 
 void Interface::left_btn_released(GtkGestureClick *gesture, int, double x, double y, GtkWidget *) {
 	log_info("Left button released");
-	std::cout << "End coordinates: " << x << ", " << y << std::endl;
+	log_info("End coordinates: " + std::to_string(x) + ", " + std::to_string(y) );
+
 	t->selection_enabled = false;
 	t->endX = x;
 	t->endY = y;
@@ -468,13 +472,13 @@ void Interface::startRecording() {
 
 	}
 	catch(avException &e) {// handle recoverable libav exceptions during initialization
-		std::cerr << "Error initializing recorder structures : " << e.what() << std::endl;
+		log_error("Error initializing recorder structures: " + std::string(e.what()));
 		t->s = std::make_unique<Recorder>();
 		if(t->dialog) t->set_error_dialog_msg(e.what());
 		gtk_widget_show(t->dialog);
 	}
 	catch(...) {// handle unexpected exceptions during initialization
-		std::cerr << "Unexpected error!" << std::endl;
+		log_error("Unexpected error!");
 		t->s = std::make_unique<Recorder>();
 		if(t->dialog) t->set_error_dialog_msg(nullptr);
 		gtk_widget_show(t->dialog);
@@ -591,14 +595,14 @@ void Interface::handlePause(GtkWidget *, gpointer) {
         t->rec.get();
     }
     catch(avException &e) {// handle recoverable libav exceptions during pausing
-        std::cerr << "Error closing output streams : " << e.what() << std::endl;
+        log_error("Error closing output streams: " + std::string(e.what()));
         t->reset_gui_from_exec();
         //show error message dialog
         if(t->dialog) t->set_error_dialog_msg(e.what());
         gtk_widget_show(t->dialog);
     }
     catch(...) {// handle unexpected exceptions during pausing
-        std::cerr << "Unexpected error!" << std::endl;
+        log_error("Unexpected error!");
         t->reset_gui_from_exec();
         //show error message dialog
         if(t->dialog) t->set_error_dialog_msg(nullptr);
@@ -622,14 +626,16 @@ void Interface::handleStop(GtkWidget *, gpointer) {
         gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
     }
     catch(avException &e) {// handle recoverable libav exceptions during termination
-        std::cerr << "Error closing output streams : " << e.what() << std::endl;
+        log_error("Error closing output streams: " + std::string(e.what()));
+
         t->reset_gui_from_stop();
         //show error message dialog
         if(t->dialog) t->set_error_dialog_msg(e.what());
         gtk_widget_show(t->dialog);
     }
     catch(...) {// handle unexpected exceptions during termination
-        std::cerr << "Unexpected error!" << std::endl;
+        log_error("Unexpected error!");
+
         t->reset_gui_from_stop();
         //show error message dialog
         if(t->dialog) t->set_error_dialog_msg(nullptr);

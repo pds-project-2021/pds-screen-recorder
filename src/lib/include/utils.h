@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 
+#include "config.h"
 #include "exceptions.h"
 
 enum AudioLayout : unsigned int {
@@ -15,13 +16,21 @@ enum AudioLayout : unsigned int {
 	STEREO = 2
 };
 
+static int LOGGING = 0;
+
 bool is_file(char *url);
 bool is_file_str(const std::string &str);
 void move_file(const std::string &source, const std::string &dest);
 void delete_file(const std::string &);
 std::string get_default_path(const std::filesystem::path &path = std::filesystem::temp_directory_path());
-void log_info(const std::string &str);
 std::string get_current_time_str();
+
+void log_info(const std::string &str);
+void log_debug(const std::string &str);
+void log_error(const std::string &str);
+
+void print_version();
+void print_helper();
 
 /* generic functions */
 

@@ -316,7 +316,8 @@ int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
 			outPacket->duration = av_rescale_q(finalSize, bq, audioStream->time_base);
 			// Write packet to file
 			writeFrameToOutput(outputFormatContext, outPacket, wR, writeFrame);
-			std::cout << "Final pts value is: " << outPacket->pts << std::endl;
+
+			log_debug("Final pts value is: " + std::to_string(outPacket->pts));
 		}
 	}
 	return 0;
