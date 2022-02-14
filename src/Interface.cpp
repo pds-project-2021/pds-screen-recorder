@@ -12,9 +12,8 @@ int launchUI(int argc, char **argv) {
 #endif
 	auto app = gtk_application_new("org.gtk.recs", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK(Interface::activate), nullptr);
-	auto status = g_application_run(G_APPLICATION(app), argc, argv);
-//	g_object_unref(app);
-	return status;
+
+	return g_application_run(G_APPLICATION(app), argc, argv);
 }
 
 gboolean Interface::switchImageRec() {
@@ -172,16 +171,22 @@ Interface::Interface(GtkApplication *app) {
 
 	// file choice dialog
 	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
-	fileChoiceDialog = gtk_file_chooser_dialog_new("Open File",
-	                                               nullptr,
+	fileChoiceDialog = gtk_file_chooser_dialog_new("Save File",
+	                                               GTK_WINDOW(window),
 	                                               action,
-	                                               (const char *) "Cancel",
-	                                               GTK_RESPONSE_CANCEL,
-	                                               (const char *) "Save",
+	                                               ("_Cancel"),
+												   GTK_RESPONSE_CANCEL,
+												   ("_Save"),
 	                                               GTK_RESPONSE_ACCEPT,
 	                                               NULL);
+
 	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
-	gtk_file_chooser_set_current_name(fileChooser, "Untitled.mp4");
+	auto filter = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(filter, "*.mp4");
+    gtk_file_chooser_add_filter(fileChooser, filter);
+
+	gtk_file_chooser_set_current_name(fileChooser, ("Untitled.mp4"));
+
 	fileHandler = g_signal_connect (fileChoiceDialog, "response",
 	                                G_CALLBACK(on_save_response),
 	                                NULL);
@@ -190,6 +195,7 @@ Interface::Interface(GtkApplication *app) {
                                     NULL);
 	gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), true);
 	gtk_window_set_title(GTK_WINDOW(fileChoiceDialog), "Choose video capture file destination");
+	gtk_file_chooser_set_select_multiple(fileChooser, false);
 
 	// selection area with a controller for mouse click
 	gtk_window_set_child(GTK_WINDOW(selectWindow), selectionArea);
@@ -284,8 +290,12 @@ void Interface::getRectCoordinates(double &offsetX, double &offsetY, double &wid
 
 void Interface::on_save_response(GtkDialog *, int response) {
 	if (response == GTK_RESPONSE_ACCEPT) {
-		auto destPath = g_file_get_path(gtk_file_chooser_get_file(t->fileChooser));
+		auto folder = g_file_get_path(gtk_file_chooser_get_current_folder(t->fileChooser));
+		auto file_name = gtk_file_chooser_get_current_name(t->fileChooser);
+		auto destPath = (std::filesystem::path(folder)/file_name).string();
+
 		move_file(t->dest, destPath);
+		log_info("Saved file in: " + destPath);
 	} else if (response == GTK_RESPONSE_CANCEL) {
 		delete_file(t->dest);
 	}
