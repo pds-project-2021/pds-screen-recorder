@@ -479,7 +479,6 @@ void Interface::pauseRecording() {
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
 	} else {
 		t->s->pause();
-        throw "error";
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Resume");
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Paused");
 	}
