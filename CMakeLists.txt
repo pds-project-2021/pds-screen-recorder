@@ -28,8 +28,6 @@ if (LINUX)
     set(CMAKE_USE_WIN32_THREADS_INIT 0)
     set(CMAKE_USE_PTHREADS_INIT 1)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
-
-    include_directories(${FFMPEG_INCLUDE_DIRS})
 elseif (WIN32)
     find_package(GTK REQUIRED)
     set(VCPKG_INCLUDE_PATH C:/src/vcpkg/installed/x64-windows)
