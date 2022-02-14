@@ -1,6 +1,3 @@
-//
-// Created by gabriele on 31/10/21.
-//
 
 /**
  * This file contains all platform specific code and functions

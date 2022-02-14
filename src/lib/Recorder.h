@@ -1,7 +1,3 @@
-//
-// Created by gabriele on 31/10/21.
-//
-
 #pragma once
 
 #include "ffmpeg_cpp.h"

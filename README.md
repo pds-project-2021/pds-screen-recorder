@@ -36,11 +36,9 @@ Per il del progetto sono necessarie le seguenti dipendenze:
 
 - `cmake 3.20+`
 - `clang 13+`
-- `libav 4.4.1+`  <!-- TODO Controllare questo -->
+- `ffmpeg 4.4.1+`
 
-Per quanto riguarda `libav`, su Linux le dipendenze sono automaticamente scaricate col pacchetto `ffmpeg`,
-su Windows ... <!-- TODO aggiungere installazione -->
-su MacOS ... <!-- TODO se è uguale a linux -->
+Installare il pacchetto `ffmpeg` è il modo più veloce per soddisfare automaticamente le dipendenze.
 
 Dalla cartella root del progetto eseguire il build con:
 

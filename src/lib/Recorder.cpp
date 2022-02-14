@@ -1,7 +1,3 @@
-//
-// Created by gabriele on 31/10/21.
-//
-
 #include "Recorder.h"
 
 /** Initialize lib codecs and devices */

@@ -1,7 +1,3 @@
-//
-// Created by gabriele on 31/10/21.
-//
-
 #include "Stream.h"
 
 Stream::Stream(const Format &format, const Codec &codec) {

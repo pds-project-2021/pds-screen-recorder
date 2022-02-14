@@ -1,8 +1,3 @@
-//
-// Created by gabriele on 07/10/21.
-//
-
-
 /**
  * This file contains all C header file for low level libraries
  */
@@ -11,7 +6,6 @@
 
 #define __STDC_CONSTANT_MACROS
 
-// todo: vedere dove mettere queste
 extern "C" {
 #include <libavutil/audio_fifo.h>
 #include <libavutil/imgutils.h>
