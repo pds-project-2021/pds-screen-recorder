@@ -16,26 +16,25 @@
 
 const GOptionEntry cmd_params[] = {
 	{
-		.long_name = "info",
-		.short_name = 'v',
-		.flags = G_OPTION_FLAG_NONE,
-		.arg = G_OPTION_ARG_NONE,
-		.arg_data = nullptr,
-		.description = "For INFO level logging",
-		.arg_description = nullptr,
+		"info",
+		'v',
+		G_OPTION_FLAG_NONE,
+		G_OPTION_ARG_NONE,
+		nullptr,
+		"For INFO level logging",
+		nullptr,
 	},
 	{
-		.long_name = "debug",
-		.short_name = 'w',
-		.flags = G_OPTION_FLAG_NONE,
-		.arg = G_OPTION_ARG_NONE,
-		.arg_data = nullptr,
-		.description = "For DEBUG level logging",
-		.arg_description = nullptr,
+		"debug",
+		'w',
+		G_OPTION_FLAG_NONE,
+		G_OPTION_ARG_NONE,
+		nullptr,
+		"For DEBUG level logging",
+		nullptr,
 	},
 	{nullptr}
 };
-
 
 class Interface {
   public:
@@ -53,12 +52,12 @@ class Interface {
 	GtkWidget *titleView = nullptr;
 	GtkWidget *fileChoiceDialog = nullptr;
 	GtkWidget *image = nullptr;
-    GtkWidget *dialog = nullptr;
-    GtkWidget *label = nullptr;
+	GtkWidget *dialog = nullptr;
+	GtkWidget *label = nullptr;
 
 	std::atomic<bool> selection_enabled = false;
 	std::atomic<bool> ready = false;
-    std::atomic<bool> blink_enabled = false;
+	std::atomic<bool> blink_enabled = false;
 	std::atomic<bool> img_on = true;
 
 	GtkTextBuffer *title = nullptr;
@@ -78,7 +77,6 @@ class Interface {
 	unsigned long fileHandler;
 	std::string dest;
 	cairo_surface_t *surface = nullptr;
-	std::future<gboolean> blink_img;
 	std::future<void> rec;
 
 	Interface() = default;
@@ -94,16 +92,16 @@ class Interface {
 	static gboolean switchImageRec();
 	void setImageRecOff();
 	void setImageRecOn();
-    void init_error_dialog();
-    void set_error_dialog_msg(const char*) const;
-    void reset_gui_from_start();
-    void reset_gui_from_exec();
-    void reset_gui_from_stop();
-    void enable_blink();
+	void init_error_dialog();
+	void set_error_dialog_msg(const char *) const;
+	void reset_gui_from_start();
+	void reset_gui_from_exec();
+	void reset_gui_from_stop();
+	void enable_blink();
 
 	// callback
-    static gboolean on_dialog_deleted();
-    static gboolean on_widget_deleted();
+	static gboolean on_dialog_deleted();
+	static gboolean on_widget_deleted();
 	static void on_save_response(GtkDialog *dialog, int response);
 	static void motion_detected(GtkEventControllerMotion *controller, double x, double y, gpointer user_data);
 	static void select_record_region(GtkWidget *widget, gpointer data);
