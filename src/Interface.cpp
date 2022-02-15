@@ -99,7 +99,7 @@ void Interface::init_error_dialog() {
 	                                     flags,
 	                                     "_OK",
 	                                     GTK_RESPONSE_CLOSE,
-	                                     NULL);
+	                                     nullptr);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG (dialog));
 	label = gtk_label_new("Unexpected error!");
 //    dialog = gtk_message_dialog_new (GTK_WINDOW(window),
@@ -109,10 +109,10 @@ void Interface::init_error_dialog() {
 //                                     "Unexpected error!");
 	g_signal_connect (dialog, "response",
 	                  G_CALLBACK(gtk_widget_hide),
-	                  NULL);
+	                  nullptr);
 	g_signal_connect (dialog, "destroy",
 	                  G_CALLBACK(gtk_widget_hide),
-	                  NULL);
+	                  nullptr);
 	gtk_window_set_deletable(GTK_WINDOW(dialog), false);
 	gtk_box_append(GTK_BOX (content_area), label);
 	gtk_widget_show(dialog);
@@ -139,7 +139,7 @@ gboolean Interface::on_dialog_deleted() {
 	                                   "Unexpected error!");
 	g_signal_connect (t->dialog, "response",
 	                  G_CALLBACK(Interface::on_dialog_deleted),
-	                  NULL);
+	                  nullptr);
 	log_info("Error dialog closed");
 	gtk_widget_show(t->dialog);
 	gtk_widget_hide(t->dialog);
@@ -239,30 +239,35 @@ Interface::Interface(GtkApplication *app) {
 												   GTK_RESPONSE_CANCEL,
 												   ("_Save"),
 												   GTK_RESPONSE_ACCEPT,
-												   NULL);
+												   nullptr);
 #else
 	fileChoiceDialog = gtk_file_chooser_dialog_new("Save File",
-	                                               GTK_WINDOW(window),
-	                                               action,
-	                                               ("_Cancel"),
-	                                               GTK_RESPONSE_CANCEL,
-	                                               ("_Save"),
-	                                               GTK_RESPONSE_ACCEPT,
-	                                               NULL);
+                                                GTK_WINDOW(window),
+                                                action,
+                                                ("_Cancel"),
+                                                GTK_RESPONSE_CANCEL,
+                                                ("_Save"),
+                                                GTK_RESPONSE_ACCEPT,
+                                                nullptr);
 #endif
+
 	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
+
 	auto filter = gtk_file_filter_new();
 	gtk_file_filter_add_pattern(filter, "*.mp4");
 	gtk_file_chooser_add_filter(fileChooser, filter);
 
+#ifdef WIN32
 	gtk_file_chooser_set_current_name(fileChooser, ("Untitled.mp4"));
+#endif
 
 	fileHandler = g_signal_connect (fileChoiceDialog, "response",
 	                                G_CALLBACK(on_save_response),
-	                                NULL);
+	                                nullptr);
 	fileHandler = g_signal_connect (fileChoiceDialog, "destroy",
 	                                G_CALLBACK(on_widget_deleted),
-	                                NULL);
+	                                nullptr);
+
 	gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), true);
 	gtk_window_set_title(GTK_WINDOW(fileChoiceDialog), "Choose video capture file destination");
 	gtk_file_chooser_set_select_multiple(fileChooser, false);
@@ -309,6 +314,7 @@ Interface::Interface(GtkApplication *app) {
 //	s = std::make_unique<Recorder>();
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
+
     //enable blinking user notification for recording
     enable_blink();
     //start recording error control
