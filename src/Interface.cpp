@@ -18,21 +18,41 @@ int launchUI(int argc, char **argv) {
 	return g_application_run(G_APPLICATION(app), argc, argv);
 }
 
+void Interface::enable_blink() {
+    // execute periodically blink image function with timeout for feedback when app is recording
+    g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
+    blink_enabled = true;
+}
+
 gboolean Interface::switchImageRec() {
-	if (t->window == nullptr) return FALSE;
-
-	if (t->s->is_capturing() && !t->s->is_paused()) {
-		if (t->img_on) {
-			t->setImageRecOff();
-		} else {
-			t->setImageRecOn();
-		}
-	} else if (!t->img_on) {
-		t->setImageRecOn();
-	}
-
-	gtk_widget_queue_draw(t->window);
-
+    try{
+        if (t->window == nullptr) return FALSE;
+        if (t->s->is_capturing() && !t->s->is_paused()) {
+            if (t->img_on) {
+                t->setImageRecOff();
+            }else {
+                t->setImageRecOn();
+            }
+        } else if (!t->img_on) {
+            t->setImageRecOn();
+        }
+        gtk_widget_queue_draw(t->window);
+    }
+    catch(std::runtime_error &e) {
+        std::cerr << "Error updating blinking recording icon for user notification: " << e.what() << std::endl;
+        t->blink_enabled = false;
+        return FALSE;
+    }
+    catch(std::exception &e) {
+        std::cerr << "Error updating blinking recording icon for user notification: " << e.what() << std::endl;
+        t->blink_enabled = false;
+        return FALSE;
+    }
+    catch(...) {
+        std::cerr << "Error updating blinking recording icon for user notification" << std::endl;
+        t->blink_enabled = false;
+        return FALSE;
+    }
 	return TRUE;
 }
 
@@ -254,13 +274,11 @@ Interface::Interface(GtkApplication *app) {
 	s = std::make_unique<Recorder>();
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
-	g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
+    //enable blinking user notification for recording
+    enable_blink();
 
 	// error dialog for runtime exceptions
-	init_error_dialog();
-
-	// release blink image future for feedback when app is recording
-	blink_img = std::async(std::launch::async, switchImageRec);
+    init_error_dialog();
 }
 
 Interface::~Interface() {
@@ -450,13 +468,13 @@ void Interface::startRecording() {
 		if (!t->ready) {
 			t->init_recorder(t->startX, t->startY, t->endX, t->endY);
 		}
-
 		if (t->s->is_paused()) {
 			t->s->resume();
-		} else if (!t->s->is_capturing()) {
+		} else if (!t->s->is_capturing()){
 			t->s->capture();
 		}
 
+        if (!t->blink_enabled) t->enable_blink();
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
 		gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), false);
 		gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), true);
@@ -465,13 +483,13 @@ void Interface::startRecording() {
 	}
 	catch (avException &e) {// handle recoverable libav exceptions during initialization
 		log_error("Error initializing recorder structures: " + std::string(e.what()));
-		t->s = std::make_unique<Recorder>();
+        t->reset_gui_from_start();
 		if (t->dialog) t->set_error_dialog_msg(e.what());
 		gtk_widget_show(t->dialog);
 	}
 	catch (...) {// handle unexpected exceptions during initialization
 		log_error("Unexpected error!");
-		t->s = std::make_unique<Recorder>();
+        t->reset_gui_from_start();
 		if (t->dialog) t->set_error_dialog_msg(nullptr);
 		gtk_widget_show(t->dialog);
 	}
@@ -518,6 +536,20 @@ void Interface::select_record_region(GtkWidget *, gpointer) {
 	gtk_window_present(GTK_WINDOW(t->selectWindow));
 	gtk_window_present(GTK_WINDOW(t->recordWindow));
 	log_info("Record button pressed");
+}
+
+
+void Interface::reset_gui_from_start() {
+    // delete recorder if necessary
+    if(ready) {
+        s = std::make_unique<Recorder>();
+        ready = false;
+    }
+    // reset action buttons
+    gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
+    gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
+    gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
 }
 
 void Interface::reset_gui_from_exec() {
@@ -603,36 +635,34 @@ void Interface::handlePause(GtkWidget *, gpointer) {
 }
 
 void Interface::handleStop(GtkWidget *, gpointer) {
-	try {
-		t->rec = std::async(std::launch::async, stopRecording);
-		log_info("Stop button pressed");
-		// variable to check if windows' states need to be restored
-		// wait until the registration is completed
-		t->rec.get();
-		// set windows' states for file saving
-		gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
+    try {
+        t->rec = std::async(std::launch::async, stopRecording);
+        log_info("Stop button pressed");
+        // variable to check if windows' states need to be restored
+        // wait until the registration is completed
+	    t->rec.get();
+        // set windows' states for file saving
+        gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
 #ifdef WIN32
-		gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
-		gtk_window_close(GTK_WINDOW(t->window));
+        gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
+        gtk_window_close(GTK_WINDOW(t->window));
 #endif
-		gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
-	}
-	catch (avException &e) {// handle recoverable libav exceptions during termination
-		log_error("Error closing output streams: " + std::string(e.what()));
-
-		t->reset_gui_from_stop();
-		//show error message dialog
-		if (t->dialog) t->set_error_dialog_msg(e.what());
-		gtk_widget_show(t->dialog);
-	}
-	catch (...) {// handle unexpected exceptions during termination
-		log_error("Unexpected error!");
-
-		t->reset_gui_from_stop();
-		//show error message dialog
-		if (t->dialog) t->set_error_dialog_msg(nullptr);
-		gtk_widget_show(t->dialog);
-	}
+        gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
+    }
+    catch(avException &e) {// handle recoverable libav exceptions during termination
+        log_error("Error closing output streams: " + std::string(e.what()));
+        t->reset_gui_from_stop();
+        //show error message dialog
+        if (t->dialog) t->set_error_dialog_msg(e.what());
+        gtk_widget_show(t->dialog);
+    }
+    catch(...) {// handle unexpected exceptions during termination
+        log_error("Unexpected error!");
+        t->reset_gui_from_stop();
+        //show error message dialog
+        if (t->dialog) t->set_error_dialog_msg(nullptr);
+        gtk_widget_show(t->dialog);
+    }
 }
 
 void Interface::handleClose(GtkWidget *, gpointer) {

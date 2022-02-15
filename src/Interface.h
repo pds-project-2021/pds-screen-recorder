@@ -58,6 +58,7 @@ class Interface {
 
 	std::atomic<bool> selection_enabled = false;
 	std::atomic<bool> ready = false;
+    std::atomic<bool> blink_enabled = false;
 	std::atomic<bool> img_on = true;
 
 	GtkTextBuffer *title = nullptr;
@@ -95,8 +96,10 @@ class Interface {
 	void setImageRecOn();
     void init_error_dialog();
     void set_error_dialog_msg(const char*) const;
+    void reset_gui_from_start();
     void reset_gui_from_exec();
     void reset_gui_from_stop();
+    void enable_blink();
 
 	// callback
     static gboolean on_dialog_deleted();
