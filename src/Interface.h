@@ -14,6 +14,29 @@
 #include "icon_on.xpm"
 #include "icon_off.xpm"
 
+const GOptionEntry cmd_params[] = {
+	{
+		.long_name = "info",
+		.short_name = 'v',
+		.flags = G_OPTION_FLAG_NONE,
+		.arg = G_OPTION_ARG_NONE,
+		.arg_data = nullptr,
+		.description = "For INFO level logging",
+		.arg_description = nullptr,
+	},
+	{
+		.long_name = "debug",
+		.short_name = 'w',
+		.flags = G_OPTION_FLAG_NONE,
+		.arg = G_OPTION_ARG_NONE,
+		.arg_data = nullptr,
+		.description = "For DEBUG level logging",
+		.arg_description = nullptr,
+	},
+	{nullptr}
+};
+
+
 class Interface {
   public:
 	GtkApplication *g_application = nullptr;

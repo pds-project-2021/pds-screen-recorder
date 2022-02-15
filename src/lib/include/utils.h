@@ -16,7 +16,7 @@ enum AudioLayout : unsigned int {
 	STEREO = 2
 };
 
-static int LOGGING = 0;
+inline int LOGGING = 0;
 
 bool is_file(char *url);
 bool is_file_str(const std::string &str);

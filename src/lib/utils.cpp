@@ -58,13 +58,13 @@ std::string get_default_path(const fs::path &path) {
 }
 
 void log_info(const std::string &str) {
-	if (LOGGING > 1) {
+	if (LOGGING >= 1) {
 		std::cout << "[INFO] " + str << std::endl;
 	}
 }
 
 void log_debug(const std::string &str) {
-	if (LOGGING > 2) {
+	if (LOGGING >= 2) {
 		std::cout << "[DEBUG] " + str << std::endl;
 	}
 }
@@ -81,10 +81,10 @@ void print_helper(){
 	print_version();
 
 	std::cout << "\nUSAGE: recs <args>" << std::endl;
-	std::cout << "  -v              For INFO level logging" << std::endl;
-	std::cout << "  -vv             For DEBUG level logging" << std::endl;
-	std::cout << "  -V, --version   For show current software version" << std::endl;
-
+	std::cout << "  -v              Set logging to INFO level" << std::endl;
+	std::cout << "  -w              Set loggign to DEBUG level" << std::endl;
+	std::cout << "  -V, --version   Print current software version" << std::endl;
+	std::cout << "  -h, --help      Show this helper" << std::endl;
 }
 
 std::string get_current_time_str() {

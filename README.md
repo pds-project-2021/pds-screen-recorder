@@ -48,10 +48,16 @@ cd build
 make
 ```
 
-Questo genererà l'eseguibile nella cartella `build` appena creata, eseguire l'applicazione con:
+Questo genererà l'eseguibile nella cartella `build` appena creata.
+
+Eseguire con `./recs`, si possono aggiunger dei flag da linea di comando:
 
 ```shell
-./recs
+USAGE: recs <args>
+  -v              Set logging to INFO level
+  -w              Set loggign to DEBUG level
+  -V, --version   Print current software version
+  -h, --help      Show this helper
 ```
 
 ## Authors
