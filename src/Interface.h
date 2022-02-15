@@ -7,11 +7,12 @@
 #include <future>
 #include <memory>
 
-#include "icon_on.cpp"
-#include "icon_off.cpp"
 #include "lib/Recorder.h"
 #include "lib/include/exceptions.h"
 #include "libavutil/avutil.h"
+
+#include "icon_on.xpm"
+#include "icon_off.xpm"
 
 class Interface {
   public:

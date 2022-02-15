@@ -2,8 +2,12 @@ cmake_minimum_required(VERSION 3.20)
 project(recs VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 17)
 
+# configuration file for project name and version
 configure_file(${PROJECT_SOURCE_DIR}/config.h.in ${PROJECT_BINARY_DIR}/config.h)
-include_directories("${PROJECT_BINARY_DIR}")
+include_directories(${PROJECT_BINARY_DIR})
+
+# gui asset files
+include_directories(assets)
 
 if (LINUX)
     find_package(PkgConfig REQUIRED)
@@ -90,7 +94,7 @@ endif ()
 
 # include lib
 add_subdirectory(src/lib)
-add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h src/icon_on.cpp src/icon_off.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h)
 
 if(LINUX)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV lib)

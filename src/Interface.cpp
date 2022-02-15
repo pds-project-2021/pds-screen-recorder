@@ -119,7 +119,7 @@ Interface::Interface(GtkApplication *app) {
 
 	// main window setup
 	headerBar = gtk_header_bar_new();
-    auto pix = gdk_pixbuf_new_from_inline(-1, icon_on, false, NULL);
+    auto pix = gdk_pixbuf_new_from_xpm_data(icon_on);
     image = gtk_image_new_from_pixbuf(pix);
     title = gtk_text_buffer_new(nullptr);
 	gtk_text_buffer_set_text(GTK_TEXT_BUFFER(title), "  ", 2);
@@ -265,21 +265,6 @@ Interface::~Interface() {
 	if (s->is_capturing()) {
 		s->terminate();
 	}
-//    gtk_window_destroy(GTK_WINDOW(dialog));
-//    if (surface) cairo_surface_destroy(surface);
-
-//#ifdef linux
-//	gtk_window_destroy(GTK_WINDOW(window));
-//    gtk_window_set_hide_on_close(GTK_WINDOW(selectWindow), false);
-//    gtk_window_close(GTK_WINDOW(selectWindow));
-//    gtk_window_set_hide_on_close(GTK_WINDOW(recordWindow), false);
-//    gtk_window_close(GTK_WINDOW(recordWindow));
-//    gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
-//    gtk_window_close(GTK_WINDOW(fileChoiceDialog));
-//#else
-	//	gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
-	//	gtk_window_close(GTK_WINDOW(window));
-//#endif
 }
 
 /* Redraw the screen from the surface. Note that the ::draw
@@ -327,8 +312,8 @@ void Interface::on_save_response(GtkDialog *, int response) {
 
 void Interface::setImageRecOff() {
 	gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
-    auto pix = gdk_pixbuf_new_from_inline(-1, icon_off, false, NULL);
-    image = gtk_image_new_from_pixbuf(pix);
+	auto pix = gdk_pixbuf_new_from_xpm_data(icon_off);
+	image = gtk_image_new_from_pixbuf(pix);
 	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
 	img_on = false;
@@ -336,23 +321,12 @@ void Interface::setImageRecOff() {
 
 void Interface::setImageRecOn() {
 	gtk_header_bar_remove(GTK_HEADER_BAR(headerBar), image);
-    auto pix = gdk_pixbuf_new_from_inline(-1, icon_on, false, NULL);
-    image = gtk_image_new_from_pixbuf(pix);
+	auto pix = gdk_pixbuf_new_from_xpm_data(icon_on);
+	image = gtk_image_new_from_pixbuf(pix);
 	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
 	img_on = true;
 }
-
-//static void clear_surface(void) {
-//	cairo_t *cr;
-//
-//	cr = cairo_create(t->surface);
-//
-//	cairo_set_source_rgb(cr, 0, 0, 0);
-//	cairo_paint(cr);
-//
-//	cairo_destroy(cr);
-//}
 
 void Interface::draw_rect(cairo_t *cr) {
 	double offsetX, offsetY, width, height;
