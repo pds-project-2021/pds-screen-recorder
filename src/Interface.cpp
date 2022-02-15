@@ -668,13 +668,24 @@ void Interface::handleStop(GtkWidget *, gpointer) {
 void Interface::handleClose(GtkWidget *, gpointer) {
 	log_info("Close button pressed");
 	g_application_quit(G_APPLICATION(t->g_application));
+    try {
+        g_application_quit(G_APPLICATION(t->g_application));
+    }
+    catch(...) {
+        throw uiException("Error while closing user interface");
+    }
 }
 
 void Interface::activate(GtkApplication *app, gpointer) {
 	if (app == nullptr) {
 		throw uiException("Invalid application window");
 	}
-
-	t = std::make_unique<Interface>(app);
+    try {
+        t = std::make_unique<Interface>(app);
+    }
+    catch(...) {
+        std::cerr << "Error during interface initialization" << std::endl;
+        throw uiException("Could not launch user interface");
+    }
 }
 
