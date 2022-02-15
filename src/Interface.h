@@ -89,6 +89,7 @@ class Interface {
 	static void startRecording();
 	static void pauseRecording();
 	static void stopRecording();
+    static gboolean checkRecExecErrors();
 	static gboolean switchImageRec();
 	void setImageRecOff();
 	void setImageRecOn();
@@ -98,6 +99,7 @@ class Interface {
 	void reset_gui_from_exec();
 	void reset_gui_from_stop();
 	void enable_blink();
+    void enable_rec_execution_error_handler() const;
 
 	// callback
 	static gboolean on_dialog_deleted();

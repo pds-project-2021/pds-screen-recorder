@@ -24,9 +24,44 @@ void Interface::enable_blink() {
     blink_enabled = true;
 }
 
+void Interface::enable_rec_execution_error_handler() const {
+    // execute periodically blink image function with timeout for feedback when app is recording
+    g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(checkRecExecErrors), window);
+}
+
+gboolean Interface::checkRecExecErrors() {
+    bool err;
+    std::string str_err;
+    try {
+        if(t->s == nullptr) return TRUE;
+        str_err = t->s->get_exec_error(err);
+        if(err) {
+            std::cerr << str_err << std::endl;
+            t->ready = false;
+            gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
+            gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Pause");
+            gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
+            gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
+            gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
+            gtk_widget_queue_draw(t->window);
+            //show error message dialog
+            if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
+            gtk_widget_show(t->dialog);
+            t->s = nullptr;
+        }
+    }
+    catch(...) {
+        std::cerr << "[FATAL] Unexpected error during recorder execution error control" << std::endl;
+        t = nullptr;
+        return FALSE;
+    }
+    return TRUE;
+}
+
 gboolean Interface::switchImageRec() {
     try{
         if (t->window == nullptr) return FALSE;
+        if(t->s == nullptr) return TRUE;
         if (t->s->is_capturing() && !t->s->is_paused()) {
             if (t->img_on) {
                 t->setImageRecOff();
@@ -271,12 +306,13 @@ Interface::Interface(GtkApplication *app) {
 	gtk_style_context_save(context);
 
 	// allocate `Recorder` and enable gui buttons
-	s = std::make_unique<Recorder>();
+//	s = std::make_unique<Recorder>();
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
     //enable blinking user notification for recording
     enable_blink();
-
+    //start recording error control
+    enable_rec_execution_error_handler();
 	// error dialog for runtime exceptions
     init_error_dialog();
 }
@@ -285,7 +321,7 @@ Interface::~Interface() {
 	log_info("Interface has been destroyed");
 
 	// terminate capture if it's running
-	if (s->is_capturing()) {
+	if (s != nullptr && s->is_capturing()) {
 		s->terminate();
 	}
 }
@@ -456,8 +492,7 @@ void Interface::init_recorder(double sX, double sY, double eX, double eY) {
 	} else {
 		log_info("Recording " + screen.get_video_size() + " area, with offset " + screen.get_offset_str());
 	}
-//	t->s->set_audio_codec("ciao");
-
+    t->s = std::make_unique<Recorder>();
 	t->s->init(screen);
 	log_info("Initialized input streams");
 	t->ready = true;
@@ -593,7 +628,7 @@ void Interface::reset_gui_from_stop() {
 }
 
 void Interface::handleRecord(GtkWidget *, gpointer) {
-	if (t->s->is_capturing()) {
+	if (t->s != nullptr && t->s->is_capturing()) {
 		t->rec = std::async(std::launch::async, stopRecording);
 	}
 
