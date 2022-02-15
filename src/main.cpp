@@ -3,7 +3,7 @@
 #include "Interface.h"
 
 int main(int argc, char **argv) {
-	if (argc > 1) {
+	if (argc == 2) {
 		// set logging level to `info`
 		if (strcmp(argv[1], "-v") == 0) {
 			LOGGING = 1;
