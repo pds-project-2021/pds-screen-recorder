@@ -13,4 +13,4 @@ media
 config.h
 build
 /output.txt
-/cmake-build-release/
+cmake-build-release*
