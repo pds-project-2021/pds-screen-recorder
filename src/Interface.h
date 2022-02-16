@@ -100,6 +100,7 @@ class Interface {
 	void reset_gui_from_stop();
 	void enable_blink();
     void enable_rec_execution_error_handler() const;
+    void reset_gui_from_file_dialog();
 
 	// callback
 	static gboolean on_dialog_deleted();
@@ -121,6 +122,7 @@ class Interface {
 	static void left_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
 	static void right_btn_released(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
 	static void left_btn_released(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
+
 };
 
 int launchUI(int argc, char **argv);

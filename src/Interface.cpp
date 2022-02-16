@@ -348,31 +348,68 @@ void Interface::getRectCoordinates(double &offsetX, double &offsetY, double &wid
 #endif
 }
 
-void Interface::on_save_response(GtkDialog *, int response) {
-	if (response == GTK_RESPONSE_ACCEPT) {
-		auto folder = g_file_get_path(gtk_file_chooser_get_current_folder(t->fileChooser));
-		auto file_name = gtk_file_chooser_get_current_name(t->fileChooser);
-		auto destPath = (std::filesystem::path(folder) / file_name).string();
+void Interface::reset_gui_from_file_dialog() {
 
-		move_file(t->dest, destPath);
-		log_info("Saved file in: " + destPath);
-	} else if (response == GTK_RESPONSE_CANCEL) {
-		delete_file(t->dest);
-	}
-
-	gtk_window_close(GTK_WINDOW (t->fileChoiceDialog));
+    gtk_window_close(GTK_WINDOW (fileChoiceDialog));
 #ifdef WIN32
-	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
-	//prevents freeze on windows (nvidia)
-	gtk_window_minimize(GTK_WINDOW(t->window));
-	gtk_window_present(GTK_WINDOW(t->window));
-	gtk_window_unminimize(GTK_WINDOW(t->window));
+    gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+    //prevents freeze on windows (nvidia)
+    gtk_window_minimize(GTK_WINDOW(window));
+    gtk_window_present(GTK_WINDOW(window));
+    gtk_window_unminimize(GTK_WINDOW(window));
 #else
-	gtk_window_present(GTK_WINDOW(t->window));
+    gtk_window_present(GTK_WINDOW(t->window));
 #endif
+    // the user can record again only if the file dialog window is closed
+    gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
+}
 
-	// the user can record again only if the file dialog window is closed
-	gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
+void Interface::on_save_response(GtkDialog *, int response) {
+    try {
+        if (response == GTK_RESPONSE_ACCEPT) {
+            auto folder = g_file_get_path(gtk_file_chooser_get_current_folder(t->fileChooser));
+            auto file_name = gtk_file_chooser_get_current_name(t->fileChooser);
+            auto destPath = (std::filesystem::path(folder) / file_name).string();
+
+            move_file(t->dest, destPath);
+            log_info("Saved file in: " + destPath);
+        } else if (response == GTK_RESPONSE_CANCEL) {
+            delete_file(t->dest);
+        }
+        t->reset_gui_from_file_dialog();
+    }
+    catch (std::exception &e) {// handle recoverable std::exceptions during file save
+        if (response == GTK_RESPONSE_ACCEPT) {
+            std::string str_err = "Error during file save: ";
+            str_err.append(e.what());
+            log_error(str_err);
+            if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
+        } else {
+            std::string str_err = "Error in file save dialog: ";
+            str_err.append(e.what());
+            log_error(str_err);
+            if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
+        }
+        //reset gui state
+        t->reset_gui_from_file_dialog();
+        //show error message dialog
+        gtk_widget_show(t->dialog);
+    }
+    catch (...) {// handle unexpected exceptions during file save
+        if (response == GTK_RESPONSE_ACCEPT) {
+            log_error("Unexpected error during file save!");
+            //set error message dialog
+            if (t->dialog) t->set_error_dialog_msg("Unexpected error during file save!");
+        } else {
+            log_error("Unexpected error in file save dialog!");
+            //set error message dialog
+            if (t->dialog) t->set_error_dialog_msg("Unexpected error in file save dialog!");
+        }
+        //reset gui state
+        t->reset_gui_from_file_dialog();
+        //show error message dialog
+        gtk_widget_show(t->dialog);
+    }
 }
 
 void Interface::setImageRecOff() {
