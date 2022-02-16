@@ -24,16 +24,19 @@ class Screen {
   public:
 
 	Screen() = default;
-	Screen(int width, int height, int offset_x, int offset_y);
+
+    [[maybe_unused]] Screen(int width, int height, int offset_x, int offset_y);
 	~Screen() = default;
 
-	void set_dimension(const std::string &dim);
+    [[maybe_unused]] void set_dimension(const std::string &dim);
 	template<typename T>
 	void set_dimension(T w, T h);
-	void set_offset(const std::string &offset);
+
+    [[maybe_unused]] void set_offset(const std::string &offset);
 	template<typename T>
 	void set_offset(T x, T y);
-	void set_show_region(bool val);
+
+    [[maybe_unused]] void set_show_region(bool val);
 
 	[[nodiscard]] bool fullscreen() const;
 	[[nodiscard]] std::string get_offset_x() const;

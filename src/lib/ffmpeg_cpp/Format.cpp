@@ -123,11 +123,11 @@ void Format::setup_destination(const std::string &dest) {
 	destination_context(dest);
 }
 
-std::string Format::get_audio_device() {
+std::string Format::get_audio_device() const {
 	return audioDevice;
 }
 
-std::string Format::get_video_device() {
+std::string Format::get_video_device() const {
 	return videoDevice;
 }
 AVCodecParameters *Format::get_source_audio_codec() const {

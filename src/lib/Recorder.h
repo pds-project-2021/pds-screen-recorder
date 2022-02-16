@@ -45,7 +45,6 @@ class Recorder {
 
 	std::condition_variable videoCnv;
 	std::condition_variable audioCnv;
-	std::condition_variable writeFrame;
 
 	/* private functions */
 

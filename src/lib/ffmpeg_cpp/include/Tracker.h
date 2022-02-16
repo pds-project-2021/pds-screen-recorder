@@ -14,7 +14,7 @@ class Tracker {
 	Tracker() { count++; }
 	~Tracker() { count--; }
 
-	static void print_count() {
+    [[maybe_unused]] static void print_count() {
 		std::cout << typeid(T).name() << ": " << count << std::endl;
 	}
 };

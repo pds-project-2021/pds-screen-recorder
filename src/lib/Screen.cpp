@@ -4,7 +4,7 @@
 
 #include "Screen.h"
 
-Screen::Screen(int width, int height, int offset_x, int offset_y) {
+[[maybe_unused]] Screen::Screen(int width, int height, int offset_x, int offset_y) {
 	// NOTE: screen parameters must be even
 	this->width = set_even(width);
 	this->height = set_even(height);
@@ -18,7 +18,7 @@ Screen::Screen(int width, int height, int offset_x, int offset_y) {
  *
  * @param dim string containing dimensions
  */
-void Screen::set_dimension(const std::string &dim) {
+[[maybe_unused]] void Screen::set_dimension(const std::string &dim) {
 	width = set_even(stoi(dim.substr(0, dim.find('x'))));
 	height = set_even(stoi(dim.substr(dim.find('x') + 1, dim.length())));
 }
@@ -29,7 +29,7 @@ void Screen::set_dimension(const std::string &dim) {
  *
  * @param offset string containing offset positions
  */
-void Screen::set_offset(const std::string &offset) {
+[[maybe_unused]] void Screen::set_offset(const std::string &offset) {
 	offset_x = set_even(stoi(offset.substr(0, offset.find('x'))));
 	offset_y = set_even(stoi(offset.substr(offset.find('x') + 1, offset.length())));
 }
@@ -38,7 +38,7 @@ void Screen::set_offset(const std::string &offset) {
  * View the record area into a rect
  * @param val
  */
-void Screen::set_show_region(bool val) {
+[[maybe_unused]] void Screen::set_show_region(bool val) {
 	show_region = val;
 }
 

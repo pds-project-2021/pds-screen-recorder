@@ -95,8 +95,10 @@ void Codec::destination_video_context() {
 }
 
 void Codec::find_audio_encoder(const std::string &codec_name) {
-#ifdef linux || WIN32
+#ifdef linux
 	auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
+#elif WIN32
+    auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
 #else
 	auto audio = avcodec_find_encoder(AV_CODEC_ID_AAC);
 #endif

@@ -5,7 +5,7 @@
 
 #ifdef WIN32
 
-HRESULT _enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
+HRESULT enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
 {
 	// Create the System Device Enumerator.
 	ICreateDevEnum *pDevEnum;
@@ -25,7 +25,7 @@ HRESULT _enumerateDshowDevices(REFGUID category, IEnumMoniker **ppEnum)
 	return hr;
 }
 
-void _getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *audioDevices) {
+void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *audioDevices) {
 	IMoniker *pMoniker = nullptr;
 	if (audioDevices == nullptr) return;
 	while (pEnum->Next(1, &pMoniker, nullptr) == S_OK) {
@@ -82,16 +82,16 @@ std::string get_audio_input_device(){
 		IEnumMoniker *pEnum;
 
 		// Get device enumerator for audio devices
-		hr = _enumerateDshowDevices(CLSID_AudioInputDeviceCategory, &pEnum);
+		hr = enumerateDshowDevices(CLSID_AudioInputDeviceCategory, &pEnum);
 		if (SUCCEEDED(hr))
 		{
 			//Get audio devices names
-			_getDshowDeviceInformation(pEnum, &audio_devices);
+			getDshowDeviceInformation(pEnum, &audio_devices);
 			pEnum->Release();
 		}
 		CoUninitialize();
 	}
-	else return nullptr;
+	else return "";
 	// Prepare dshow command input audio device parameter string
 	std::string audioInputName;
 	audioInputName.append("audio=") ;
@@ -99,7 +99,7 @@ std::string get_audio_input_device(){
 	auto curr_name = audio_devices.begin();
 	for (int i = 0; curr_name != audio_devices.end(); i++) {// Select first available audio device
 		if(i==DEFAULT_AUDIO_INPUT_DEVICE) {
-			audioInputName.append(curr_name->c_str());// Write value to string
+			audioInputName.append(*curr_name);// Write value to string
 			break;
 		}
 		curr_name++;

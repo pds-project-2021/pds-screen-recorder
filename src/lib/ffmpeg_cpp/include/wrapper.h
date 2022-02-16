@@ -20,8 +20,8 @@ class wrapper : public Tracker<wrapper<T>> {
 	wrapper();
 	~wrapper();
 
-	T *get_audio() const;
-	T *get_video() const;
+	[[nodiscard]] T *get_audio() const;
+	[[nodiscard]] T *get_video() const;
 
 	void set_audio(T *ptr);
 	void set_video(T *ptr);
