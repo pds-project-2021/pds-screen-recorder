@@ -6,9 +6,13 @@ Recorder::Recorder() {
 }
 
 Recorder::~Recorder() {
-    if(capturing) terminate();
+    if(capturing) {
+		terminate();
+	}
     log_info("Recorder destroyed");
 }
+
+
 
 /**
  * Get audio layout
@@ -78,49 +82,12 @@ std::string Recorder::get_destination() {
 	return destination_path;
 }
 
-void Recorder::init(Screen params) {
-#ifdef WIN32
-	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-#endif
+void Recorder::set_screen_params(const Screen &params){
+	screen = params;
+}
 
-	format.set_screen_params(params);
-	format.set_audio_layout(audio_layout);
-	format.setup_source();
-
-	auto audioPar = format.get_source_audio_codec();
-	auto videoPar = format.get_source_video_codec();
-
-	codec.set_source_audio_layout(audio_layout);
-	codec.set_source_audio_parameters(audioPar);
-	codec.set_source_video_parameters(videoPar);
-	codec.setup_source();
-
-	// format
-	format.setup_destination(destination_path);
-
-	codec.find_encoders(audio_codec, video_codec);
-
-	stream = Stream{format, codec};
-	stream.get_video()->time_base = {1, 30};
-	stream.get_audio()->time_base = {1, codec.inputContext.get_audio()->sample_rate};
-
-	codec.set_destination_audio_parameters(stream.get_audio()->codecpar);
-	codec.set_destination_video_parameters(stream.get_video()->codecpar);
-
-	codec.setup_destination();
-
-	create_out_file(destination_path);
-	rescaler.set_audio_scaler(codec);
-	rescaler.set_video_scaler(codec);
-
-	format.write_header(options);
-
-	ref_time = get_ref_time(format.inputContext);
-
-#ifdef WIN32
-	CoUninitialize();
-#endif
-//    throw avException("Error");
+[[maybe_unused]] Screen Recorder::get_screen_params(){
+	return screen;
 }
 
 [[maybe_unused]]
@@ -133,7 +100,6 @@ void Recorder::print_source_info() {
 void Recorder::print_destination_info(const std::string &dest) const {
 	av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
 }
-
 
 std::string Recorder::get_exec_error(bool& err) {
     std::lock_guard<std::mutex> lg(eM);
@@ -153,6 +119,8 @@ std::string Recorder::get_exec_error(bool& err) {
  * Release 2 threads for audio/video demuxing and 2 threads for audio/video frame conversion
  */
 void Recorder::capture() {
+	init();
+
 	capturing = true;
 
 	if (num_core > 2) {
@@ -202,6 +170,15 @@ void Recorder::terminate() {
 	capturing = false;
 }
 
+void Recorder::reset() {
+	stopped = false;
+	pausedVideo = false;
+	pausedAudio = false;
+	finishedVideoDemux = false;
+	finishedAudioDemux = false;
+	capturing = false;
+}
+
 /**
  * Check if capture is paused
  */
@@ -226,6 +203,54 @@ bool Recorder::is_capturing() {
 }
 
 /* Private functions */
+
+void Recorder::init() {
+#ifdef WIN32
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+#endif
+
+	reset();
+
+	format.set_screen_params(screen);
+	format.set_audio_layout(audio_layout);
+	format.setup_source();
+
+	auto audioPar = format.get_source_audio_codec();
+	auto videoPar = format.get_source_video_codec();
+
+	codec.set_source_audio_layout(audio_layout);
+	codec.set_source_audio_parameters(audioPar);
+	codec.set_source_video_parameters(videoPar);
+	codec.setup_source();
+
+	// format
+	format.setup_destination(destination_path);
+
+	codec.find_encoders(audio_codec, video_codec);
+
+	stream = Stream{format, codec};
+	stream.get_video()->time_base = {1, 30};
+	stream.get_audio()->time_base = {1, codec.inputContext.get_audio()->sample_rate};
+
+	codec.set_destination_audio_parameters(stream.get_audio()->codecpar);
+	codec.set_destination_video_parameters(stream.get_video()->codecpar);
+
+	codec.setup_destination();
+
+	create_out_file(destination_path);
+	rescaler.set_audio_scaler(codec);
+	rescaler.set_video_scaler(codec);
+
+	format.write_header(options);
+
+	ref_time = get_ref_time(format.inputContext);
+
+#ifdef WIN32
+	CoUninitialize();
+#endif
+//    throw avException("Error");
+}
+
 
 void Recorder::join_all() {
 	if (num_core > 2) {
@@ -255,7 +280,6 @@ void Recorder::create_out_file(const std::string &dest) const {
 		}
 	}
 }
-
 
 void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& th_num, const  char* what) {
     std::lock_guard<std::mutex> lg(eM);

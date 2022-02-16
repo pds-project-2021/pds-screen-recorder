@@ -4,10 +4,6 @@
 
 #include "Rescaler.h"
 
-Rescaler::Rescaler() {
-	swrCtx = swr_alloc();
-}
-
 Rescaler::~Rescaler() {
 	if (swrCtx != nullptr) {
 		swr_free(&swrCtx);

@@ -11,6 +11,8 @@ class Recorder {
 	Rescaler rescaler;
 	Stream stream;
 
+	Screen screen;
+
 	// output codec
 	enum AudioLayout audio_layout = MONO;
 	std::string audio_codec = DEFAULT_AUDIO_CODEC;
@@ -72,23 +74,28 @@ class Recorder {
 	[[maybe_unused]] std::string get_audio_codec();
 	[[maybe_unused]] std::string get_video_codec();
 
-    [[maybe_unused]] [[maybe_unused]] [[maybe_unused]] void set_audio_codec(const std::string &cod);
+    [[maybe_unused]] void set_audio_codec(const std::string &cod);
 
-    [[maybe_unused]] [[maybe_unused]] void set_video_codec(const std::string &cod);
+    [[maybe_unused]] void set_video_codec(const std::string &cod);
 
 	// recorder factions
-	void init(Screen params);
+	void init();
 	void capture();
 	void pause();
 	void resume();
 	void terminate();
+	void reset();
 	bool is_paused();
 	bool is_capturing();
 
-    [[maybe_unused]] [[maybe_unused]] void set_destination(const std::string &);
+    [[maybe_unused]] void set_destination(const std::string &);
 	std::string get_destination();
 
-    [[maybe_unused]] [[maybe_unused]] void set_threads(unsigned int th);
+	void set_screen_params(const Screen &params);
+	[[maybe_unused]] Screen get_screen_params();
+
+
+    [[maybe_unused]] void set_threads(unsigned int th);
     std::string get_exec_error(bool&);
 
 	// log functions

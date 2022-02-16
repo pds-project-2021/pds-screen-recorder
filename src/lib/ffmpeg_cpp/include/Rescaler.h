@@ -13,7 +13,7 @@ class Rescaler : public Tracker<Rescaler> {
 	SwrContext *swrCtx = nullptr;
 
   public:
-	Rescaler();
+	Rescaler() = default;
 	~Rescaler();
 
 	void set_video_scaler(const Codec &codec);

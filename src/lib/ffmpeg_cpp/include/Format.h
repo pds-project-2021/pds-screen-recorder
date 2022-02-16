@@ -16,7 +16,7 @@ class Format {
 	wrapper<AVDictionary> inputOptions;
 
 	wrapper<AVOutputFormat> output;
-    [[maybe_unused]] wrapper<AVDictionary> outputOptions;
+//   [[maybe_unused]] wrapper<AVDictionary> outputOptions;
 
 	wrapper<AVFormatContext> inputContext;
 	wrapper<AVFormatContext> outputContext;
@@ -54,8 +54,8 @@ class Format {
 	void setup_source();
 	void setup_destination(const std::string &dest);
 
-	std::string get_audio_device() const;
-	std::string get_video_device() const;
+	[[nodiscard]] std::string get_audio_device() const;
+	[[nodiscard]] std::string get_video_device() const;
 
 	[[nodiscard]] AVCodecParameters *get_source_audio_codec() const;
 	[[nodiscard]] AVCodecParameters *get_source_video_codec() const;

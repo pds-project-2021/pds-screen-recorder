@@ -1,4 +1,5 @@
 #include "Interface.h"
+
 // global ref of the interface for gtk callbacks
 std::unique_ptr<Interface> t = nullptr;
 
@@ -536,7 +537,8 @@ void Interface::init_recorder(double sX, double sY, double eX, double eY) {
 		log_info("Recording " + screen.get_video_size() + " area, with offset " + screen.get_offset_str());
 	}
     t->s = std::make_unique<Recorder>();
-	t->s->init(screen);
+//	t->s->set_video_codec("");
+	t->s->set_screen_params(screen);
 	log_info("Initialized input streams");
 	t->ready = true;
 }
