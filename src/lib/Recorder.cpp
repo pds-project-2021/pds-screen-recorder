@@ -618,7 +618,6 @@ void Recorder::ConvertAudioFrames() {
 
         int frame_size = 0;
         int64_t pts = 0;
-        bool finished = false;
         int result = AVERROR(EAGAIN);
 
         auto in_frame =
@@ -687,7 +686,7 @@ void Recorder::ConvertAudioFrames() {
             throw avException("Failed to receive decoded packet");
         }
 
-        //Convert last frame and then write it to file
+        //Convert last frames and then write them to file
         convertAndWriteLastAudioFrames(swrContext,
                                        outputCodecContext,
                                        inputCodecContext,
@@ -841,7 +840,6 @@ void Recorder::ConvertVideoFrames() {
 
         int64_t count = 0;
         int result = AVERROR(EAGAIN);
-        bool finished = false;
 
         auto in_frame = Frame{};
         std::unique_lock<std::mutex> ul(vD);

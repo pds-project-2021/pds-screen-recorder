@@ -144,7 +144,7 @@ convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecCon
 int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream,
                                       AVFormatContext *outputFormatContext, std::mutex *wR) {
 
-	for (int result;;) {
+	while (true) {
 		auto out_packet = Packet{};
 		auto outPacket = out_packet.into();
 
@@ -252,7 +252,7 @@ int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodec
 
 	AVPacket *prevPacket;
 	AVRational bq = {1, inputCodecContext->sample_rate * inputCodecContext->channels};
-
+    if(finalSize == 0) finalSize = outputCodecContext->frame_size;
 	avcodec_send_frame(outputCodecContext, nullptr);
 	auto receive = avcodec_receive_packet(outputCodecContext, outPacket);
 	while (receive >= 0) {// Try to get packet
@@ -300,9 +300,10 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outpu
 	AVRational bq = {1, inputCodecContext->sample_rate * inputCodecContext->channels};
 
 	int got_packet = 0;
+    //handle remaining samples < default frame size in resampler queue
 	int got_samples = swr_convert(swrContext, outputFrame->data, outputFrame->nb_samples, nullptr, 0);
 	if (got_samples < 0) {
-		throw avException("error: swr_convert()");
+		throw avException("swr_convert() error on last frame");
 	} else if (got_samples > 0) {
 		*pts_p += got_samples;
 		outputFrame->nb_samples = got_samples;
@@ -326,7 +327,7 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outpu
 			if (result != 0) {
 				throw avException("Error in writing audio frame");
 			}
-		}
+		} else std::cout << "Last not delayed audio frame could not be encoded successfully" << std::endl;
 
         convertAndWriteDelayedAudioFrames(inputCodecContext,
                                           outputCodecContext,
@@ -334,7 +335,14 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outpu
                                           outputFormatContext,
                                           got_samples,
                                           wR);
-	}
+	} else {
+        convertAndWriteDelayedAudioFrames(inputCodecContext,
+                                          outputCodecContext,
+                                          audioStream,
+                                          outputFormatContext,
+                                          got_samples,
+                                          wR);
+    }
 
 	return 0;
 }
