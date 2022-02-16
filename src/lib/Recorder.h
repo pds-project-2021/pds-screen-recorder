@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ffmpeg_cpp.h"
+#include <thread>
 
 class Recorder {
   private:
@@ -34,10 +35,6 @@ class Recorder {
 	std::atomic<bool> finishedVideoDemux = false;
 	std::atomic<bool> finishedAudioDemux = false;
     bool rec_error = false;
-    std::atomic<bool> audio_dmx_started = false;
-    std::atomic<bool> audio_cnv_started = false;
-    std::atomic<bool> video_dmx_started = false;
-    std::atomic<bool> video_cnv_started = false;
 
     std::atomic<bool> capturing = false;
 

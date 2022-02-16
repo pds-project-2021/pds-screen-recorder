@@ -37,6 +37,7 @@ gboolean Interface::checkRecExecErrors() {
         str_err = t->s->get_exec_error(err);
         if(err) {
             std::cerr << str_err << std::endl;
+            t->s = nullptr;
             t->ready = false;
             gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
             gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Pause");
@@ -47,7 +48,6 @@ gboolean Interface::checkRecExecErrors() {
             //show error message dialog
             if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
             gtk_widget_show(t->dialog);
-            t->s = nullptr;
         }
     }
     catch(...) {

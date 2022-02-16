@@ -46,52 +46,28 @@ int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet
 
 void writeFrameToOutput(AVFormatContext *outputFormatContext,
                         AVPacket *outPacket,
-                        std::mutex *wR,
-                        std::condition_variable *writeFrame);
+                        std::mutex *wR);
 // Video functions
 
-int convertAndWriteVideoFrame(SwsContext *swsContext,
-                              AVCodecContext *outputCodecContext,
-                              AVCodecContext *inputCodecContext,
-                              AVStream *videoStream,
-                              AVFormatContext *outputFormatContext,
-                              AVFrame *frame,
-                              const int64_t *pts_p,
-                              std::mutex *wR,
-                              std::condition_variable *writeFrame);
+int
+convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext,
+                          AVStream *videoStream, AVFormatContext *outputFormatContext, AVFrame *frame,
+                          const int64_t *pts_p, std::mutex *wR);
 
-int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
-                                      AVStream *videoStream,
-                                      AVFormatContext *outputFormatContext,
-                                      std::mutex *wR,
-                                      std::condition_variable *writeFrame);
+int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream,
+                                      AVFormatContext *outputFormatContext, std::mutex *wR);
 
 // Audio functions
 
-int convertAndWriteAudioFrames(SwrContext *swrContext,
-                               AVCodecContext *outputCodecContext,
-                               AVCodecContext *inputCodecContext,
-                               AVStream *audioStream,
-                               AVFormatContext *outputFormatContext,
-                               AVFrame *audioFrame,
-                               int64_t *pts_p,
-                               std::mutex *wR,
-                               std::condition_variable *writeFrame);
+int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
+                               AVCodecContext *inputCodecContext, AVStream *audioStream,
+                               AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, std::mutex *wR);
 
-int convertAndWriteLastAudioFrames(SwrContext *swrContext,
-                                   AVCodecContext *outputCodecContext,
-                                   AVCodecContext *inputCodecContext,
-                                   AVStream *audioStream,
-                                   AVFormatContext *outputFormatContext,
-                                   int64_t *pts_p,
-                                   std::mutex *wR,
-                                   std::condition_variable *writeFrame);
+int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
+                                   AVCodecContext *inputCodecContext, AVStream *audioStream,
+                                   AVFormatContext *outputFormatContext, int64_t *pts_p, std::mutex *wR);
 
-int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext,
-                                      AVCodecContext *outputCodecContext,
-                                      AVStream *audioStream,
-                                      AVFormatContext *outputFormatContext,
-                                      int finalSize,
-                                      std::mutex *wR,
-                                      std::condition_variable *writeFrame);
+int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodecContext *outputCodecContext,
+                                      AVStream *audioStream, AVFormatContext *outputFormatContext, int finalSize,
+                                      std::mutex *wR);
 

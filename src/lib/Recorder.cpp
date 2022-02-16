@@ -259,6 +259,7 @@ void Recorder::create_out_file(const std::string &dest) const {
 
 void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& th_num, const  char* what) {
     std::lock_guard<std::mutex> lg(eM);
+    if(capturing) capturing = false;
     rec_error = true;
     err_string = "Unexpected error during recording";
     if(!th_name.empty()) {
@@ -270,39 +271,36 @@ void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& 
         err_string.append(": ");
         err_string.append(what);
     }
-    capturing = false;
     if (num_core > 2) {
         if(th_num != 1) th_audio_demux.join();
         else {
-            th_audio_demux.detach();
+            th_audio_demux.join();
             std::lock_guard<std::mutex> ul(aD);
             finishedAudioDemux = true;
             audioCnv.notify_one(); // notify converter thread if halted
         }
         if(th_num != 2) th_audio_convert.join();
         else {
+            th_audio_convert.join();
             std::unique_lock<std::mutex> ul(aD);
             audioCnv.notify_one();// Signal demuxer thread if necessary
-            th_audio_convert.detach();
         }
         if(th_num != 3) th_video_demux.join();
         else {
-            th_video_demux.detach();
+            th_video_demux.join();
             std::lock_guard<std::mutex> ul(vD);
             finishedVideoDemux = true;
             videoCnv.notify_one(); // notify converter thread if halted
         }
         if(th_num != 4) th_video_convert.join();
         else {
+            th_video_convert.join();
             std::lock_guard<std::mutex> ul(vD);
             videoCnv.notify_one(); // notify converter thread if halted
-            th_video_convert.detach();
         }
     } else {
-        if(th_num != 1) th_audio.join();
-        else th_audio.detach();
-        if(th_num != 2) th_video.join();
-        else th_video.detach();
+        th_audio.join();
+        th_video.join();
     }
     stopped = true;
 }
@@ -327,7 +325,6 @@ void Recorder::CaptureAudioFrames() {
 
         auto read_frame = true;
         while (read_frame) {
-            audio_cnv_started = true;
             auto in_packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
@@ -365,8 +362,7 @@ void Recorder::CaptureAudioFrames() {
                                                outputFormatContext,
                                                in_frame.into(),
                                                &pts,
-                                               &wR,
-                                               &writeFrame);
+                                               &wR);
                 } else {
                     throw avException("Failed to decode packet");
                 }
@@ -380,20 +376,35 @@ void Recorder::CaptureAudioFrames() {
                                        audioStream,
                                        outputFormatContext,
                                        &pts,
-                                       &wR,
-                                       &writeFrame);
+                                       &wR);
     }
     catch(avException &e) {
-        handle_rec_error("audio", 1, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio", 1, e.what());});
+        t.detach();
     }
     catch(std::runtime_error &e) {
-        handle_rec_error("audio", 1, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio", 1, e.what());});
+        t.detach();
     }
     catch(std::exception &e) {
-        handle_rec_error("audio", 1, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio", 1, e.what());});
+        t.detach();
     }
     catch(...) {
-        handle_rec_error("audio", 1);
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this]{handle_rec_error("audio", 1);});
+        t.detach();
     }
 }
 
@@ -419,7 +430,6 @@ void Recorder::CaptureVideoFrames() {
 
         auto read_frame = true;
         while (read_frame) {
-            video_cnv_started = true;
             auto in_packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
@@ -455,8 +465,7 @@ void Recorder::CaptureVideoFrames() {
                                                   outputFormatContext,
                                                   in_frame.into(),
                                                   &count,
-                                                  &wR,
-                                                  &writeFrame);
+                                                  &wR);
                     }
                 }
             }
@@ -466,20 +475,35 @@ void Recorder::CaptureVideoFrames() {
         convertAndWriteDelayedVideoFrames(outputCodecContext,
                                           videoStream,
                                           outputFormatContext,
-                                          &wR,
-                                          &writeFrame);
+                                          &wR);
     }
     catch(avException &e) {
-        handle_rec_error("video", 2, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video", 0, e.what());});
+        t.detach();
     }
     catch(std::runtime_error &e) {
-        handle_rec_error("video", 2, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video", 0, e.what());});
+        t.detach();
     }
     catch(std::exception &e) {
-        handle_rec_error("video", 2, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video", 0, e.what());});
+        t.detach();
     }
     catch(...) {
-        handle_rec_error("video", 2);
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this]{handle_rec_error("video", 0);});
+        t.detach();
     }
 }
 
@@ -498,7 +522,6 @@ void Recorder::DemuxAudioInput() {
         avformat_flush(inputFormatContext);
         auto read_packet = true;
         while (read_packet) {
-            audio_dmx_started = true;
             auto in_packet = Packet{};
             read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
@@ -523,21 +546,17 @@ void Recorder::DemuxAudioInput() {
                 log_debug("Received audio packet after " + std::to_string(elapsed_seconds.count()) + " s");
 
                 // Send packet to decoder
-                if (aD.try_lock()) {
-                    result =
-                        avcodec_send_packet(inputCodecContext, in_packet.into()); // Try to send a packet without waiting
-                    if (result >= 0) {
-                        audioCnv.notify_one(); // notify converter thread if halted
-                        av_packet_unref(in_packet.into());
-                    }
-                    aD.unlock();
-                } else {
-                    result = AVERROR(EAGAIN);
+                std::unique_lock<std::mutex> ul(aD);
+                result = avcodec_send_packet(inputCodecContext, in_packet.into()); // Try to send a packet without waiting
+                if (result >= 0) {
+                    audioCnv.notify_one(); // notify converter thread if halted
+                    av_packet_unref(in_packet.into());
                 }
+                ul.unlock();
 
                 // Check result
                 if (result == AVERROR(EAGAIN)) {//buffer is full or could not acquire lock, wait and retry
-                    std::unique_lock<std::mutex> ul(aD);
+                    ul.lock();
                     if (!capturing) {
                         break;
                     }
@@ -547,6 +566,7 @@ void Recorder::DemuxAudioInput() {
                     if (result >= 0) {
                         audioCnv.notify_one(); // notify converter thread if halted
                     }
+                    ul.unlock();
                 }
 
                 if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
@@ -559,16 +579,32 @@ void Recorder::DemuxAudioInput() {
         }
     }
     catch(avException &e) {
-        handle_rec_error("audio demux", 1, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio demux", 1, e.what());});
+        t.detach();
     }
     catch(std::runtime_error &e) {
-        handle_rec_error("audio demux", 1, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio demux", 1, e.what());});
+        t.detach();
     }
     catch(std::exception &e) {
-        handle_rec_error("audio demux", 1, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio demux", 1, e.what());});
+        t.detach();
     }
     catch(...) {
-        handle_rec_error("audio demux", 1);
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this]{handle_rec_error("audio demux", 1);});
+        t.detach();
     }
 }
 
@@ -588,17 +624,13 @@ void Recorder::ConvertAudioFrames() {
         auto in_frame =
             Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout, 0};
 
-        if (aD.try_lock()) {
-            result =
-                avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
-            if (result >= 0) {
-                audioCnv.notify_one(); // Signal demuxer thread to resume if halted
-            }
-            aD.unlock();
-        } else {
-            result = AVERROR(EAGAIN);
-        }
 
+        std::unique_lock<std::mutex> ul(aD);
+        result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
+        if (result >= 0) {
+            audioCnv.notify_one(); // Signal demuxer thread to resume if halted
+        }
+        ul.unlock();
         while (result >= 0 || result == AVERROR(EAGAIN)) {
             if (!capturing) {
                 break;
@@ -616,23 +648,18 @@ void Recorder::ConvertAudioFrames() {
                                            outputFormatContext,
                                            in_frame.into(),
                                            &pts,
-                                           &wR,
-                                           &writeFrame);
+                                           &wR);
     //			in_frame.unref();
             }
-            if (aD.try_lock()) {
-                result =
-                    avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
-                if (result >= 0) {
-                    audioCnv.notify_one();// Signal demuxer thread to resume if halted
-                }
-                aD.unlock();
-            } else {
-                result = AVERROR(EAGAIN);
+            ul.lock();
+            result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
+            if (result >= 0) {
+                audioCnv.notify_one();// Signal demuxer thread to resume if halted
             }
+            ul.unlock();
 
             if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
-                std::unique_lock<std::mutex> ul(aD);
+                ul.lock();
                 if (!capturing) {
                     break;
                 }
@@ -650,6 +677,7 @@ void Recorder::ConvertAudioFrames() {
                     if (result == AVERROR(EAGAIN)) break;
                     finished = true;
                 }
+                ul.unlock();
             }
 
             if (result < 0 && result != AVERROR(EAGAIN)) {
@@ -669,20 +697,35 @@ void Recorder::ConvertAudioFrames() {
                                        audioStream,
                                        outputFormatContext,
                                        &pts,
-                                       &wR,
-                                       &writeFrame);
+                                       &wR);
     }
     catch(avException &e) {
-        handle_rec_error("audio converter", 2, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio converter", 2, e.what());});
+        t.detach();
     }
     catch(std::runtime_error &e) {
-        handle_rec_error("audio converter", 2, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio converter", 2, e.what());});
+        t.detach();
     }
     catch(std::exception &e) {
-        handle_rec_error("audio converter", 2, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("audio converter", 2, e.what());});
+        t.detach();
     }
     catch(...) {
-        handle_rec_error("audio converter", 2);
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this]{handle_rec_error("audio converter", 2);});
+        t.detach();
     }
 }
 
@@ -704,7 +747,6 @@ void Recorder::DemuxVideoInput() {
 
         auto read_frame = true;
         while (read_frame) {
-            video_dmx_started = true;
             auto packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
 
@@ -732,20 +774,16 @@ void Recorder::DemuxVideoInput() {
                 }
 
                 // Send packet to decoder
-                if (vD.try_lock()) {
-                    result = avcodec_send_packet(inputCodecContext, packet.into());// Try to send a packet without waiting
-                    if (result >= 0) {
-                        videoCnv.notify_one(); // notify converter thread if halted
-                        packet.unref();
-                    }
-                    vD.unlock();
-                } else {
-                    result = AVERROR(EAGAIN);
+                std::unique_lock<std::mutex> ul(vD);
+                result = avcodec_send_packet(inputCodecContext, packet.into());// Try to send a packet without waiting
+                if (result >= 0) {
+                    videoCnv.notify_one(); // notify converter thread if halted
+                    packet.unref();
                 }
-
+                ul.unlock();
                 // Check result
                 if (result == AVERROR(EAGAIN)) { //buffer is full or could not acquire lock, wait and retry
-                    std::unique_lock<std::mutex> ul(vD);
+                    ul.lock();
                     if (!capturing) {
                         break;
                     }
@@ -755,6 +793,7 @@ void Recorder::DemuxVideoInput() {
                     if (result >= 0) {
                         videoCnv.notify_one(); // notify converter thread if halted
                     }
+                    ul.unlock();
                 }
                 if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
                     // Decoder error
@@ -766,16 +805,32 @@ void Recorder::DemuxVideoInput() {
         }
     }
     catch(avException &e) {
-        handle_rec_error("video demux", 3, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video demux", 3, e.what());});
+        t.detach();
     }
     catch(std::runtime_error &e) {
-        handle_rec_error("video demux", 3, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video demux", 3, e.what());});
+        t.detach();
     }
     catch(std::exception &e) {
-        handle_rec_error("video demux", 3, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video demux", 3, e.what());});
+        t.detach();
     }
     catch(...) {
-        handle_rec_error("video demux", 3);
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this]{handle_rec_error("video demux", 3);});
+        t.detach();
     }
 }
 
@@ -792,18 +847,12 @@ void Recorder::ConvertVideoFrames() {
         bool finished = false;
 
         auto in_frame = Frame{};
-
-        if (vD.try_lock()) {
-            result =
-                avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
-            if (result >= 0) {
-                videoCnv.notify_one();// Signal demuxer thread to resume if halted
-            }
-            vD.unlock();
-        } else {
-            result = AVERROR(EAGAIN);
+        std::unique_lock<std::mutex> ul(vD);
+        result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
+        if (result >= 0) {
+            videoCnv.notify_one();// Signal demuxer thread to resume if halted
         }
-
+        ul.unlock();
         while (result >= 0 || result == AVERROR(EAGAIN)) {
             if (!capturing) {
                 break;
@@ -819,25 +868,18 @@ void Recorder::ConvertVideoFrames() {
                                           outputFormatContext,
                                           in_frame.into(),
                                           &count,
-                                          &wR,
-                                          &writeFrame);
+                                          &wR);
             }
 
     //		in_frame.unref();
-
-            if (vD.try_lock()) {
-                result =
-                    avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
-                if (result >= 0) {
-                    videoCnv.notify_one(); // Signal demuxer thread to resume if halted
-                }
-                vD.unlock();
-            } else {
-                result = AVERROR(EAGAIN);
+            ul.lock();
+            result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
+            if (result >= 0) {
+                videoCnv.notify_one(); // Signal demuxer thread to resume if halted
             }
-
+            ul.unlock();
             if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
-                std::unique_lock<std::mutex> ul(vD);
+                ul.lock();
                 if (!capturing) {
                     break;
                 }
@@ -853,6 +895,7 @@ void Recorder::ConvertVideoFrames() {
                     if (result == AVERROR(EAGAIN)) break;
                     finished = true;
                 }
+                ul.unlock();
             }
 
             if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
@@ -869,20 +912,35 @@ void Recorder::ConvertVideoFrames() {
         convertAndWriteDelayedVideoFrames(outputCodecContext,
                                           videoStream,
                                           outputFormatContext,
-                                          &wR,
-                                          &writeFrame);
+                                          &wR);
     }
     catch(avException &e) {
-        handle_rec_error("video converter", 4, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video converter", 4, e.what());});
+        t.detach();
     }
     catch(std::runtime_error &e) {
-        handle_rec_error("video converter", 4, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video converter", 4, e.what());});
+        t.detach();
     }
     catch(std::exception &e) {
-        handle_rec_error("video converter", 4, e.what());
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this, e]{handle_rec_error("video converter", 4, e.what());});
+        t.detach();
     }
     catch(...) {
-        handle_rec_error("video converter", 4);
+        std::lock_guard<std::mutex> lg(eM);
+        if(!capturing) return;
+        capturing = false;
+        std::thread t = std::thread([this]{handle_rec_error("video converter", 4);});
+        t.detach();
     }
 }
 
