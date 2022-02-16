@@ -670,12 +670,9 @@ void Recorder::ConvertAudioFrames() {
                     if (result >= 0) {
                         audioCnv.notify_one();// Signal demuxer thread to resume if halted
                     }
-                } else if (finished) {
-                    break;
                 } else {
                     result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
                     if (result == AVERROR(EAGAIN)) break;
-                    finished = true;
                 }
                 ul.unlock();
             }
@@ -888,12 +885,9 @@ void Recorder::ConvertVideoFrames() {
                     videoCnv.wait(ul);// Wait for resume signal
                     result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
                     if (result >= 0) videoCnv.notify_one();// Signal demuxer thread to resume if halted
-                } else if (finished) {
-                    break;
                 } else {
                     result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
                     if (result == AVERROR(EAGAIN)) break;
-                    finished = true;
                 }
                 ul.unlock();
             }
