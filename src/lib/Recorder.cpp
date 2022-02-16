@@ -46,7 +46,7 @@ Recorder::~Recorder() {
  * Set output audio codec
  * @param device
  */
-void Recorder::set_audio_codec(const std::string &cod) {
+[[maybe_unused]] void Recorder::set_audio_codec(const std::string &cod) {
 	audio_codec = cod;
 }
 
@@ -54,7 +54,7 @@ void Recorder::set_audio_codec(const std::string &cod) {
  * Set output video codec
  * @param device
  */
-void Recorder::set_video_codec(const std::string &cod) {
+[[maybe_unused]] void Recorder::set_video_codec(const std::string &cod) {
 	video_codec = cod;
 }
 
@@ -62,7 +62,7 @@ void Recorder::set_video_codec(const std::string &cod) {
  * Initialize lib parameters, audio/video stream and output file
  */
 
-void Recorder::set_destination(const std::string &dest_path) {
+[[maybe_unused]] void Recorder::set_destination(const std::string &dest_path) {
 	auto path = std::filesystem::path(dest_path);
 
 	if (is_file_str(dest_path)) {
@@ -221,7 +221,7 @@ bool Recorder::is_capturing() {
  *
  * @param th number of threads
  */
-void Recorder::set_threads(unsigned int th) {
+[[maybe_unused]] void Recorder::set_threads(unsigned int th) {
 	num_core = th;
 }
 

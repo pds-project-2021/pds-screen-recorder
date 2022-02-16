@@ -72,8 +72,10 @@ class Recorder {
 
 	[[maybe_unused]] std::string get_audio_codec();
 	[[maybe_unused]] std::string get_video_codec();
-	[[maybe_unused]] void set_audio_codec(const std::string &cod);
-	[[maybe_unused]] void set_video_codec(const std::string &cod);
+
+    [[maybe_unused]] [[maybe_unused]] [[maybe_unused]] void set_audio_codec(const std::string &cod);
+
+    [[maybe_unused]] [[maybe_unused]] void set_video_codec(const std::string &cod);
 
 	// recorder factions
 	void init(Screen params);
@@ -83,9 +85,11 @@ class Recorder {
 	void terminate();
 	bool is_paused();
 	bool is_capturing();
-	[[maybe_unused]] void set_destination(const std::string &);
+
+    [[maybe_unused]] [[maybe_unused]] void set_destination(const std::string &);
 	std::string get_destination();
-	[[maybe_unused]] void set_threads(unsigned int th);
+
+    [[maybe_unused]] [[maybe_unused]] void set_threads(unsigned int th);
     std::string get_exec_error(bool&);
 
 	// log functions
