@@ -340,7 +340,8 @@ void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& 
         th_audio.join();
         th_video.join();
     }
-    stopped = true;
+//    stopped = true;
+    reset();
 }
 
 /* single thread (de)muxing */
