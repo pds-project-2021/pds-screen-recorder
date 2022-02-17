@@ -184,10 +184,9 @@ Interface::Interface(GtkApplication *app) {
 #ifdef WIN32
 	gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
 #else
-	gtk_window_set_default_size(GTK_WINDOW(window), 500, 50);
+	gtk_window_set_default_size(GTK_WINDOW(window), 550, 50);
 #endif
 	gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
-
 	// get full screen geometry for `selectionWindow` size setup
 	GdkRectangle geometry;
 	auto monitor = reinterpret_cast<GdkMonitor *>(g_list_model_get_item(gdk_display_get_monitors(gtk_widget_get_display(

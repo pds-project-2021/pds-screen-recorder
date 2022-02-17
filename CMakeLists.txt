@@ -94,12 +94,14 @@ endif ()
 
 # include lib
 add_subdirectory(src/lib)
-add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h)
 
 if(LINUX)
+    add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV lib)
 elseif(WIN32)
+    add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h appicon.rc)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} ${FFMPEG_LIBRARIES} lib)
 else()
+    add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h)
     target_link_libraries(${PROJECT_NAME} PkgConfig::FFMPEG ${GTK4_LIBRARIES} lib)
 endif()
