@@ -15,14 +15,14 @@ void Format::source_audio_context() {
 	auto audioCtx = avformat_alloc_context();
 	auto ret = avformat_open_input(&audioCtx, audioDevice.c_str(), audio, &options);
 	if (ret != 0) {
-		throw avException("Couldn't open audio input stream");
+		throw avException("Couldn't open audio input streams");
 	}
 	inputContext.set_audio(audioCtx);
 	inputOptions.set_audio(options);
 
 	ret = avformat_find_stream_info(audioCtx, nullptr);
 	if (ret < 0) {
-		throw avException("Unable to find the audio stream information");
+		throw avException("Unable to find the audio streams information");
 	}
 }
 
@@ -38,14 +38,14 @@ void Format::source_video_context() {
 	auto videoCtx = avformat_alloc_context();
 	auto ret = avformat_open_input(&videoCtx, videoDevice.c_str(), video, &options);
 	if (ret != 0) {
-		throw avException("Couldn't open video input stream");
+		throw avException("Couldn't open video input streams");
 	}
 	inputContext.set_video(videoCtx);
 	inputOptions.set_video(options);
 
 	ret = avformat_find_stream_info(videoCtx, nullptr);
 	if (ret < 0) {
-		throw avException("Unable to find the video stream information");
+		throw avException("Unable to find the video streams information");
 	}
 }
 
@@ -89,7 +89,7 @@ void Format::find_source_audio_stream_info() {
 	auto audio = inputContext.get_audio();
 	audioStreamIndex = av_find_best_stream(audio, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (audioStreamIndex == -1) {
-		throw avException("Unable to find the audio stream index. (-1)");
+		throw avException("Unable to find the audio streams index. (-1)");
 	}
 }
 
@@ -97,7 +97,7 @@ void Format::find_source_video_stream_info() {
 	auto video = inputContext.get_video();
 	videoStreamIndex = av_find_best_stream(video, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
 	if (videoStreamIndex == -1) {
-		throw avException("Unable to find the video stream index. (-1)");
+		throw avException("Unable to find the video streams index. (-1)");
 	}
 }
 
@@ -148,4 +148,10 @@ void Format::write_header(const Dictionary &options) const {
 	if (ret < 0) {
 		throw avException("Error in writing the header context");
 	}
+}
+
+void Format::reset() {
+	inputContext.set_audio(nullptr);
+	inputContext.set_video(nullptr);
+	outputContext.set_video(nullptr);
 }

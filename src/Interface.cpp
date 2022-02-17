@@ -593,7 +593,10 @@ void Interface::stopRecording() {
 	//get temporary file location
 	t->dest = t->s->get_destination();
 	// reset recorder
-	t->s = std::make_unique<Recorder>();
+//	t->s = std::make_unique<Recorder>();
+    t->s->terminate();
+    t->s->reset();
+
 	t->ready = false;
 	// set temporary name to current time
 	auto file_name = get_current_time_str() + ".mp4";

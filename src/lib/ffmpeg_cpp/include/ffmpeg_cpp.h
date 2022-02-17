@@ -33,7 +33,6 @@
 #include "Codec.h"
 #include "Format.h"
 #include "Dictionary.h"
-#include "Stream.h"
 #include "Rescaler.h"
 #include "Frame.h"
 #include "Packet.h"

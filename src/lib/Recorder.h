@@ -6,11 +6,10 @@
 class Recorder {
   private:
 	Codec codec;
-	Dictionary options;
 	Format format;
 	Rescaler rescaler;
-	Stream stream;
 
+	Dictionary options;
 	Screen screen;
 
 	// output codec
@@ -77,10 +76,10 @@ class Recorder {
 	[[maybe_unused]] void set_audio_layout(enum AudioLayout layout);
 
 	[[maybe_unused]] std::string get_audio_codec();
-	[[maybe_unused]] std::string get_video_codec();
-
     [[maybe_unused]] void set_audio_codec(const std::string &cod);
-    [[maybe_unused]] void set_video_codec(const std::string &cod);
+
+	[[maybe_unused]] std::string get_video_codec();
+	[[maybe_unused]] void set_video_codec(const std::string &cod);
 
 	[[maybe_unused]] void set_destination(const std::string &);
 	std::string get_destination();

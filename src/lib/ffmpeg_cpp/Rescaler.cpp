@@ -14,6 +14,11 @@ Rescaler::~Rescaler() {
 }
 
 void Rescaler::set_video_scaler(const Codec &codec) {
+	if (swsCtx != nullptr){
+		sws_freeContext(swsCtx);
+		swsCtx = nullptr;
+	}
+
 	swsCtx = sws_getCachedContext(swsCtx,
 	                              codec.inputPar.get_video()->width,
 	                              codec.inputPar.get_video()->height,
@@ -31,6 +36,11 @@ void Rescaler::set_video_scaler(const Codec &codec) {
 }
 
 void Rescaler::set_audio_scaler(const Codec &codec) {
+	if (swrCtx != nullptr) {
+		swr_free(&swrCtx);
+		swrCtx = nullptr;
+	}
+
 	swrCtx = swr_alloc_set_opts(
 		swrCtx, (int64_t) codec.outputContext.get_audio()->channel_layout,
 		codec.outputContext.get_audio()->sample_fmt, codec.outputContext.get_audio()->sample_rate,

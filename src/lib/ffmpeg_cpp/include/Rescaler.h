@@ -21,7 +21,6 @@ class Rescaler : public Tracker<Rescaler> {
 
 	SwsContext *get_sws();
 	SwrContext *get_swr();
-
 };
 
 

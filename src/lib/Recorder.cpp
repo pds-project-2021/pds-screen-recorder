@@ -70,7 +70,7 @@ Recorder::~Recorder() {
 }
 
 /**
- * Initialize lib parameters, audio/video stream and output file
+ * Initialize lib parameters, audio/video streams and output file
  */
 
 [[maybe_unused]] void Recorder::set_destination(const std::string &dest_path) {
@@ -178,6 +178,13 @@ void Recorder::terminate() {
 }
 
 void Recorder::reset() {
+	// reset screen parameters
+	screen = Screen{};
+
+	// reset libav resources
+	format.reset();
+	codec.reset();
+
 	stopped = false;
 	pausedVideo = false;
 	pausedAudio = false;
@@ -216,9 +223,12 @@ void Recorder::init() {
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-	reset();
+//	reset();
 
+	// format
+	format.setup_destination(destination_path);
 	format.set_screen_params(screen);
+	std::cout << format.screen.get_video_size() << std::endl;
 	format.set_audio_layout(audio_layout);
 	format.setup_source();
 
@@ -230,17 +240,11 @@ void Recorder::init() {
 	codec.set_source_video_parameters(videoPar);
 	codec.setup_source();
 
-	// format
-	format.setup_destination(destination_path);
-
 	codec.find_encoders(audio_codec, video_codec);
+	codec.open_streams(format);
 
-	stream = Stream{format, codec};
-	stream.get_video()->time_base = {1, 30};
-	stream.get_audio()->time_base = {1, codec.inputContext.get_audio()->sample_rate};
-
-	codec.set_destination_audio_parameters(stream.get_audio()->codecpar);
-	codec.set_destination_video_parameters(stream.get_video()->codecpar);
+	codec.set_destination_audio_parameters(codec.streams.get_audio()->codecpar);
+	codec.set_destination_video_parameters(codec.streams.get_video()->codecpar);
 
 	codec.setup_destination();
 
@@ -343,7 +347,7 @@ void Recorder::CaptureAudioFrames() {
         auto inputCodecContext = codec.inputContext.get_audio();
         auto outputCodecContext = codec.outputContext.get_audio();
         auto outputFormatContext = format.outputContext.get_audio();
-        auto audioStream = stream.get_audio();
+        auto audioStream = codec.streams.get_audio();
         auto swrContext = rescaler.get_swr();
 
         int frame_size = 0;
@@ -351,7 +355,7 @@ void Recorder::CaptureAudioFrames() {
         int64_t pts = 0;
         bool synced = false;
 
-        // Handle audio input stream packets
+        // Handle audio input streams packets
         avformat_flush(inputFormatContext);
 
         auto read_frame = true;
@@ -445,7 +449,7 @@ void Recorder::CaptureVideoFrames() {
         auto inputCodecContext = codec.inputContext.get_video();
         auto outputCodecContext = codec.outputContext.get_video();
         auto outputFormatContext = format.outputContext.get_video();
-        auto videoStream = stream.get_video();
+        auto videoStream = codec.streams.get_video();
         auto swsContext = rescaler.get_sws();
 
         int64_t count = 0;
@@ -644,7 +648,7 @@ void Recorder::ConvertAudioFrames() {
         auto inputCodecContext = codec.inputContext.get_audio();
         auto outputCodecContext = codec.outputContext.get_audio();
         auto outputFormatContext = format.outputContext.get_audio();
-        auto audioStream = stream.get_audio();
+        auto audioStream = codec.streams.get_audio();
         auto swrContext = rescaler.get_swr();
 
         int frame_size = 0;
@@ -866,7 +870,7 @@ void Recorder::ConvertVideoFrames() {
         auto inputCodecContext = codec.inputContext.get_video();
         auto outputCodecContext = codec.outputContext.get_video();
         auto outputFormatContext = format.outputContext.get_video();
-        auto videoStream = stream.get_video();
+        auto videoStream = codec.streams.get_video();
         auto swsContext = rescaler.get_sws();
 
         int64_t count = 0;

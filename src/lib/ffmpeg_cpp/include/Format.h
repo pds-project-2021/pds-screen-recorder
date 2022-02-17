@@ -54,6 +54,8 @@ class Format {
 	void setup_source();
 	void setup_destination(const std::string &dest);
 
+	void reset();
+
 	[[nodiscard]] std::string get_audio_device() const;
 	[[nodiscard]] std::string get_video_device() const;
 
