@@ -130,6 +130,7 @@ std::string Format::get_audio_device() const {
 std::string Format::get_video_device() const {
 	return videoDevice;
 }
+
 AVCodecParameters *Format::get_source_audio_codec() const {
 	auto audio = inputContext.get_audio();
 	return audio->streams[audioStreamIndex]->codecpar;
@@ -140,10 +141,10 @@ AVCodecParameters *Format::get_source_video_codec() const {
 	return video->streams[videoStreamIndex]->codecpar;
 }
 
-void Format::write_header(const Dictionary &options) const {
+void Format::write_header() const {
 	/* imp: mp4 container or some advanced container file required header
 	 * information */
-	auto opt = options.get_video();
+	auto opt = outputOptions.get_video();
 	auto ret = avformat_write_header(outputContext.get_video(), &opt);
 	if (ret < 0) {
 		throw avException("Error in writing the header context");

@@ -8,8 +8,6 @@
 #include "ffmpegc.h"
 #include "Tracker.h"
 
-//using namespace std;
-
 template<typename T>
 class wrapper : public Tracker<wrapper<T>> {
   protected:

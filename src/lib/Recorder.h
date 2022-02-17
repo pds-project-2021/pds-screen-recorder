@@ -9,7 +9,6 @@ class Recorder {
 	Format format;
 	Rescaler rescaler;
 
-	Dictionary options;
 	Screen screen;
 
 	// output codec

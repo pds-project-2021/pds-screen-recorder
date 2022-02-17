@@ -7,7 +7,6 @@
 
 #include "wrapper.h"
 #include "platform.h"
-#include "Dictionary.h"
 #include "Screen.h"
 
 class Format {
@@ -16,7 +15,7 @@ class Format {
 	wrapper<AVDictionary> inputOptions;
 
 	wrapper<AVOutputFormat> output;
-//   [[maybe_unused]] wrapper<AVDictionary> outputOptions;
+    wrapper<AVDictionary> outputOptions;
 
 	wrapper<AVFormatContext> inputContext;
 	wrapper<AVFormatContext> outputContext;
@@ -61,7 +60,7 @@ class Format {
 	[[nodiscard]] AVCodecParameters *get_source_audio_codec() const;
 	[[nodiscard]] AVCodecParameters *get_source_video_codec() const;
 
-	void write_header(const Dictionary &options) const;
+	void write_header() const;
 };
 
 

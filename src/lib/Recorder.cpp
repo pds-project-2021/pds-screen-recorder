@@ -239,7 +239,7 @@ void Recorder::init() {
 	rescaler.set_audio_scaler(codec);
 	rescaler.set_video_scaler(codec);
 
-	format.write_header(options);
+	format.write_header();
 
 	ref_time = get_ref_time(format.inputContext);
 

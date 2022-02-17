@@ -1,7 +1,3 @@
-//
-// Created by gabriele on 23/12/21.
-//
-
 #include "Frame.h"
 
 /**
@@ -65,6 +61,23 @@ Frame::Frame() {
 	if (!inner) {
 		throw avException("Unable to release the audio avframe resources");
 	}
+}
+
+/**
+ * Destructor for output frame (both audio and video)
+ */
+Frame::~Frame() {
+	if (inner != nullptr) {
+		if (inner->data[1] != nullptr) {
+			av_freep(&inner->data[0]);
+		}
+
+		av_frame_free(&inner);
+	}
+}
+
+void Frame::unref() {
+	av_frame_unref(inner);
 }
 
 
