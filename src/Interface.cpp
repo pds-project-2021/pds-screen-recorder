@@ -547,6 +547,11 @@ void Interface::startRecording() {
 	try {
 		if (!t->ready) {
 			t->init_recorder(t->startX, t->startY, t->endX, t->endY);
+            //reset screen selection coordinates
+            t->startX = 0;
+            t->startY = 0;
+            t->endX = 0;
+            t->endY = 0;
 		}
 		if (t->s->is_paused()) {
 			t->s->resume();
@@ -622,11 +627,9 @@ void Interface::select_record_region(GtkWidget *, gpointer) {
 
 
 void Interface::reset_gui_from_start() {
-    // delete recorder if necessary
-    if(ready) {
-        s = std::make_unique<Recorder>();
-        ready = false;
-    }
+    // delete recorder
+    s = std::make_unique<Recorder>();
+    ready = false;
     // reset action buttons
     gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
     gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
@@ -635,11 +638,9 @@ void Interface::reset_gui_from_start() {
 }
 
 void Interface::reset_gui_from_pause() {
-	// delete recorder if necessary
-	if (ready) {
-		s = std::make_unique<Recorder>();
-		ready = false;
-	}
+	// delete recorder
+    s = std::make_unique<Recorder>();
+    ready = false;
 	// reset action buttons
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
 	gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
