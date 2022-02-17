@@ -96,7 +96,7 @@ class Interface {
 	void init_error_dialog();
 	void set_error_dialog_msg(const char *) const;
 	void reset_gui_from_start();
-	void reset_gui_from_exec();
+	void reset_gui_from_pause();
 	void reset_gui_from_stop();
 	void enable_blink();
     void enable_rec_execution_error_handler() const;
