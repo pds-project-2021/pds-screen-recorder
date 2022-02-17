@@ -24,14 +24,14 @@
 }
 
 /**
- * Set capture window offset position in format `posXxposY`,
- * for example, in a FHD screen, the top left angle will be `0x0` and the top right angle will be `1920x0`
+ * Set capture window offset position in format `posX,posY`,
+ * for example, in a FHD screen, the top left angle will be `0,0` and the top right angle will be `1920,0`
  *
  * @param offset string containing offset positions
  */
 [[maybe_unused]] void Screen::set_offset(const std::string &offset) {
-	offset_x = set_even(stoi(offset.substr(0, offset.find('x'))));
-	offset_y = set_even(stoi(offset.substr(offset.find('x') + 1, offset.length())));
+	offset_x = set_even(stoi(offset.substr(0, offset.find(','))));
+	offset_y = set_even(stoi(offset.substr(offset.find(',') + 1, offset.length())));
 }
 
 /**
@@ -79,5 +79,5 @@ std::string Screen::get_show_region() const {
 }
 
 bool Screen::fullscreen() const {
-	return this->get_video_size() == "0x0";
+	return get_video_size() == "0x0";
 }

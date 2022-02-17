@@ -50,10 +50,12 @@ class Recorder {
 
 	void init();
 	void reset();
+	void set_threads(unsigned int th);
 
 	void join_all();
 	void create_out_file(const std::string &dest) const;
     void handle_rec_error(const std::string& th_name, const unsigned int& th_num, const char* what = nullptr);
+
 	// single thread (de)muxing
 	void CaptureAudioFrames();
 	void CaptureVideoFrames();
@@ -88,7 +90,8 @@ class Recorder {
 	void set_screen_params(const Screen &params);
 	[[maybe_unused]] Screen get_screen_params();
 
-	[[maybe_unused]] void set_threads(unsigned int th);
+	[[maybe_unused]] void set_low_profile();
+	[[maybe_unused]] void set_high_profile();
 
 	// recorder functions
 	void capture();

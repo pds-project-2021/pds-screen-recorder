@@ -199,12 +199,17 @@ bool Recorder::is_capturing() {
 }
 
 /**
- * Manually set number of working threads
- *
- * @param th number of threads
+ * Set the minimum number of threads for capture
  */
-[[maybe_unused]] void Recorder::set_threads(unsigned int th) {
-	num_core = th;
+[[maybe_unused]] void Recorder::set_low_profile(){
+	set_threads(2);
+}
+
+/**
+ * Set the maximum number of threads for capture
+ */
+[[maybe_unused]] void Recorder::set_high_profile() {
+	set_threads(4);
 }
 
 /* Private functions */
@@ -260,6 +265,15 @@ void Recorder::join_all() {
         th_audio.join();
         th_video.join();
 	}
+}
+
+/**
+ * Manually set number of working threads
+ *
+ * @param th number of threads
+ */
+[[maybe_unused]] void Recorder::set_threads(unsigned int th) {
+	num_core = th;
 }
 
 /**
