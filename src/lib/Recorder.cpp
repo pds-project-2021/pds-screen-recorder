@@ -12,15 +12,6 @@ Recorder::~Recorder() {
     log_info("Recorder destroyed");
 }
 
-//Recorder &Recorder::operator=(const Recorder &source) {
-//	return *this;
-//}
-//
-//Recorder &Recorder::operator=(Recorder &&source)  noexcept {
-//	return *this;
-//}
-
-
 /**
  * Get audio layout
  * @return
@@ -679,7 +670,6 @@ void Recorder::ConvertAudioFrames() {
                                            in_frame.into(),
                                            &pts,
                                            &wR);
-    //			in_frame.unref();
             }
             ul.lock();
             result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
@@ -897,7 +887,6 @@ void Recorder::ConvertVideoFrames() {
                                           &wR);
             }
 
-    //		in_frame.unref();
             ul.lock();
             result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
             if (result >= 0) {

@@ -103,11 +103,6 @@ void Interface::init_error_dialog() {
 	                                     nullptr);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG (dialog));
 	label = gtk_label_new("Unexpected error!");
-//    dialog = gtk_message_dialog_new (GTK_WINDOW(window),
-//                                     flags,
-//                                     GTK_MESSAGE_ERROR,
-//                                     GTK_BUTTONS_CLOSE,
-//                                     "Unexpected error!");
 	g_signal_connect (dialog, "response",
 	                  G_CALLBACK(gtk_widget_hide),
 	                  nullptr);
@@ -312,7 +307,6 @@ Interface::Interface(GtkApplication *app) {
 	gtk_style_context_save(context);
 
 	// allocate `Recorder` and enable gui buttons
-//	s = std::make_unique<Recorder>();
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
 
@@ -459,7 +453,6 @@ void Interface::motion_detected(GtkEventControllerMotion *, double x, double y, 
 		cairo_destroy(cr);
 		gtk_widget_queue_draw(GTK_WIDGET(t->selectionArea));
 	}
-//    else if (!gtk_window_is_active(GTK_WINDOW(t->recordWindow))) gtk_window_present(GTK_WINDOW(t->recordWindow));
 }
 
 void Interface::right_btn_pressed(GtkGestureClick *, int, double x, double y, GtkWidget *) {
@@ -537,7 +530,6 @@ void Interface::init_recorder(double sX, double sY, double eX, double eY) {
 		log_info("Recording " + screen.get_video_size() + " area, with offset " + screen.get_offset_str());
 	}
     t->s = std::make_unique<Recorder>();
-//	t->s->set_video_codec("");
 	t->s->set_screen_params(screen);
 	log_info("Initialized input streams");
 	t->ready = true;
@@ -598,10 +590,8 @@ void Interface::stopRecording() {
 	//get temporary file location
 	t->dest = t->s->get_destination();
 	// reset recorder
-//	t->s = std::make_unique<Recorder>();
     t->s->terminate();
 	t->ready = false;
-
 	// set temporary name to current time
 	auto file_name = get_current_time_str() + ".mp4";
 	gtk_file_chooser_set_current_name(t->fileChooser, file_name.c_str());
@@ -690,6 +680,11 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
 #ifdef WIN32
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
+    gtk_window_present(GTK_WINDOW(t->window));
+    //prevent freezes on Windows (Nvidia)
+    gtk_widget_queue_draw(t->window);
+#else
+    gtk_window_present(GTK_WINDOW(t->window));
 #endif
 	gtk_window_present(GTK_WINDOW(t->window));
 	log_info("Start recording button pressed");

@@ -49,7 +49,7 @@ class Interface {
 	GtkWidget *stopButton = nullptr;
 	GtkWidget *headerBar = nullptr;
 	GtkWidget *selectionArea = nullptr;
-	GtkWidget *titleView = nullptr;
+    [[maybe_unused]] GtkWidget *titleView = nullptr;
 	GtkWidget *fileChoiceDialog = nullptr;
 	GtkWidget *image = nullptr;
 	GtkWidget *dialog = nullptr;
@@ -74,7 +74,7 @@ class Interface {
 	double endY = 0;
 
 	std::unique_ptr<Recorder> s = nullptr;
-	unsigned long fileHandler;
+    [[maybe_unused]] unsigned long fileHandler{};
 	std::string dest;
 	cairo_surface_t *surface = nullptr;
 	std::future<void> rec;
