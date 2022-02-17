@@ -133,6 +133,27 @@ void Codec::find_encoders(const std::string &audio_codec, const std::string &vid
 	find_video_encoder(video_codec);
 }
 
+void Codec::open_streams(const Format &format) {
+	auto video = avformat_new_stream(format.outputContext.get_video(), output.get_video());
+	if (!video) {
+		throw avException("Error in creating a av format new video streams");
+	}
+	video->time_base = {1, 30};
+	streams.set_video(video);
+
+	auto audio = avformat_new_stream(format.outputContext.get_audio(), output.get_audio());
+	if (!audio) {
+		throw avException("Error in creating a av format new audio streams");
+	}
+	audio->time_base = {1, inputContext.get_audio()->sample_rate};
+	streams.set_audio(audio);
+
+
+
+
+}
+
+
 void Codec::set_source_audio_layout(enum AudioLayout layout) {
 	if (layout == MONO) {
 		channel_layout = AV_CH_LAYOUT_MONO;
@@ -189,13 +210,19 @@ void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
 void Codec::set_destination_video_parameters(AVCodecParameters *par) {
 	outputPar.set_video(par);
 
-	par->codec_id = output.get_video()
-		->id; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
+	par->codec_id = output.get_video()->id; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
 	par->codec_type = AVMEDIA_TYPE_VIDEO;
 	par->format = AV_PIX_FMT_YUV420P;
 	par->bit_rate = VIDEO_BITRATE; // 2500000
 	par->width = inputContext.get_video()->width;
 	par->height = inputContext.get_video()->height;
+}
+
+void Codec::reset() {
+	inputContext.set_audio(nullptr);
+	inputContext.set_video(nullptr);
+	outputContext.set_audio(nullptr);
+	outputContext.set_video(nullptr);
 }
 
 

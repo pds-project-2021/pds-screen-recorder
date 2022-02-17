@@ -149,3 +149,9 @@ void Format::write_header(const Dictionary &options) const {
 		throw avException("Error in writing the header context");
 	}
 }
+
+void Format::reset() {
+	inputContext.set_audio(nullptr);
+	inputContext.set_video(nullptr);
+	outputContext.set_video(nullptr);
+}

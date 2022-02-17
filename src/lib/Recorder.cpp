@@ -99,13 +99,13 @@ void Recorder::set_screen_params(const Screen &params){
 
 [[maybe_unused]]
 void Recorder::print_source_info() {
-	av_dump_format(format->inputContext.get_audio(), 0, format->get_audio_device().c_str(), 0);
-	av_dump_format(format->inputContext.get_video(), 0, format->get_video_device().c_str(), 0);
+	av_dump_format(format.inputContext.get_audio(), 0, format.get_audio_device().c_str(), 0);
+	av_dump_format(format.inputContext.get_video(), 0, format.get_video_device().c_str(), 0);
 }
 
 [[maybe_unused]]
 void Recorder::print_destination_info(const std::string &dest) const {
-	av_dump_format(format->outputContext.get_video(), 0, dest.c_str(), 1);
+	av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
 }
 
 std::string Recorder::get_exec_error(bool& err) {
@@ -166,7 +166,7 @@ void Recorder::terminate() {
 	// wait all threads
 	join_all();
 
-	auto outputFormatContext = format->outputContext.get_video();
+	auto outputFormatContext = format.outputContext.get_video();
 
 	// Write file trailer data
 	auto ret = av_write_trailer(outputFormatContext);
@@ -174,21 +174,23 @@ void Recorder::terminate() {
 		throw avException("Error in writing av trailer");
 	}
 
-//	capturing = false;
-    reset();
+	reset();
 }
 
 void Recorder::reset() {
+	// reset screen parameters
+	screen = Screen{};
+
+	// reset libav resources
+	format.reset();
+	codec.reset();
+
 	stopped = false;
 	pausedVideo = false;
 	pausedAudio = false;
 	finishedVideoDemux = false;
 	finishedAudioDemux = false;
 	capturing = false;
-    format = nullptr;
-    codec = nullptr;
-    stream = nullptr;
-    rescaler = nullptr;
 }
 
 /**
@@ -221,43 +223,34 @@ void Recorder::init() {
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-//	reset();
-    format = std::make_unique<Format>(Format{});
-	format->set_screen_params(screen);
-	format->set_audio_layout(audio_layout);
-	format->setup_source();
+	format.set_screen_params(screen);
+	format.set_audio_layout(audio_layout);
+	format.setup_source();
+	format.setup_destination(destination_path);
 
-	auto audioPar = format->get_source_audio_codec();
-	auto videoPar = format->get_source_video_codec();
+	auto audioPar = format.get_source_audio_codec();
+	auto videoPar = format.get_source_video_codec();
 
-    codec = std::make_unique<Codec>(Codec{});
-	codec->set_source_audio_layout(audio_layout);
-	codec->set_source_audio_parameters(audioPar);
-	codec->set_source_video_parameters(videoPar);
-	codec->setup_source();
+	codec.set_source_audio_layout(audio_layout);
+	codec.set_source_audio_parameters(audioPar);
+	codec.set_source_video_parameters(videoPar);
+	codec.setup_source();
 
-	// format
-	format->setup_destination(destination_path);
+	codec.find_encoders(audio_codec, video_codec);
+	codec.open_streams(format);
 
-	codec->find_encoders(audio_codec, video_codec);
+	codec.set_destination_audio_parameters(codec.streams.get_audio()->codecpar);
+	codec.set_destination_video_parameters(codec.streams.get_video()->codecpar);
 
-	stream = std::make_unique<Stream>(Stream(*(format), *(codec)));
-	stream->get_video()->time_base = {1, 30};
-	stream->get_audio()->time_base = {1, codec->inputContext.get_audio()->sample_rate};
-
-	codec->set_destination_audio_parameters(stream->get_audio()->codecpar);
-	codec->set_destination_video_parameters(stream->get_video()->codecpar);
-
-	codec->setup_destination();
+	codec.setup_destination();
 
 	create_out_file(destination_path);
-    rescaler = std::make_unique<Rescaler>(Rescaler{});
-	rescaler->set_audio_scaler(*(codec));
-	rescaler->set_video_scaler(*(codec));
+	rescaler.set_audio_scaler(codec);
+	rescaler.set_video_scaler(codec);
 
-	format->write_header(options);
+	format.write_header(options);
 
-	ref_time = get_ref_time(format->inputContext);
+	ref_time = get_ref_time(format.inputContext);
 
 #ifdef WIN32
 	CoUninitialize();
@@ -282,7 +275,7 @@ void Recorder::join_all() {
  * Create output media file
  */
 void Recorder::create_out_file(const std::string &dest) const {
-	auto ctx = format->outputContext.get_video();
+	auto ctx = format.outputContext.get_video();
 
 	/* create empty video file */
 	if (!(ctx->flags & AVFMT_NOFILE)) {
@@ -340,19 +333,18 @@ void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& 
         th_audio.join();
         th_video.join();
     }
-//    stopped = true;
-    reset();
+    stopped = true;
 }
 
 /* single thread (de)muxing */
 void Recorder::CaptureAudioFrames() {
     try {
-        auto inputFormatContext = format->inputContext.get_audio();
-        auto inputCodecContext = codec->inputContext.get_audio();
-        auto outputCodecContext = codec->outputContext.get_audio();
-        auto outputFormatContext = format->outputContext.get_audio();
-        auto audioStream = stream->get_audio();
-        auto swrContext = rescaler->get_swr();
+        auto inputFormatContext = format.inputContext.get_audio();
+        auto inputCodecContext = codec.inputContext.get_audio();
+        auto outputCodecContext = codec.outputContext.get_audio();
+        auto outputFormatContext = format.outputContext.get_audio();
+        auto audioStream = codec.streams.get_audio();
+        auto swrContext = rescaler.get_swr();
 
         int frame_size = 0;
         int got_frame = 0;
@@ -449,12 +441,12 @@ void Recorder::CaptureAudioFrames() {
 
 void Recorder::CaptureVideoFrames() {
     try{
-        auto inputFormatContext = format->inputContext.get_video();
-        auto inputCodecContext = codec->inputContext.get_video();
-        auto outputCodecContext = codec->outputContext.get_video();
-        auto outputFormatContext = format->outputContext.get_video();
-        auto videoStream = stream->get_video();
-        auto swsContext = rescaler->get_sws();
+        auto inputFormatContext = format.inputContext.get_video();
+        auto inputCodecContext = codec.inputContext.get_video();
+        auto outputCodecContext = codec.outputContext.get_video();
+        auto outputFormatContext = format.outputContext.get_video();
+        auto videoStream = codec.streams.get_video();
+        auto swsContext = rescaler.get_sws();
 
         int64_t count = 0;
         int frameNum = 0; // frame number in a second
@@ -555,8 +547,8 @@ void Recorder::DemuxAudioInput() {
         bool synced = false;
         int result;
 
-        auto inputFormatContext = format->inputContext.get_audio();
-        auto inputCodecContext = codec->inputContext.get_audio();
+        auto inputFormatContext = format.inputContext.get_audio();
+        auto inputCodecContext = codec.inputContext.get_audio();
 
         avformat_flush(inputFormatContext);
         auto read_packet = true;
@@ -649,11 +641,11 @@ void Recorder::DemuxAudioInput() {
 
 void Recorder::ConvertAudioFrames() {
     try {
-        auto inputCodecContext = codec->inputContext.get_audio();
-        auto outputCodecContext = codec->outputContext.get_audio();
-        auto outputFormatContext = format->outputContext.get_audio();
-        auto audioStream = stream->get_audio();
-        auto swrContext = rescaler->get_swr();
+        auto inputCodecContext = codec.inputContext.get_audio();
+        auto outputCodecContext = codec.outputContext.get_audio();
+        auto outputFormatContext = format.outputContext.get_audio();
+        auto audioStream = codec.streams.get_audio();
+        auto swrContext = rescaler.get_swr();
 
         int frame_size = 0;
         int64_t pts = 0;
@@ -773,8 +765,8 @@ void Recorder::DemuxVideoInput() {
         auto sync = false;
 
         auto start = std::chrono::system_clock::now();
-        auto inputFormatContext = format->inputContext.get_video();
-        auto inputCodecContext = codec->inputContext.get_video();
+        auto inputFormatContext = format.inputContext.get_video();
+        auto inputCodecContext = codec.inputContext.get_video();
 
         if (inputFormatContext->start_time == ref_time) { // If video started later
             sync = true;// Video needs to set the ref_time value
@@ -871,11 +863,11 @@ void Recorder::DemuxVideoInput() {
 
 void Recorder::ConvertVideoFrames() {
     try {
-        auto inputCodecContext = codec->inputContext.get_video();
-        auto outputCodecContext = codec->outputContext.get_video();
-        auto outputFormatContext = format->outputContext.get_video();
-        auto videoStream = stream->get_video();
-        auto swsContext = rescaler->get_sws();
+        auto inputCodecContext = codec.inputContext.get_video();
+        auto outputCodecContext = codec.outputContext.get_video();
+        auto outputFormatContext = format.outputContext.get_video();
+        auto videoStream = codec.streams.get_video();
+        auto swsContext = rescaler.get_sws();
 
         int64_t count = 0;
         int result = AVERROR(EAGAIN);

@@ -5,12 +5,11 @@
 
 class Recorder {
   private:
-    std::unique_ptr<Codec> codec = nullptr;
-    Dictionary options;
-    std::unique_ptr<Format> format = nullptr;
-    std::unique_ptr<Rescaler> rescaler = nullptr;
-    std::unique_ptr<Stream> stream = nullptr;
+	Codec codec;
+	Format format;
+	Rescaler rescaler;
 
+	Dictionary options;
 	Screen screen;
 
 	// output codec
@@ -51,7 +50,8 @@ class Recorder {
 	/* private functions */
 
 	void init();
-    void reset();
+	void reset();
+
 	void join_all();
 	void create_out_file(const std::string &dest) const;
     void handle_rec_error(const std::string& th_name, const unsigned int& th_num, const char* what = nullptr);
@@ -78,10 +78,10 @@ class Recorder {
 	[[maybe_unused]] void set_audio_layout(enum AudioLayout layout);
 
 	[[maybe_unused]] std::string get_audio_codec();
-	[[maybe_unused]] std::string get_video_codec();
-
     [[maybe_unused]] void set_audio_codec(const std::string &cod);
-    [[maybe_unused]] void set_video_codec(const std::string &cod);
+
+	[[maybe_unused]] std::string get_video_codec();
+	[[maybe_unused]] void set_video_codec(const std::string &cod);
 
 	[[maybe_unused]] void set_destination(const std::string &);
 	std::string get_destination();

@@ -3,6 +3,7 @@
 
 #include "wrapper.h"
 #include "platform.h"
+#include "Format.h"
 
 class Codec {
   public:
@@ -14,6 +15,8 @@ class Codec {
 
 	wrapper<AVCodecParameters> inputPar;
 	wrapper<AVCodecParameters> outputPar;
+
+	wrapper<AVStream> streams;
 
 	uint64_t channel_layout;
 	uint16_t channels;
@@ -30,6 +33,8 @@ class Codec {
 	void setup_source();
 	void setup_destination();
 	void find_encoders(const std::string &audio_codec, const std::string &video_codec);
+	void open_streams(const Format &format);
+	void reset();
 
 	void set_source_audio_layout(enum AudioLayout);
 	void set_source_audio_parameters(AVCodecParameters *par);

@@ -29,7 +29,7 @@
 #define DEFAULT_VIDEO_INPUT_FORMAT  "gdigrab"
 #define DEFAULT_VIDEO_INPUT_DEVICE  "desktop"
 #define DEFAULT_VIDEO_CODEC         "h264_mf"
-#define DEFAULT_AUDIO_CODEC "aac"
+#define DEFAULT_AUDIO_CODEC         "aac"
 
 
 #elif defined linux

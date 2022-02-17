@@ -5,7 +5,6 @@ add_library(${PROJECT_NAME}
         ffmpeg_cpp.cpp
         Codec.cpp
         Format.cpp
-        Stream.cpp
         Rescaler.cpp
         platform.cpp
         Frame.cpp
