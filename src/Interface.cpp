@@ -53,7 +53,7 @@ gboolean Interface::checkRecExecErrors() {
     }
     catch(...) {
         std::cerr << "[FATAL] Unexpected error during recorder execution error control" << std::endl;
-        t = nullptr;
+        g_application_quit(G_APPLICATION(t->g_application));
         return FALSE;
     }
     return TRUE;
@@ -634,7 +634,7 @@ void Interface::reset_gui_from_start() {
     gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
 }
 
-void Interface::reset_gui_from_exec() {
+void Interface::reset_gui_from_pause() {
 	// delete recorder if necessary
 	if (ready) {
 		s = std::make_unique<Recorder>();
@@ -702,14 +702,14 @@ void Interface::handlePause(GtkWidget *, gpointer) {
 	}
 	catch (avException &e) {// handle recoverable libav exceptions during pausing
 		log_error("Error closing output streams: " + std::string(e.what()));
-		t->reset_gui_from_exec();
+		t->reset_gui_from_pause();
 		//show error message dialog
 		if (t->dialog) t->set_error_dialog_msg(e.what());
 		gtk_widget_show(t->dialog);
 	}
 	catch (...) {// handle unexpected exceptions during pausing
 		log_error("Unexpected error!");
-		t->reset_gui_from_exec();
+		t->reset_gui_from_pause();
 		//show error message dialog
 		if (t->dialog) t->set_error_dialog_msg(nullptr);
 		gtk_widget_show(t->dialog);
@@ -749,7 +749,7 @@ void Interface::handleStop(GtkWidget *, gpointer) {
 
 void Interface::handleClose(GtkWidget *, gpointer) {
 	log_info("Close button pressed");
-	g_application_quit(G_APPLICATION(t->g_application));
+//	g_application_quit(G_APPLICATION(t->g_application));
     try {
         g_application_quit(G_APPLICATION(t->g_application));
     }
