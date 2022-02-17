@@ -9,6 +9,8 @@ class Stream : public wrapper<AVStream> {
   public:
 	Stream() = default;
 	Stream(const Format &format, const Codec &codec);
+    Stream(const Stream&) = delete;
+    Stream& operator=(const Stream&) = delete;
 	~Stream() = default;
 };
 
