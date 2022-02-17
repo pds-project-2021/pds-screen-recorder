@@ -50,6 +50,7 @@ class Recorder {
 
 	/* private functions */
 
+	void init();
 	void join_all();
 	void create_out_file(const std::string &dest) const;
     void handle_rec_error(const std::string& th_name, const unsigned int& th_num, const char* what = nullptr);
@@ -67,35 +68,38 @@ class Recorder {
 	Recorder();
 	~Recorder();
 
+//    TODO: da sistemare
+//    Recorder& operator=(const Recorder& source);
+//    Recorder& operator=(Recorder&& source) noexcept;
+
 	// recorder parameters functions
 	[[maybe_unused]] enum AudioLayout get_audio_layout();
-	[[maybe_unused]] void set_video_layout(enum AudioLayout layout);
+	[[maybe_unused]] void set_audio_layout(enum AudioLayout layout);
 
 	[[maybe_unused]] std::string get_audio_codec();
 	[[maybe_unused]] std::string get_video_codec();
 
     [[maybe_unused]] void set_audio_codec(const std::string &cod);
-
     [[maybe_unused]] void set_video_codec(const std::string &cod);
 
-	// recorder factions
-	void init();
-	void capture();
-	void pause();
-	void resume();
-	void terminate();
-	void reset();
-	bool is_paused();
-	bool is_capturing();
-
-    [[maybe_unused]] void set_destination(const std::string &);
+	[[maybe_unused]] void set_destination(const std::string &);
 	std::string get_destination();
 
 	void set_screen_params(const Screen &params);
 	[[maybe_unused]] Screen get_screen_params();
 
+	[[maybe_unused]] void set_threads(unsigned int th);
 
-    [[maybe_unused]] void set_threads(unsigned int th);
+	// recorder functions
+	void capture();
+	void pause();
+	void resume();
+	void terminate();
+	void reset();
+
+	bool is_paused();
+	bool is_capturing();
+
     std::string get_exec_error(bool&);
 
 	// log functions

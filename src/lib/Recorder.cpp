@@ -12,6 +12,13 @@ Recorder::~Recorder() {
     log_info("Recorder destroyed");
 }
 
+//Recorder &Recorder::operator=(const Recorder &source) {
+//	return *this;
+//}
+//
+//Recorder &Recorder::operator=(Recorder &&source)  noexcept {
+//	return *this;
+//}
 
 
 /**
@@ -26,7 +33,7 @@ Recorder::~Recorder() {
  * Set audio layout [choices: MONO, STEREO]
  * @return
  */
-[[maybe_unused]] void Recorder::set_video_layout(enum AudioLayout layout) {
+[[maybe_unused]] void Recorder::set_audio_layout(enum AudioLayout layout) {
 	audio_layout = layout;
 }
 
