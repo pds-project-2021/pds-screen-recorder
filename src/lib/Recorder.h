@@ -5,11 +5,11 @@
 
 class Recorder {
   private:
-	Codec codec;
-	Dictionary options;
-	Format format;
-	Rescaler rescaler;
-	Stream stream;
+    std::unique_ptr<Codec> codec = nullptr;
+    Dictionary options;
+    std::unique_ptr<Format> format = nullptr;
+    std::unique_ptr<Rescaler> rescaler = nullptr;
+    std::unique_ptr<Stream> stream = nullptr;
 
 	Screen screen;
 
