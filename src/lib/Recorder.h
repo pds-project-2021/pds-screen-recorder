@@ -50,6 +50,8 @@ class Recorder {
 	/* private functions */
 
 	void init();
+	void reset();
+
 	void join_all();
 	void create_out_file(const std::string &dest) const;
     void handle_rec_error(const std::string& th_name, const unsigned int& th_num, const char* what = nullptr);
@@ -94,7 +96,6 @@ class Recorder {
 	void pause();
 	void resume();
 	void terminate();
-	void reset();
 
 	bool is_paused();
 	bool is_capturing();

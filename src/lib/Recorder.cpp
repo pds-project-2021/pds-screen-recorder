@@ -174,7 +174,7 @@ void Recorder::terminate() {
 		throw avException("Error in writing av trailer");
 	}
 
-	capturing = false;
+	reset();
 }
 
 void Recorder::reset() {
@@ -223,14 +223,10 @@ void Recorder::init() {
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-//	reset();
-
-	// format
-	format.setup_destination(destination_path);
 	format.set_screen_params(screen);
-	std::cout << format.screen.get_video_size() << std::endl;
 	format.set_audio_layout(audio_layout);
 	format.setup_source();
+	format.setup_destination(destination_path);
 
 	auto audioPar = format.get_source_audio_codec();
 	auto videoPar = format.get_source_video_codec();
