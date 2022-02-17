@@ -15,8 +15,6 @@ class Rescaler : public Tracker<Rescaler> {
   public:
 	Rescaler() = default;
 	~Rescaler();
-    Rescaler(const Rescaler&) = delete;
-    Rescaler& operator=(const Rescaler&) = delete;
 
 	void set_video_scaler(const Codec &codec);
 	void set_audio_scaler(const Codec &codec);

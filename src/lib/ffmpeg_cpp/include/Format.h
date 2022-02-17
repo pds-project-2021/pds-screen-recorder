@@ -48,8 +48,6 @@ class Format {
   public:
 	Format() = default;
 	~Format() = default;
-    Format(const Format&) = delete;
-    Format& operator=(const Format&) = delete;
 	void set_screen_params(const Screen &params);
 	void set_audio_layout(enum AudioLayout layout);
 	void setup_source();

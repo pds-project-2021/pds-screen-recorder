@@ -6,11 +6,7 @@
 
 #include "wrapper.h"
 
-class Dictionary : public wrapper<AVDictionary> {
-public:
-    Dictionary(const Dictionary&) = delete;
-    Dictionary& operator=(const Dictionary&) = delete;
-};
+class Dictionary : public wrapper<AVDictionary> {};
 
 
 

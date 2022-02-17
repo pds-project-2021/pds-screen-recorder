@@ -27,8 +27,6 @@ class Codec {
 	void find_video_encoder(const std::string &codec_name);
 
   public:
-    Codec(const Codec&) = delete;
-    Codec& operator=(const Codec&) = delete;
 	void setup_source();
 	void setup_destination();
 	void find_encoders(const std::string &audio_codec, const std::string &video_codec);

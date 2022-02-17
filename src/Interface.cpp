@@ -595,7 +595,6 @@ void Interface::stopRecording() {
 	// reset recorder
 //	t->s = std::make_unique<Recorder>();
     t->s->terminate();
-    t->s->reset();
 	t->ready = false;
 
 	// set temporary name to current time

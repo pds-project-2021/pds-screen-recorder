@@ -174,7 +174,8 @@ void Recorder::terminate() {
 		throw avException("Error in writing av trailer");
 	}
 
-	capturing = false;
+//	capturing = false;
+    reset();
 }
 
 void Recorder::reset() {
