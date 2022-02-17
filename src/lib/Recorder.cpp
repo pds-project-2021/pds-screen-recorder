@@ -184,6 +184,16 @@ void Recorder::reset() {
 	finishedVideoDemux = false;
 	finishedAudioDemux = false;
 	capturing = false;
+//    (&format)->~Format();
+    format = Format();
+//    (&codec)->~Codec();
+    codec = Codec{};
+//    (&stream)->~Stream();
+    stream = Stream{};
+//    (&options)->~Dictionary();
+    options = Dictionary{};
+//    (&rescaler)->~Rescaler();
+    rescaler = Rescaler{};
 }
 
 /**
@@ -216,7 +226,7 @@ void Recorder::init() {
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-	reset();
+//	reset();
 
 	format.set_screen_params(screen);
 	format.set_audio_layout(audio_layout);
