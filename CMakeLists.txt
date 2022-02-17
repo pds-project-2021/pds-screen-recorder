@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(recs VERSION 0.0.1)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # configuration file for project name and version
 configure_file(${PROJECT_SOURCE_DIR}/config.h.in ${PROJECT_BINARY_DIR}/config.h)

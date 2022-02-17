@@ -173,8 +173,10 @@ void Recorder::reset() {
 	screen = Screen{};
 
 	// reset libav resources
-	format.reset();
-	codec.reset();
+	rescaler.reset();
+    codec.reset();
+    format.reset();
+//    avdevice_register_all();
 
 	stopped = false;
 	pausedVideo = false;

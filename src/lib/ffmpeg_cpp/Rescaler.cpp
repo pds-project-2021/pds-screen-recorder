@@ -64,3 +64,14 @@ SwsContext *Rescaler::get_sws() {
 SwrContext *Rescaler::get_swr() {
 	return swrCtx;
 }
+
+void Rescaler::reset() {
+    if (swsCtx != nullptr){
+        sws_freeContext(swsCtx);
+        swsCtx = nullptr;
+    }
+    if (swrCtx != nullptr) {
+        swr_free(&swrCtx);
+        swrCtx = nullptr;
+    }
+}
