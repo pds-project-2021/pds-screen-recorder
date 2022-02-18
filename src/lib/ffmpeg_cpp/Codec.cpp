@@ -114,7 +114,7 @@ void Codec::find_video_encoder(const std::string &codec_name) {
         video = avcodec_find_encoder_by_name(FALLBACK_VIDEO_CODEC);
         std::cerr << "Requested codec was not found, selecting default fallback codec: " << FALLBACK_VIDEO_CODEC <<std::endl;
         if (!video) {
-            throw avException("Error in finding the video av codecs.");
+            throw avException("Error in finding the video av codecs");
         }
     }
 	output.set_video(video);
