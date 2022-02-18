@@ -100,7 +100,7 @@ void Codec::find_audio_encoder(const std::string &codec_name) {
 #elif WIN32
     auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
 #else
-	auto audio = (AVCodec*) avcodec_find_encoder(AV_CODEC_ID_AAC);
+	auto audio = (AVCodec*) avcodec_find_encoder_by_name(codec_name.c_str());
 #endif
 	if (!audio) {
 		throw avException("Error in finding the audio av codecs.");
