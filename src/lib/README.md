@@ -80,6 +80,29 @@ dell'algoritmo di codifica e decodifica. In particolare nella funzione `init()` 
 inizializzate e allocate le strutture dati di ffmpeg per la cattura e nella funzione di `reset()`
 vengono rilasciate le risorse e reinizializzati i dati per una nuova cattura.
 
+
+###Thread asincroni per la cattura audio/video
+
+
+
+###Controllo e gestione errori durante esecuzione dei thread asincroni
+
+Nel momento in cui uno qualsiasi dei thread audio/video di cattura/demuxing/conversione lancia
+internamente un'eccezione, questa viene automaticamente gestita dal thread in questione,
+che si preoccuperà di avviare un thread secondario che esegue la funzione `handle_rec_error`
+la quale riceve come parametri il nome del thread, un numero che lo identifica per la sua
+funzione e una stringa che specifica il tipo di errore che si è verificato.
+
+La funzione si occupa quindi di salvare i dati relativi all'errore in una variabile interna
+alla classe e di interrompere l'esecuzione dei thread audio/video, oltre che di ripristinare
+lo stato delle strutture dati interne. 
+Dopodichè il thread secondario termina e sarà possibile accedere ai dati relativi all'errore
+verificatosi tramite una chiamata al metodo pubblico `get_exec_error` che riceve tramite
+riferimento una variabile bool nella quale viene memorizzato l'effettivo avvenire di un errore
+durante la fase di registrazione entro il momento della chiamata del metodo e restituisce una
+stringa con i dettagli sull'errore in caso affermativo.
+
+
 [//]: # (todo funzioni di cattura)
 
 ## Template `wrapper`
