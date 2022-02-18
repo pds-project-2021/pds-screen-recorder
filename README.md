@@ -35,10 +35,12 @@ una sua implementazione con classi e idioma RAII ([qui](src/lib/README.md) la do
 Per il del progetto sono necessarie le seguenti dipendenze:
 
 - `cmake 3.20+`
-- `clang 13+`
+- `clang 13+` o `MSVC c++ compiler`
 - `ffmpeg 4.4.1+`
+- `gtk4`
+- `libx264`
 
-Installare il pacchetto `ffmpeg` è il modo più veloce per soddisfare automaticamente le dipendenze.
+Installare i pacchetti `ffmpeg`, `gtk4`, e `libx264` è il modo più veloce per soddisfare automaticamente le dipendenze, tramite un package manager su sistemi Linux oppure adoperando tool come vcpkg per sistemi Windows oppure brew per MacOS. 
 
 Dalla cartella root del progetto eseguire il build con:
 
@@ -50,6 +52,17 @@ make
 
 Questo genererà l'eseguibile nella cartella `build` appena creata.
 
+###Procedure aggiuntive per sistemi Windows
+Nel caso in cui si effettui la build su un sistema Windows, è necessario disporre delle dipendenze richiste nel file cmake, che è stato configurato per integrarsi
+con eventuali installazioni presenti di vcpkg (il percorso di installazione richiesto è "C:/src/vcpkg" ma può essere modificato nel file per soddisfare percorsi differenti).
+
+Sarà inoltre necessario aggiungere -DCMAKE_TOOLCHAIN_FILE={vcpkg-root-folder}/scripts/buildsystems/vcpkg.cmake alle opzioni di cmake sostituendo la parte tra parentesi con il percorso di installazione di vcpkg.
+
+A questo punto tutte le dipendenze necessarie possono essere installate tramite vcpkg e verranno riconosciute automaticamente.
+
+Sarà necessario aggiungere alle variabili di ambiente XDG_DATA_DIRS={vcpkg-root-folder}\installed\x64-windows\share per permettere il corretto funzionamento di gtk4 nel caso di installazione tramite vcpkg.
+
+##Esecuzione
 Eseguire con `./recs`, si possono aggiunger dei flag da linea di comando:
 
 ```shell
