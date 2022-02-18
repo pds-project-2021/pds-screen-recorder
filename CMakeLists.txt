@@ -9,7 +9,7 @@ include_directories(${PROJECT_BINARY_DIR})
 # gui asset files
 include_directories(assets)
 
-if (LINUX)
+if (UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
     # GTK4
     pkg_check_modules(GTK4 REQUIRED gtk4)
@@ -89,7 +89,7 @@ endif ()
 # include lib
 add_subdirectory(src/lib)
 
-if(LINUX)
+if(UNIX AND NOT APPLE)
     add_executable(${PROJECT_NAME} src/main.cpp src/Interface.cpp src/Interface.h)
     target_link_libraries(${PROJECT_NAME} ${GTK4_LIBRARIES} PkgConfig::LIBAV lib)
 elseif(WIN32)
