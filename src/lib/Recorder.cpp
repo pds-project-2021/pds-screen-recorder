@@ -176,7 +176,6 @@ void Recorder::reset() {
 	rescaler.reset();
     codec.reset();
     format.reset();
-//    avdevice_register_all();
 
 	stopped = false;
 	pausedVideo = false;

@@ -16,19 +16,23 @@
 #define AUDIO_SAMPLE_RATE   44100
 #define VIDEO_BITRATE       8*1000*1000
 #define AUDIO_BITRATE       128*1000
+#define VIDEO_FRAMERATE     30
+#define VIDEO_GOP_SIZE      15
+#define VIDEO_MAX_B_FRAMES  10
 
 #ifdef WIN32
 /** WINDOWS platform specific attributes */
 
 #include <iostream>
-
 #include <windows.h>
+
 #pragma comment(lib, "strmiids.lib")
 #define DEFAULT_AUDIO_INPUT_FORMAT  "dshow"
-#define DEFAULT_AUDIO_INPUT_DEVICE   0
+#define DEFAULT_AUDIO_INPUT_DEVICE  0
 #define DEFAULT_VIDEO_INPUT_FORMAT  "gdigrab"
 #define DEFAULT_VIDEO_INPUT_DEVICE  "desktop"
-#define DEFAULT_VIDEO_CODEC         "h264_mf"
+#define DEFAULT_VIDEO_CODEC         "t"
+#define FALLBACK_VIDEO_CODEC        "mpeg2"
 #define DEFAULT_AUDIO_CODEC         "aac"
 
 
@@ -40,6 +44,7 @@
 #define DEFAULT_VIDEO_INPUT_FORMAT  "x11grab"
 #define DEFAULT_VIDEO_INPUT_DEVICE  ":0.0"
 #define DEFAULT_VIDEO_CODEC         "libx264"
+#define FALLBACK_VIDEO_CODEC        "mpeg2"
 #define DEFAULT_AUDIO_CODEC         "aac"
 
 #else
@@ -52,7 +57,7 @@
 #define DEFAULT_VIDEO_INPUT_FORMAT  "avfoundation"
 #define DEFAULT_VIDEO_INPUT_DEVICE  "0"
 #define DEFAULT_VIDEO_CODEC         "libx264"
-#define DEFAULT_AUDIO_CODEC         "mp3"
+#define DEFAULT_AUDIO_CODEC         "aac"
 
 #endif
 

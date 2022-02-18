@@ -156,8 +156,8 @@ void Format::reset() {
 	inputContext.set_video(nullptr);
     outputContext.set_audio(nullptr);
 	outputContext.set_video(nullptr);
-    input.set_audio(nullptr);
-    input.set_video(nullptr);
-    output.set_audio(nullptr);
-    output.set_video(nullptr);
+//    input.set_audio(nullptr);
+//    input.set_video(nullptr);
+//    output.set_audio(nullptr);
+//    output.set_video(nullptr);
 }

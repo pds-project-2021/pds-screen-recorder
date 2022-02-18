@@ -42,7 +42,7 @@ rec.terminate();
 
 La classe usa il paradigma RAII per liberare le risorse e il builder pattern
 per impostare i parametri di registrazione. Di default viene catturato l'intero
-schermo con codec video `h264` e codec audio `acc`, inoltre per impostare facilmente
+schermo con codec video `h264` e codec audio `aac`, inoltre per impostare facilmente
 i parametri dello schermo si usa la classe `Screen` anch'essa col builder pattern, ad esempio:
 
 ```c++

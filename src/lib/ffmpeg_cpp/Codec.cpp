@@ -75,9 +75,9 @@ void Codec::destination_video_context() {
 	if (!videoCtx) {
 		throw avException("Error in allocating the video codec context");
 	}
-	videoCtx->gop_size = 15;
-	videoCtx->max_b_frames = 10;
-	videoCtx->time_base = {1, 30};
+	videoCtx->gop_size = VIDEO_GOP_SIZE;
+	videoCtx->max_b_frames = VIDEO_MAX_B_FRAMES;
+	videoCtx->time_base = {1, VIDEO_FRAMERATE};
 
 	outputContext.set_video(videoCtx);
 
@@ -110,9 +110,13 @@ void Codec::find_audio_encoder(const std::string &codec_name) {
 
 void Codec::find_video_encoder(const std::string &codec_name) {
 	auto video = avcodec_find_encoder_by_name(codec_name.c_str());
-	if (!video) {
-		throw avException("Error in finding the video av codecs.");
-	}
+    if (!video) {
+        video = avcodec_find_encoder_by_name(FALLBACK_VIDEO_CODEC);
+        std::cerr << "Requested codec was not found, selecting default fallback codec: " << FALLBACK_VIDEO_CODEC <<std::endl;
+        if (!video) {
+            throw avException("Error in finding the video av codecs.");
+        }
+    }
 	output.set_video(video);
 }
 
@@ -138,7 +142,7 @@ void Codec::open_streams(const Format &format) {
 	if (!video) {
 		throw avException("Error in creating a av format new video streams");
 	}
-	video->time_base = {1, 30};
+	video->time_base = {1, VIDEO_FRAMERATE};
 	streams.set_video(video);
 
 	auto audio = avformat_new_stream(format.outputContext.get_audio(), output.get_audio());
@@ -171,7 +175,7 @@ void Codec::set_source_audio_parameters(AVCodecParameters *par) {
 	par->sample_rate = AUDIO_SAMPLE_RATE;
 	par->codec_id = AV_CODEC_ID_PCM_S16LE;
 	par->codec_type = AVMEDIA_TYPE_AUDIO;
-	par->frame_size = 22050; // set number of audio samples in each frame
+	par->frame_size = AUDIO_SAMPLE_RATE/2; // set number of audio samples in each frame
 	par->channel_layout = channel_layout;
 	par->channels = channels;
 
@@ -204,7 +208,7 @@ void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
 	par->channel_layout = inputContext.get_audio()->channel_layout;
 	par->sample_rate = inputContext.get_audio()->sample_rate;
 	par->format = output.get_audio()->sample_fmts[0];
-	par->frame_size = 22050;
+	par->frame_size = AUDIO_SAMPLE_RATE/2;
 }
 
 void Codec::set_destination_video_parameters(AVCodecParameters *par) {
@@ -223,12 +227,12 @@ void Codec::reset() {
 	inputContext.set_video(nullptr);
 	outputContext.set_audio(nullptr);
 	outputContext.set_video(nullptr);
-    input.set_audio(nullptr);
-    input.set_video(nullptr);
-    output.set_audio(nullptr);
-    output.set_video(nullptr);
-    streams.set_audio(nullptr);
-    streams.set_video(nullptr);
+//    input.set_audio(nullptr);
+//    input.set_video(nullptr);
+//    output.set_audio(nullptr);
+//    output.set_video(nullptr);
+//    streams.set_audio(nullptr);
+//    streams.set_video(nullptr);
 }
 
 
