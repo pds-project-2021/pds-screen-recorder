@@ -365,18 +365,16 @@ void Recorder::CaptureAudioFrames() {
             auto in_packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
-            if (stopped.load() || !capturing) {
-                break;
-            }
-
-            if (!synced && !pausedAudio.load()) {
+            if(!capturing) return;
+            if (stopped) break;
+            if (!synced && !pausedAudio) {
                 if (in_packet.into()->pts > ref_time) {
                     ref_time = in_packet.into()->pts;
                 }
                 synced = true;
             }
 
-            if (!pausedAudio.load() && in_packet.into()->pts >= ref_time) {
+            if (!pausedAudio && in_packet.into()->pts >= ref_time) {
                 auto in_frame =
                     Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout,
                         0};
@@ -470,18 +468,16 @@ void Recorder::CaptureVideoFrames() {
             auto in_packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
-            if (!synced && sync && !pausedVideo.load()) {
+            if (!synced && sync && !pausedVideo) {
                 if (in_packet.into()->pts > ref_time) {
                     ref_time = in_packet.into()->pts;
                 }
                 synced = true;
             }
 
-            if (stopped.load() || !capturing) {
-                break;
-            }
-
-            if (!pausedVideo.load() && in_packet.into()->pts >= ref_time) {
+            if(!capturing) return;
+            if (stopped) break;
+            if (!pausedVideo && in_packet.into()->pts >= ref_time) {
                 if (frameNum++ == 30)
                     frameNum = 0; // reset every fps frames
 

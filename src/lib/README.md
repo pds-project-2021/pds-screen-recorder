@@ -83,9 +83,21 @@ vengono rilasciate le risorse e reinizializzati i dati per una nuova cattura.
 
 ###Thread asincroni per la cattura audio/video
 
+In base alla quantità di thread fisicamente presenti, la classe Recorder si occupa di decidere
+tra due tipi di esecuzione differenti: la prima consiste nell'adoperare due thread di cattura,
+uno `th_audio` per il flusso audio  ed un altro `th_video` per il flusso video, pensata per
+sistemi con fino a due thread fisici; la seconda invece separa i compiti di cattura in demuxing
+e conversione/scrittura per ogni flusso audio/video, per un totale di quattro thread in esecuzione,
+ovvero `th_audio_demux`, `th_audio_convert`, `th_video_demux` e `th_video_convert`.
 
-
-###Controllo e gestione errori durante esecuzione dei thread asincroni
+Più in dettaglio:
+- `th_audio`:
+    esegue la funzione `CaptureAudioFrames()`, che mantiene un ciclo while di lettura dei 
+    pacchetti audio in ingresso fino a che non viene convalidata una condizione di terminazione, che
+    può portare allo stop della regitrazione (`stopped == true`) o alla terminazione immediata della
+    funzione (`capturing == false`).
+    
+###Controllo e gestione errori durante l'esecuzione dei thread asincroni
 
 Nel momento in cui uno qualsiasi dei thread audio/video di cattura/demuxing/conversione lancia
 internamente un'eccezione, questa viene automaticamente gestita dal thread in questione,
