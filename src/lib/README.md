@@ -70,10 +70,10 @@ dal numero di core della cpu con `std::thread::hardware_concurrency()`, ciò non
 però all'utente di scegliere il profilo di esecuzione della cattura con `set_low_profile()` e
 `set_high_profile()` che rilasciano rispettivamente due e quattro thread per la cattura.
 
-Per interazione asincrona con i thread di cattura sono esposte delle fuzioni di controllo:
+Per interazione asincrona con i thread di cattura sono esposte delle funzioni di controllo:
 `pause()` e `is_paused()` per mettere in pausa e controllare che la cattura sia in pausa,
 `resume()` per riprendere dopo un comando di pausa e `is_capturing()` che controlla che sia
-stato avviato il muxing/demux e quindi sia finita al fase di inizializzazione.
+stato avviato il muxing/demux e quindi sia finita la fase di inizializzazione.
 
 Le funzioni private della classe sono per lo più per l'inizializzazione e l'implementazione
 dell'algoritmo di codifica e decodifica. In particolare nella funzione `init()` vengono 

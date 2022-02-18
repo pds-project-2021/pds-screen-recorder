@@ -1,11 +1,11 @@
 # Recs
 
-Sowftware la cattura e registrazione dello schermo. 
+Software la cattura e registrazione dello schermo. 
 Sono supportati i seguenti sistemi:
 
 - Linux
 - Windows
-- MacOS
+- MacOS (non testato)
 
 Il software si compone di una libreria per la registrazione dello schermo
 e di una interfaccia grafica per una facile gestione.
@@ -52,7 +52,8 @@ make
 
 Questo genererà l'eseguibile nella cartella `build` appena creata.
 
-###Procedure aggiuntive per sistemi Windows
+### Procedure aggiuntive per sistemi Windows
+
 Nel caso in cui si effettui la build su un sistema Windows, è necessario disporre delle dipendenze richiste nel file cmake, che è stato configurato per integrarsi
 con eventuali installazioni presenti di vcpkg (il percorso di installazione richiesto è "C:/src/vcpkg" ma può essere modificato nel file per soddisfare percorsi differenti).
 
@@ -62,7 +63,8 @@ A questo punto tutte le dipendenze necessarie possono essere installate tramite 
 
 Sarà necessario aggiungere alle variabili di ambiente `XDG_DATA_DIRS={vcpkg-root-folder}\installed\x64-windows\share` per permettere il corretto funzionamento di gtk4 nel caso di installazione tramite vcpkg.
 
-##Esecuzione
+## Esecuzione
+
 Eseguire con `./recs`, si possono aggiunger dei flag da linea di comando:
 
 ```shell
@@ -73,7 +75,7 @@ USAGE: recs <args>
   -h, --help      Show this helper
 ```
 
-## Authors
+## Autori
 
 - Belluardo Gabriele s290270 
 - Bottisio Alessandro s277945
