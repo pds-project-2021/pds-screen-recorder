@@ -57,6 +57,7 @@
 #define DEFAULT_VIDEO_INPUT_FORMAT  "avfoundation"
 #define DEFAULT_VIDEO_INPUT_DEVICE  "0"
 #define DEFAULT_VIDEO_CODEC         "libx264"
+#define FALLBACK_VIDEO_CODEC        "mpeg2video"
 #define DEFAULT_AUDIO_CODEC         "aac"
 
 #endif

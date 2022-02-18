@@ -100,7 +100,7 @@ void Codec::find_audio_encoder(const std::string &codec_name) {
 #elif WIN32
     auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
 #else
-	auto audio = avcodec_find_encoder(AV_CODEC_ID_AAC);
+	auto audio = (AVCodec*) avcodec_find_encoder(AV_CODEC_ID_AAC);
 #endif
 	if (!audio) {
 		throw avException("Error in finding the audio av codecs.");
@@ -109,9 +109,9 @@ void Codec::find_audio_encoder(const std::string &codec_name) {
 }
 
 void Codec::find_video_encoder(const std::string &codec_name) {
-	auto video = avcodec_find_encoder_by_name(codec_name.c_str());
+	auto video = (AVCodec*) avcodec_find_encoder_by_name(codec_name.c_str());
     if (!video) {
-        video = avcodec_find_encoder_by_name(FALLBACK_VIDEO_CODEC);
+        video = (AVCodec*) avcodec_find_encoder_by_name(FALLBACK_VIDEO_CODEC);
         std::cerr << "Requested codec was not found, selecting default fallback codec: " << FALLBACK_VIDEO_CODEC <<std::endl;
         if (!video) {
             throw avException("Error in finding the video av codecs");
@@ -179,7 +179,7 @@ void Codec::set_source_audio_parameters(AVCodecParameters *par) {
 	par->channel_layout = channel_layout;
 	par->channels = channels;
 
-	auto audioCodec = avcodec_find_decoder(par->codec_id);
+	auto audioCodec = (AVCodec*)  avcodec_find_decoder(par->codec_id);
 	if (audioCodec == nullptr) {
 		throw avException("Unable to find the audio decoder");
 	}
@@ -191,7 +191,7 @@ void Codec::set_source_video_parameters(AVCodecParameters *par) {
 
 	par->format = AV_PIX_FMT_BGR0;
 
-	auto videoCodec = avcodec_find_decoder(par->codec_id);
+	auto videoCodec = (AVCodec*) avcodec_find_decoder(par->codec_id);
 	if (videoCodec == nullptr) {
 		throw avException("Unable to find the video decoder");
 	}
