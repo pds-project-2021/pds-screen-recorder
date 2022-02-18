@@ -1,6 +1,7 @@
 #include "Codec.h"
 
 /* Private methods */
+
 void Codec::source_audio_context() {
 	auto audio = input.get_audio();
 	auto audioCtx = avcodec_alloc_context3(audio);
@@ -151,10 +152,6 @@ void Codec::open_streams(const Format &format) {
 	}
 	audio->time_base = {1, inputContext.get_audio()->sample_rate};
 	streams.set_audio(audio);
-
-
-
-
 }
 
 
@@ -214,10 +211,10 @@ void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
 void Codec::set_destination_video_parameters(AVCodecParameters *par) {
 	outputPar.set_video(par);
 
-	par->codec_id = output.get_video()->id; // AV_CODEC_ID_MPEG4; AV_CODEC_ID_H264; // AV_CODEC_ID_MPEG1VIDEO; // AV_CODEC_ID_MPEG2VIDEO;
+	par->codec_id = output.get_video()->id;
 	par->codec_type = AVMEDIA_TYPE_VIDEO;
 	par->format = AV_PIX_FMT_YUV420P;
-	par->bit_rate = VIDEO_BITRATE; // 2500000
+	par->bit_rate = VIDEO_BITRATE;
 	par->width = inputContext.get_video()->width;
 	par->height = inputContext.get_video()->height;
 }

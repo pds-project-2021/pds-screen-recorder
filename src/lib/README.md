@@ -115,11 +115,19 @@ durante la fase di registrazione entro il momento della chiamata del metodo e re
 stringa con i dettagli sull'errore in caso affermativo.
 
 
-[//]: # (todo funzioni di cattura)
-
 ## Template `wrapper`
 
+`wrapper` è un interfaccia che espone metodi di get e set dei puntatori nativi usati
+da `libav` di `ffmpeg`, implementa delle specializzazioni, per alcuni tipi, per il rilascio
+della memoria seguendo il paradigma RAII. Non è pesata per essere usata direttamente 
+dall'utente, ma come wrapper, appunto per attributi nelle classi `Codec` e `Format`.
+
 ## Codec
+
+Classe che alloca le risorse per `AVCodec` e `AVCodecContext` per l'input
+e l'output, oltre che agli `AVStream` di audio e video. Nelle funzioni d'inizializzazione
+vengono usati parametri di default (non dipendenti dalla piattaforma) e i parametri platform specific
+vengono ricavati con delle funzioni di `platform.cpp` con compilazione condizionale in base all'OS.
 
 ## Format
 
