@@ -40,7 +40,7 @@ Per il del progetto sono necessarie le seguenti dipendenze:
 - `gtk4`
 - `libx264`
 
-Installare i pacchetti `ffmpeg`, `gtk4`, e `libx264` è il modo più veloce per soddisfare automaticamente le dipendenze, tramite un package manager su sistemi Linux oppure adoperando tool come vcpkg per sistemi Windows oppure brew per MacOS. 
+Installare i pacchetti `ffmpeg`, `gtk4`, e `libx264` è il modo più veloce per soddisfare automaticamente le dipendenze, tramite un package manager su sistemi Linux oppure adoperando tool come vcpkg per sistemi Windows o brew per MacOS. 
 
 Dalla cartella root del progetto eseguire il build con:
 
