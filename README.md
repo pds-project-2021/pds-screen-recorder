@@ -40,7 +40,7 @@ Per il del progetto sono necessarie le seguenti dipendenze:
 - `gtk4`
 - `libx264`
 
-Installare i pacchetti `ffmpeg`, `gtk4`, e `libx264` è il modo più veloce per soddisfare automaticamente le dipendenze, tramite un package manager su sistemi Linux oppure adoperando tool come vcpkg per sistemi Windows o brew per MacOS. 
+Installare i pacchetti `ffmpeg`, `gtk4`, e `libx264` è il modo più veloce per soddisfare automaticamente le dipendenze, tramite un package manager su sistemi Linux oppure adoperando tool come `vcpkg` per sistemi Windows o `brew` per MacOS. 
 
 Dalla cartella root del progetto eseguire il build con:
 
@@ -56,11 +56,11 @@ Questo genererà l'eseguibile nella cartella `build` appena creata.
 Nel caso in cui si effettui la build su un sistema Windows, è necessario disporre delle dipendenze richiste nel file cmake, che è stato configurato per integrarsi
 con eventuali installazioni presenti di vcpkg (il percorso di installazione richiesto è "C:/src/vcpkg" ma può essere modificato nel file per soddisfare percorsi differenti).
 
-Sarà inoltre necessario aggiungere -DCMAKE_TOOLCHAIN_FILE={vcpkg-root-folder}/scripts/buildsystems/vcpkg.cmake alle opzioni di cmake sostituendo la parte tra parentesi con il percorso di installazione di vcpkg.
+Sarà inoltre necessario aggiungere `-DCMAKE_TOOLCHAIN_FILE={vcpkg-root-folder}/scripts/buildsystems/vcpkg.cmake` alle opzioni di cmake sostituendo la parte tra parentesi con il percorso di installazione di vcpkg.
 
 A questo punto tutte le dipendenze necessarie possono essere installate tramite vcpkg e verranno riconosciute automaticamente.
 
-Sarà necessario aggiungere alle variabili di ambiente XDG_DATA_DIRS={vcpkg-root-folder}\installed\x64-windows\share per permettere il corretto funzionamento di gtk4 nel caso di installazione tramite vcpkg.
+Sarà necessario aggiungere alle variabili di ambiente `XDG_DATA_DIRS={vcpkg-root-folder}\installed\x64-windows\share` per permettere il corretto funzionamento di gtk4 nel caso di installazione tramite vcpkg.
 
 ##Esecuzione
 Eseguire con `./recs`, si possono aggiunger dei flag da linea di comando:
