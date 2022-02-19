@@ -25,8 +25,6 @@ class Recorder {
 	std::thread th_video;
 	std::thread th_audio;
 
-    bool pts_sync_enabled;
-    std::atomic<int64_t> ref_time = 0;
 	unsigned int num_core = std::thread::hardware_concurrency();
 
 	// action variable for pause and terminate
@@ -69,7 +67,6 @@ class Recorder {
 
   public:
     Recorder();
-	Recorder(bool);
 	~Recorder();
 
 //    TODO: da sistemare

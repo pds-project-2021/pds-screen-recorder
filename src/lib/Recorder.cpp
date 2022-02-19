@@ -1,11 +1,8 @@
 #include "Recorder.h"
 
 /** Initialize lib codecs and devices */
-Recorder::Recorder() : pts_sync_enabled(true) {
+Recorder::Recorder(){
     avdevice_register_all();
-}
-Recorder::Recorder(bool pt_sync) : pts_sync_enabled(pt_sync) {
-	avdevice_register_all();
 }
 
 Recorder::~Recorder() {
@@ -220,7 +217,7 @@ bool Recorder::is_capturing() {
 
 void Recorder::init() {
 #ifdef WIN32
-	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
 	format.set_screen_params(screen);
@@ -249,8 +246,6 @@ void Recorder::init() {
 	rescaler.set_video_scaler(codec);
 
 	format.write_header();
-
-	ref_time = get_ref_time(format.inputContext);
 
 #ifdef WIN32
 	CoUninitialize();
@@ -358,27 +353,18 @@ void Recorder::CaptureAudioFrames() {
         int frame_size = 0;
         int got_frame = 0;
         int64_t pts = 0;
-        bool synced = false;
 
         // Handle audio input stream packets
         avformat_flush(inputFormatContext);
 
         auto read_frame = true;
-        if(!pts_sync_enabled) synced = true;
         while (read_frame) {
             auto in_packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
             if(!capturing) return;
             if (stopped) break;
-            if (!synced && !pausedAudio) {
-                if (in_packet.into()->pts > ref_time) {
-                    ref_time = in_packet.into()->pts;
-                }
-                synced = true;
-            }
-
-            if (!pausedAudio && in_packet.into()->pts >= ref_time) {
+            if (!pausedAudio) {
                 auto in_frame =
                     Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout,
                         0};
@@ -460,27 +446,14 @@ void Recorder::CaptureVideoFrames() {
         int frameNum = 0; // frame number in a second
 
         int got_frame = 0;
-        bool synced = false;
-        int64_t rt;
-
-        if (!pts_sync_enabled || inputFormatContext->start_time <= ref_time || ref_time < 0) {// If video did not start later or ref value is not valid
-            synced = true;// Video does not need to set the ref_time value
-        }
 
         auto read_frame = true;
         while (read_frame) {
             auto in_packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
-
-            if (!synced && !pausedVideo) {
-                if (in_packet.into()->pts > ref_time) {
-                    ref_time = in_packet.into()->pts;
-                }
-                synced = true;
-            }
             if(!capturing) return;
             if (stopped) break;
-            if (!pausedVideo && in_packet.into()->pts >= ref_time) {
+            if (!pausedVideo) {
                 if (frameNum++ == 30)
                     frameNum = 0; // reset every fps frames
 
@@ -555,7 +528,6 @@ void Recorder::DemuxAudioInput() {
         auto inputFormatContext = format.inputContext.get_audio();
         auto inputCodecContext = codec.inputContext.get_audio();
 
-        if(!pts_sync_enabled) synced = true;
         avformat_flush(inputFormatContext);
         auto read_packet = true;
         while (read_packet) {
@@ -574,13 +546,7 @@ void Recorder::DemuxAudioInput() {
                 audioCnv.notify_one(); // notify converter thread if halted
                 break;
             }
-            if (!synced && !pausedAudio) {
-                if (in_packet.into()->pts > ref_time) {
-                    ref_time = in_packet.into()->pts;
-                }
-                synced = true;
-            }
-            if (!pausedAudio && in_packet.into()->pts >= ref_time) {
+            if (!pausedAudio) {
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<double> elapsed_seconds = end - start;
                 log_debug("Received audio packet after " + std::to_string(elapsed_seconds.count()) + " s");
@@ -775,10 +741,6 @@ void Recorder::DemuxVideoInput() {
         auto inputFormatContext = format.inputContext.get_video();
         auto inputCodecContext = codec.inputContext.get_video();
 
-        if (!pts_sync_enabled || inputFormatContext->start_time <= ref_time || ref_time < 0) {// If video did not start later or ref value is not valid
-            synced = true;// Video does not need to set the ref_time value
-        }
-
         auto read_frame = true;
         while (read_frame) {
             auto packet = Packet{};
@@ -798,11 +760,7 @@ void Recorder::DemuxVideoInput() {
                 videoCnv.notify_one(); // notify converter thread if halted
                 break;
             }
-            if (!synced && !pausedVideo) {
-                if (pts > ref_time) ref_time = pts;
-                synced = true;
-            }
-            if (!pausedVideo && pts >= ref_time) {
+            if (!pausedVideo) {
                 if (frameNum == 30) {
                     frameNum = 0; // reset every fps frames
                     auto end = std::chrono::system_clock::now();
