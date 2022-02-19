@@ -316,28 +316,28 @@ void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& 
         if(th_num != 1) th_audio_demux.join();
         else {
             th_audio_demux.join();
-            std::lock_guard<std::mutex> ul(aD);
+            std::lock_guard<std::mutex> ul(aC);
             finishedAudioDemux = true;
-            audioCnv.notify_one(); // notify converter thread if halted
+            audioCnv.notify_one(); // notify thread if halted
         }
         if(th_num != 2) th_audio_convert.join();
         else {
             th_audio_convert.join();
-            std::unique_lock<std::mutex> ul(aD);
-            audioCnv.notify_one();// Signal demuxer thread if necessary
+            std::unique_lock<std::mutex> ul(aC);
+            audioCnv.notify_one();// notify thread if halted
         }
         if(th_num != 3) th_video_demux.join();
         else {
             th_video_demux.join();
-            std::lock_guard<std::mutex> ul(vD);
+            std::lock_guard<std::mutex> ul(vC);
             finishedVideoDemux = true;
-            videoCnv.notify_one(); // notify converter thread if halted
+            videoCnv.notify_one(); // notify thread if halted
         }
         if(th_num != 4) th_video_convert.join();
         else {
             th_video_convert.join();
-            std::lock_guard<std::mutex> ul(vD);
-            videoCnv.notify_one(); // notify converter thread if halted
+            std::lock_guard<std::mutex> ul(vC);
+            videoCnv.notify_one(); // notify thread if halted
         }
     } else {
         th_audio.join();
