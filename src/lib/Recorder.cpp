@@ -136,7 +136,9 @@ void Recorder::capture() {
  * Pause the capture
  */
 void Recorder::pause() {
-	pausedVideo = true;
+    std::lock_guard<std::mutex> al(aD);
+    std::lock_guard<std::mutex> vl(vD);
+    pausedVideo = true;
 	pausedAudio = true;
 }
 
@@ -144,7 +146,11 @@ void Recorder::pause() {
  * Resume capture from pause
  */
 void Recorder::resume() {
-	pausedVideo = false;
+    std::lock_guard<std::mutex> al(aD);
+    std::lock_guard<std::mutex> vl(vD);
+    avformat_flush(format.inputContext.get_audio());
+    avformat_flush(format.inputContext.get_video());
+    pausedVideo = false;
 	pausedAudio = false;
 }
 
@@ -360,11 +366,12 @@ void Recorder::CaptureAudioFrames() {
         auto read_frame = true;
         while (read_frame) {
             auto in_packet = Packet{};
-            read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
-
             if(!capturing) return;
             if (stopped) break;
+            std::unique_lock<std::mutex> ul(aD);
+            read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             if (!pausedAudio) {
+                ul.unlock();
                 auto in_frame =
                     Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout,
                         0};
@@ -391,7 +398,7 @@ void Recorder::CaptureAudioFrames() {
                 } else {
                     throw avException("Failed to decode packet");
                 }
-            }
+            } else ul.lock();
         }
 
         // Convert and write last frame
@@ -450,10 +457,13 @@ void Recorder::CaptureVideoFrames() {
         auto read_frame = true;
         while (read_frame) {
             auto in_packet = Packet{};
-            read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             if(!capturing) return;
             if (stopped) break;
+            std::unique_lock<std::mutex> ul(vD);
+            read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             if (!pausedVideo) {
+                ul.unlock();
+//                if(pausedAudio && !pausedVideo) pausedAudio = false;
                 if (frameNum++ == 30)
                     frameNum = 0; // reset every fps frames
 
@@ -477,7 +487,7 @@ void Recorder::CaptureVideoFrames() {
                                                   &wR);
                     }
                 }
-            }
+            } else ul.unlock();
         }
 
         // Handle delayed frames
@@ -532,27 +542,28 @@ void Recorder::DemuxAudioInput() {
         auto read_packet = true;
         while (read_packet) {
             auto in_packet = Packet{};
-            read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
-
             if (!capturing) {
-                std::lock_guard<std::mutex> ul(aD);
+                std::unique_lock<std::mutex> ul(aC);
                 finishedAudioDemux = true;
                 audioCnv.notify_one(); // notify converter thread if halted
                 return;
             }
             if (stopped) {
-                std::lock_guard<std::mutex> ul(aD);
+                std::unique_lock<std::mutex> ul(aC);
                 finishedAudioDemux = true;
                 audioCnv.notify_one(); // notify converter thread if halted
                 break;
             }
+            std::unique_lock<std::mutex> lg(aD);
+            read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             if (!pausedAudio) {
+                lg.unlock();
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<double> elapsed_seconds = end - start;
                 log_debug("Received audio packet after " + std::to_string(elapsed_seconds.count()) + " s");
 
                 // Send packet to decoder
-                std::unique_lock<std::mutex> ul(aD);
+                std::unique_lock<std::mutex> ul(aC);
                 result = avcodec_send_packet(inputCodecContext, in_packet.into()); // Try to send a packet without waiting
                 if (result >= 0) {
                     audioCnv.notify_one(); // notify converter thread if halted
@@ -581,7 +592,7 @@ void Recorder::DemuxAudioInput() {
                 }
                 //Packet sent
                 start = std::chrono::system_clock::now();
-            }
+            } else lg.unlock();
         }
     }
     catch(avException &e) {
@@ -626,11 +637,10 @@ void Recorder::ConvertAudioFrames() {
         int64_t pts = 0;
         int result = AVERROR(EAGAIN);
 
-        auto in_frame =
-            Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout, 0};
+        auto in_frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt,
+                  inputCodecContext->channel_layout, 0};
 
-
-        std::unique_lock<std::mutex> ul(aD);
+        std::unique_lock<std::mutex> ul(aC);
         result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
         if (result >= 0) {
             audioCnv.notify_one(); // Signal demuxer thread to resume if halted
@@ -744,23 +754,23 @@ void Recorder::DemuxVideoInput() {
         auto read_frame = true;
         while (read_frame) {
             auto packet = Packet{};
-            read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
-
-            auto pts = packet.into()->pts;
 
             if(!capturing) {
-                std::lock_guard<std::mutex> ul(vD);
+                std::unique_lock<std::mutex> ul(vC);
                 finishedVideoDemux = true;
                 videoCnv.notify_one(); // notify converter thread if halted
                 return;
             }
             if (stopped) {
-                std::lock_guard<std::mutex> ul(vD);
+                std::unique_lock<std::mutex> ul(vC);
                 finishedVideoDemux = true;
                 videoCnv.notify_one(); // notify converter thread if halted
                 break;
             }
+            std::unique_lock<std::mutex> lg(vD);
+            read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
             if (!pausedVideo) {
+                lg.unlock();
                 if (frameNum == 30) {
                     frameNum = 0; // reset every fps frames
                     auto end = std::chrono::system_clock::now();
@@ -770,7 +780,7 @@ void Recorder::DemuxVideoInput() {
                 }
 
                 // Send packet to decoder
-                std::unique_lock<std::mutex> ul(vD);
+                std::unique_lock<std::mutex> ul(vC);
                 result = avcodec_send_packet(inputCodecContext, packet.into());// Try to send a packet without waiting
                 if (result >= 0) {
                     videoCnv.notify_one(); // notify converter thread if halted
@@ -797,7 +807,7 @@ void Recorder::DemuxVideoInput() {
                 }
                 //Packet sent
                 frameNum++;
-            }
+            } else lg.unlock();
         }
     }
     catch(avException &e) {
@@ -842,7 +852,7 @@ void Recorder::ConvertVideoFrames() {
         int result = AVERROR(EAGAIN);
 
         auto in_frame = Frame{};
-        std::unique_lock<std::mutex> ul(vD);
+        std::unique_lock<std::mutex> ul(vC);
         result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
         if (result >= 0) {
             videoCnv.notify_one();// Signal demuxer thread to resume if halted
