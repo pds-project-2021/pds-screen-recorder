@@ -1,7 +1,10 @@
 #include "Recorder.h"
 
 /** Initialize lib codecs and devices */
-Recorder::Recorder() {
+Recorder::Recorder() : pts_sync_enabled(true) {
+    avdevice_register_all();
+}
+Recorder::Recorder(bool pt_sync) : pts_sync_enabled(pt_sync) {
 	avdevice_register_all();
 }
 
@@ -361,6 +364,7 @@ void Recorder::CaptureAudioFrames() {
         avformat_flush(inputFormatContext);
 
         auto read_frame = true;
+        if(!pts_sync_enabled) synced = true;
         while (read_frame) {
             auto in_packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
@@ -457,10 +461,10 @@ void Recorder::CaptureVideoFrames() {
 
         int got_frame = 0;
         bool synced = false;
-        bool sync = false;
+        int64_t rt;
 
-        if (inputFormatContext->start_time == ref_time) {// If video started later
-            sync = true;// Video needs to set the ref_time value
+        if (!pts_sync_enabled || inputFormatContext->start_time <= ref_time || ref_time < 0) {// If video did not start later or ref value is not valid
+            synced = true;// Video does not need to set the ref_time value
         }
 
         auto read_frame = true;
@@ -468,13 +472,12 @@ void Recorder::CaptureVideoFrames() {
             auto in_packet = Packet{};
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
-            if (!synced && sync && !pausedVideo) {
+            if (!synced && !pausedVideo) {
                 if (in_packet.into()->pts > ref_time) {
                     ref_time = in_packet.into()->pts;
                 }
                 synced = true;
             }
-
             if(!capturing) return;
             if (stopped) break;
             if (!pausedVideo && in_packet.into()->pts >= ref_time) {
@@ -552,28 +555,32 @@ void Recorder::DemuxAudioInput() {
         auto inputFormatContext = format.inputContext.get_audio();
         auto inputCodecContext = codec.inputContext.get_audio();
 
+        if(!pts_sync_enabled) synced = true;
         avformat_flush(inputFormatContext);
         auto read_packet = true;
         while (read_packet) {
             auto in_packet = Packet{};
             read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
-            if (stopped.load() || !capturing) {
+            if (!capturing) {
+                std::lock_guard<std::mutex> ul(aD);
+                finishedAudioDemux = true;
+                audioCnv.notify_one(); // notify converter thread if halted
+                return;
+            }
+            if (stopped) {
                 std::lock_guard<std::mutex> ul(aD);
                 finishedAudioDemux = true;
                 audioCnv.notify_one(); // notify converter thread if halted
                 break;
             }
-
-            if (!synced && !pausedAudio.load()) {
+            if (!synced && !pausedAudio) {
                 if (in_packet.into()->pts > ref_time) {
                     ref_time = in_packet.into()->pts;
                 }
                 synced = true;
             }
-
-            if (!pausedAudio.load() && in_packet.into()->pts >= ref_time) {
-
+            if (!pausedAudio && in_packet.into()->pts >= ref_time) {
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<double> elapsed_seconds = end - start;
                 log_debug("Received audio packet after " + std::to_string(elapsed_seconds.count()) + " s");
@@ -665,7 +672,7 @@ void Recorder::ConvertAudioFrames() {
         ul.unlock();
         while (result >= 0 || result == AVERROR(EAGAIN)) {
             if (!capturing) {
-                break;
+                return;
             }
             if (result >= 0) {
                 //Convert frames and then write them to file
@@ -763,14 +770,13 @@ void Recorder::DemuxVideoInput() {
         int frameNum = 0;
         int result;
         auto synced = false;
-        auto sync = false;
 
         auto start = std::chrono::system_clock::now();
         auto inputFormatContext = format.inputContext.get_video();
         auto inputCodecContext = codec.inputContext.get_video();
 
-        if (inputFormatContext->start_time == ref_time) { // If video started later
-            sync = true;// Video needs to set the ref_time value
+        if (!pts_sync_enabled || inputFormatContext->start_time <= ref_time || ref_time < 0) {// If video did not start later or ref value is not valid
+            synced = true;// Video does not need to set the ref_time value
         }
 
         auto read_frame = true;
@@ -780,19 +786,23 @@ void Recorder::DemuxVideoInput() {
 
             auto pts = packet.into()->pts;
 
-            if (stopped.load() || !capturing) {
+            if(!capturing) {
+                std::lock_guard<std::mutex> ul(vD);
+                finishedVideoDemux = true;
+                videoCnv.notify_one(); // notify converter thread if halted
+                return;
+            }
+            if (stopped) {
                 std::lock_guard<std::mutex> ul(vD);
                 finishedVideoDemux = true;
                 videoCnv.notify_one(); // notify converter thread if halted
                 break;
             }
-
-            if (!synced && sync && !pausedVideo.load()) {
+            if (!synced && !pausedVideo) {
                 if (pts > ref_time) ref_time = pts;
                 synced = true;
             }
-
-            if (!pausedVideo.load() && pts >= ref_time) {
+            if (!pausedVideo && pts >= ref_time) {
                 if (frameNum == 30) {
                     frameNum = 0; // reset every fps frames
                     auto end = std::chrono::system_clock::now();
@@ -882,7 +892,7 @@ void Recorder::ConvertVideoFrames() {
         ul.unlock();
         while (result >= 0 || result == AVERROR(EAGAIN)) {
             if (!capturing) {
-                break;
+                return;
             }
             if (result >= 0) {
                 //Convert frames and then write them to file

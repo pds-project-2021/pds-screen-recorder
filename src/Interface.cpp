@@ -530,7 +530,11 @@ void Interface::init_recorder(double sX, double sY, double eX, double eY) {
 	} else {
 		log_info("Recording " + screen.get_video_size() + " area, with offset " + screen.get_offset_str());
 	}
+#ifdef WIN32
+    t->s = std::make_unique<Recorder>(false);
+#else
     t->s = std::make_unique<Recorder>();
+#endif
 	t->s->set_screen_params(screen);
 	log_info("Initialized input streams");
 	t->ready = true;
@@ -619,7 +623,11 @@ void Interface::select_record_region(GtkWidget *, gpointer) {
 
 void Interface::reset_gui_from_start() {
     // delete recorder
+#ifdef WIN32
+    s = std::make_unique<Recorder>(false);
+#else
     s = std::make_unique<Recorder>();
+#endif
     ready = false;
     // reset action buttons
     gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
@@ -630,7 +638,11 @@ void Interface::reset_gui_from_start() {
 
 void Interface::reset_gui_from_pause() {
 	// delete recorder
+#ifdef WIN32
+    s = std::make_unique<Recorder>(false);
+#else
     s = std::make_unique<Recorder>();
+#endif
     ready = false;
 	// reset action buttons
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
@@ -647,7 +659,11 @@ void Interface::reset_gui_from_pause() {
 void Interface::reset_gui_from_stop() {
 	// delete recorder if necessary
 	if (ready) {
-		s = std::make_unique<Recorder>();
+#ifdef WIN32
+        s = std::make_unique<Recorder>(false);
+#else
+        s = std::make_unique<Recorder>();
+#endif
 		ready = false;
 	}
 	// reset action buttons
