@@ -398,7 +398,7 @@ void Recorder::CaptureAudioFrames() {
                 } else {
                     throw avException("Failed to decode packet");
                 }
-            } else ul.lock();
+            } else ul.unlock();
         }
 
         // Convert and write last frame

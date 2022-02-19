@@ -115,11 +115,6 @@ std::string get_video_input_device(const std::string &_offset){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
 }
 
-int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
-//	return ctx.get_audio()->start_time * 10 + 50000000;
-	return 0;
-}
-
 #elif defined linux
 
 AVDictionary *get_audio_options() {
