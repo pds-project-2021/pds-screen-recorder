@@ -136,22 +136,21 @@ void Recorder::capture() {
  * Pause the capture
  */
 void Recorder::pause() {
-    std::lock_guard<std::mutex> al(aD);
-    std::lock_guard<std::mutex> vl(vD);
     pausedVideo = true;
-	pausedAudio = true;
+    pausedAudio = true;
 }
 
 /**
  * Resume capture from pause
  */
 void Recorder::resume() {
-    std::lock_guard<std::mutex> al(aD);
-    std::lock_guard<std::mutex> vl(vD);
+    std::unique_lock<std::mutex> rl(r);
     avformat_flush(format.inputContext.get_audio());
     avformat_flush(format.inputContext.get_video());
-    pausedVideo = false;
-	pausedAudio = false;
+    avcodec_flush_buffers(codec.inputContext.get_audio());
+    avcodec_flush_buffers(codec.inputContext.get_video());
+    resuming = true;
+    resumeWait.wait(rl, [this]()-> bool {return (!pausedAudio && !pausedVideo);});
 }
 
 /**
@@ -356,7 +355,7 @@ void Recorder::CaptureAudioFrames() {
         auto audioStream = codec.streams.get_audio();
         auto swrContext = rescaler.get_swr();
 
-        int frame_size = 0;
+        frame_size = 0;
         int got_frame = 0;
         int64_t pts = 0;
 
@@ -368,10 +367,19 @@ void Recorder::CaptureAudioFrames() {
             auto in_packet = Packet{};
             if(!capturing) return;
             if (stopped) break;
-            std::unique_lock<std::mutex> ul(aD);
+            std::unique_lock<std::mutex> rl(r);
+            if(resuming) {
+                pausedAudio = false;
+                if(pausedVideo) {
+                    resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
+                } else {
+                    resuming = false;
+                    resumeWait.notify_all();
+                }
+                rl.unlock();
+            } else rl.unlock();
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             if (!pausedAudio) {
-                ul.unlock();
                 auto in_frame =
                     Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout,
                         0};
@@ -398,7 +406,7 @@ void Recorder::CaptureAudioFrames() {
                 } else {
                     throw avException("Failed to decode packet");
                 }
-            } else ul.unlock();
+            }
         }
 
         // Convert and write last frame
@@ -451,7 +459,6 @@ void Recorder::CaptureVideoFrames() {
 
         int64_t count = 0;
         int frameNum = 0; // frame number in a second
-
         int got_frame = 0;
 
         auto read_frame = true;
@@ -459,10 +466,22 @@ void Recorder::CaptureVideoFrames() {
             auto in_packet = Packet{};
             if(!capturing) return;
             if (stopped) break;
-            std::unique_lock<std::mutex> ul(vD);
+            std::unique_lock<std::mutex> rl(r);
+            if(resuming) {
+                pausedVideo = false;
+                if(pausedAudio) {
+                    resumeWait.wait(rl, [this]() ->bool {return !pausedAudio;});
+                }
+                else {
+                    resuming = false;
+                    resumeWait.notify_all();
+                }
+                rl.unlock();
+            } else rl.unlock();
             read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+            frameCount++;
+            if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
             if (!pausedVideo) {
-                ul.unlock();
 //                if(pausedAudio && !pausedVideo) pausedAudio = false;
                 if (frameNum++ == 30)
                     frameNum = 0; // reset every fps frames
@@ -487,7 +506,7 @@ void Recorder::CaptureVideoFrames() {
                                                   &wR);
                     }
                 }
-            } else ul.unlock();
+            }
         }
 
         // Handle delayed frames
@@ -554,10 +573,19 @@ void Recorder::DemuxAudioInput() {
                 audioCnv.notify_one(); // notify converter thread if halted
                 break;
             }
-            std::unique_lock<std::mutex> lg(aD);
+            std::unique_lock<std::mutex> rl(r);
+            if(resuming) {
+                pausedAudio = false;
+                if(pausedVideo) {
+                    resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
+                } else {
+                    resuming = false;
+                    resumeWait.notify_all();
+                }
+                rl.unlock();
+            } else rl.unlock();
             read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             if (!pausedAudio) {
-                lg.unlock();
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<double> elapsed_seconds = end - start;
                 log_debug("Received audio packet after " + std::to_string(elapsed_seconds.count()) + " s");
@@ -592,7 +620,7 @@ void Recorder::DemuxAudioInput() {
                 }
                 //Packet sent
                 start = std::chrono::system_clock::now();
-            } else lg.unlock();
+            }
         }
     }
     catch(avException &e) {
@@ -633,9 +661,9 @@ void Recorder::ConvertAudioFrames() {
         auto audioStream = codec.streams.get_audio();
         auto swrContext = rescaler.get_swr();
 
-        int frame_size = 0;
         int64_t pts = 0;
         int result = AVERROR(EAGAIN);
+        frame_size = 0;
 
         auto in_frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt,
                   inputCodecContext->channel_layout, 0};
@@ -767,10 +795,20 @@ void Recorder::DemuxVideoInput() {
                 videoCnv.notify_one(); // notify converter thread if halted
                 break;
             }
-            std::unique_lock<std::mutex> lg(vD);
+            std::unique_lock<std::mutex> rl(r);
+            if(resuming) {
+                pausedVideo = false;
+                if(pausedAudio) {
+                    resumeWait.wait(rl, [this]() ->bool {return !pausedAudio;});
+                }
+                else {
+                    resuming = false;
+                    resumeWait.notify_all();
+                }
+                rl.unlock();
+            } else rl.unlock();
             read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
             if (!pausedVideo) {
-                lg.unlock();
                 if (frameNum == 30) {
                     frameNum = 0; // reset every fps frames
                     auto end = std::chrono::system_clock::now();
@@ -807,7 +845,7 @@ void Recorder::DemuxVideoInput() {
                 }
                 //Packet sent
                 frameNum++;
-            } else lg.unlock();
+            }
         }
     }
     catch(avException &e) {

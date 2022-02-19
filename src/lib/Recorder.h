@@ -29,16 +29,18 @@ class Recorder {
 
 	// action variable for pause and terminate
 	std::atomic<bool> stopped = false;
-	bool pausedVideo = false;
-	bool pausedAudio = false;
+    std::atomic<bool> resuming = false;
+    std::atomic<bool> pausedVideo = false;
+    std::atomic<bool> pausedAudio = false;
 	std::atomic<bool> finishedVideoDemux = false;
 	std::atomic<bool> finishedAudioDemux = false;
+    std::atomic<unsigned int> frameCount = 0;
+    std::atomic<unsigned int> frame_size = 0;
     bool rec_error = false;
 
     std::atomic<bool> capturing = false;
 
-	std::mutex vD;
-	std::mutex aD;
+	std::mutex r;
     std::mutex vC;
     std::mutex aC;
 	std::mutex wR;
@@ -46,6 +48,7 @@ class Recorder {
 
 	std::condition_variable videoCnv;
 	std::condition_variable audioCnv;
+    std::condition_variable resumeWait;
 
 	/* private functions */
 
