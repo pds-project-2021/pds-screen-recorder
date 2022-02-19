@@ -131,8 +131,16 @@ vengono ricavati con delle funzioni di `platform.cpp` con compilazione condizion
 
 ## Format
 
+Classe che alloca le risorse per `AVInputFormat`, `AVOutputFormat` e `AVFormatContext`, rilevando automaticamente
+i device e gli input di registrazione supportati. Il parametro `outputContext` è usato per il context del file di 
+destinazione, e viene allocato e deallocato con funzioni diverse rispetto ad `inputContext`.
+
 ## Rescaler
 
-## Template `ptr_wrapper`
-
 ## Packer e Frame
+
+Classi wrapper di `AVPacket` e `AVFrame`, per implementare il RAII su questi tipi e quindi poter
+essere usati dentro un ciclo, senza dover deallocare manualmente. Implementano il template `ptr_wrapper` per le
+funzioni `into()`, che ritorna il puntatore interno per le funzioni di `libav`, 
+e `unref()` per dereferenziare manualmente il puntatore, ma non rilasciare la memoria, necessario per 
+alcune funzioni di `libav` che si occupano automaticamente di gestire poi la memoria.
