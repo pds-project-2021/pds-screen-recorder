@@ -653,9 +653,6 @@ void Recorder::DemuxAudioInput() {
                 if(!pausingAudio) {
                     pausingAudio = true;
                     resumeWait.notify_all();
-                    if(frameCount == 0) pausedAudio = true;
-                }
-                if(pausedAudio) {
                     resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
                     pausingAudio = false;
                     pausing = false;
