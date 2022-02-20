@@ -591,6 +591,7 @@ void Recorder::DemuxAudioInput() {
                 resuming = false;
                 resumeWait.notify_all();
                 rl.unlock();
+                read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             } else {
                 rl.unlock();
                 read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
@@ -836,6 +837,7 @@ void Recorder::DemuxVideoInput() {
             }
             frameCount++;
             if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
+
             if (!pausedVideo) {
                 if (frameNum == 30) {
                     frameNum = 0; // reset every fps frames
