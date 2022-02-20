@@ -483,8 +483,16 @@ void Recorder::CaptureVideoFrames() {
         while (read_frame) {
             auto in_packet = Packet{};
 
-            if(!capturing) return;
-            if (stopped) break;
+            if(!capturing) {
+                std::unique_lock<std::mutex> rl(r);
+                resumeWait.notify_all();// notify audio thread if halted
+                return;
+            }
+            if (stopped) {
+                std::unique_lock<std::mutex> rl(r);
+                resumeWait.notify_all();// notify audio thread if halted
+                break;
+            }
 
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
