@@ -39,6 +39,10 @@ class Recorder {
 	std::atomic<bool> finishedAudioDemux = false;
     std::atomic<unsigned int> frameCount = 0;
     std::atomic<unsigned int> frame_size = 0;
+    std::atomic<int64_t> max_pts = 0;
+    std::atomic<int64_t> min_pts = 0;
+    std::atomic<int64_t> ptsAudio;
+    std::atomic<int64_t> ptsVideo;
     bool rec_error = false;
 
     std::atomic<bool> capturing = false;

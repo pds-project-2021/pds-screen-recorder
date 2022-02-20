@@ -50,7 +50,7 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext,
 int
 convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext,
                           AVStream *videoStream, AVFormatContext *outputFormatContext, AVFrame *frame,
-                          const int64_t *pts_p, std::mutex *wR);
+                          const int64_t *pts_p, std::mutex *wR, std::atomic<int64_t> *max_pts, std::atomic<int64_t> *min_pts);
 
 int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream,
                                       AVFormatContext *outputFormatContext, std::mutex *wR);
@@ -59,7 +59,8 @@ int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStre
 
 int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
                                AVCodecContext *inputCodecContext, AVStream *audioStream,
-                               AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, std::mutex *wR);
+                               AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, std::mutex *wR,
+                               std::atomic<int64_t> *max_pts, std::atomic<int64_t> *min_pts);
 
 int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
                                    AVCodecContext *inputCodecContext, AVStream *audioStream,

@@ -19,6 +19,7 @@
 #define VIDEO_FRAMERATE     30
 #define VIDEO_GOP_SIZE      15
 #define VIDEO_MAX_B_FRAMES  10
+#define PTS_SYNC_MULTIPLIER 100000000
 
 #ifdef WIN32
 /** WINDOWS platform specific attributes */
