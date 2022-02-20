@@ -28,25 +28,18 @@ class Recorder {
 	unsigned int num_core = std::thread::hardware_concurrency();
 
 	// action variable for pause and terminate
+    std::atomic<bool> capturing = false;
 	std::atomic<bool> stopped = false;
     std::atomic<bool> resuming = false;
     std::atomic<bool> pausing = false;
-    std::atomic<bool> resumingAudio = false;
-    std::atomic<bool> pausingAudio = false;
     std::atomic<bool> pausedVideo = false;
     std::atomic<bool> pausedAudio = false;
 	std::atomic<bool> finishedVideoDemux = false;
 	std::atomic<bool> finishedAudioDemux = false;
-    std::atomic<unsigned int> frameCount = 0;
-    std::atomic<unsigned int> frame_size = 0;
-    std::atomic<int64_t> max_pts = 0;
-    std::atomic<int64_t> min_pts = 0;
-    std::atomic<int64_t> ptsAudio;
-    std::atomic<int64_t> ptsVideo;
+    std::atomic<bool> resync_enabled = true;
+    int64_t max_pts = 0;
+    int64_t min_pts = 0;
     bool rec_error = false;
-
-    std::atomic<bool> capturing = false;
-
 	std::mutex r;
     std::mutex vC;
     std::mutex aC;
@@ -103,6 +96,9 @@ class Recorder {
 
 	[[maybe_unused]] void set_low_profile();
 	[[maybe_unused]] void set_high_profile();
+
+    [[maybe_unused]] bool get_forced_resync();
+    [[maybe_unused]] void set_forced_resync(bool s);
 
 	// recorder functions
 	void capture();

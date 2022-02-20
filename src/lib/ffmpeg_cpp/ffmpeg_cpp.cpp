@@ -101,7 +101,16 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext,
 int
 convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext,
                           AVStream *videoStream, AVFormatContext *outputFormatContext, AVFrame *frame,
-                          const int64_t *pts_p, std::mutex *wR, std::atomic<int64_t> *max_pts, std::atomic<int64_t> *min_pts) {
+                          int64_t *pts_p, std::mutex *wR, std::mutex *r, int64_t *mx_pts, int64_t *mn_pts,
+                          std::atomic<bool> *paused, bool resync) {
+
+    int64_t min_pts = 0;
+    int64_t max_pts =0;
+    if(resync) {
+        std::unique_lock<std::mutex> rl(*r);
+        min_pts = *mn_pts;
+        max_pts = *mx_pts;
+    }
 
 	auto out_frame =
 		Frame{outputCodecContext->width, outputCodecContext->height, (AVPixelFormat) outputCodecContext->pix_fmt, 32};
@@ -120,9 +129,14 @@ convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecCon
 	          outputFrame->data,
 	          outputFrame->linesize);
 
-	// Send converted frame to encoder
+    //pts resync to current min pts value
+    if(resync) {
+        auto pts_test = av_rescale_q(min_pts, {1, PTS_SYNC_MULTIPLIER}, outputCodecContext->time_base);
+        if (*pts_p < pts_test + 1) *pts_p = pts_test + 1;
+    }
 	outputFrame->pts = *pts_p - 1;
 
+    // Send converted frame to encoder
 	encode(outputCodecContext, outputPacket, outputFrame, &got_packet);
 
 	// Frame was sent successfully
@@ -134,15 +148,20 @@ convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecCon
 			outputPacket->dts = av_rescale_q(outputPacket->dts, outputCodecContext->time_base, videoStream->time_base);
 		}
 		outputPacket->duration = av_rescale_q(1, outputCodecContext->time_base, videoStream->time_base);
-        std::unique_lock<std::mutex> ul(*wR);
-        auto curr_pts = (outputPacket->pts*PTS_SYNC_MULTIPLIER/videoStream->time_base.den);
-        if(curr_pts > *max_pts) *max_pts = curr_pts;
-        // Write packet to file
-        if(curr_pts >= *min_pts) {
-            ul.unlock();
-            writeFrameToOutput(outputFormatContext, outputPacket, wR);
+
+        if(resync) {
+            auto curr_pts = (outputPacket->pts * PTS_SYNC_MULTIPLIER / videoStream->time_base.den);
+            if (curr_pts > max_pts) max_pts = curr_pts;
         }
+        // Write packet to file
+        writeFrameToOutput(outputFormatContext, outputPacket, wR);
 	}
+
+    if(resync) {
+        std::unique_lock<std::mutex> rl(*r);
+        *mx_pts = max_pts;
+        if(paused->load()) *mn_pts = *mx_pts;
+    }
 	return 0;
 }
 
@@ -180,7 +199,16 @@ int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStre
 int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
                                AVCodecContext *inputCodecContext, AVStream *audioStream,
                                AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, std::mutex *wR,
-                               std::atomic<int64_t> *max_pts, std::atomic<int64_t> *min_pts) {
+                               std::mutex *r, int64_t *mx_pts, int64_t *mn_pts, std::atomic<bool> *paused, bool resync) {
+
+    int64_t min_pts = 0;
+    int64_t max_pts =0;
+    if(resync) {
+        std::unique_lock<std::mutex> rl(*r);
+        min_pts = *mn_pts;
+        max_pts = *mx_pts;
+    }
+
 	auto out_frame =
 		Frame{outputCodecContext->frame_size, outputCodecContext->sample_fmt, outputCodecContext->channel_layout, 0};
 	auto outputFrame = out_frame.into();
@@ -200,6 +228,10 @@ int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCod
 	}
 
 	*pts_p += got_samples;
+    if(resync) {
+        auto pts_test = av_rescale_q(*pts_p, bq, {1, PTS_SYNC_MULTIPLIER});
+        if(pts_test < min_pts) *pts_p = av_rescale_q(min_pts, {1,  PTS_SYNC_MULTIPLIER}, bq);
+    }
 	outputFrame->nb_samples = got_samples;
 	outputFrame->pts = *pts_p;
 
@@ -217,15 +249,13 @@ int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCod
 
 		outputPacket->duration = av_rescale_q(outputCodecContext->frame_size, bq, audioStream->time_base);
 
-        std::unique_lock<std::mutex> ul(*wR);
-        auto curr_pts = (outputPacket->pts*PTS_SYNC_MULTIPLIER/audioStream->time_base.den);
-        if(curr_pts > *max_pts) *max_pts = curr_pts;
+        if(resync) {
+            auto curr_pts = (outputPacket->pts * PTS_SYNC_MULTIPLIER / audioStream->time_base.den);
+            if (curr_pts > max_pts) max_pts = curr_pts;
+        }
         // Write packet to file
         outputPacket->stream_index = 1;
-        if(curr_pts >= *min_pts) {
-            ul.unlock();
-            writeFrameToOutput(outputFormatContext, outputPacket, wR);
-        }
+        writeFrameToOutput(outputFormatContext, outputPacket, wR);
 	}
 
 	while (swr_get_out_samples(swrContext, 0) >= outputCodecContext->frame_size) {
@@ -246,17 +276,21 @@ int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCod
 			}
 			outputPacket->duration = av_rescale_q(outputCodecContext->frame_size, bq, audioStream->time_base);
 
-            std::unique_lock<std::mutex> ul(*wR);
-            auto curr_pts = (outputPacket->pts*PTS_SYNC_MULTIPLIER/audioStream->time_base.den);
-            if(curr_pts > *max_pts) *max_pts = curr_pts;
+            if(resync) {
+                auto curr_pts = (outputPacket->pts * PTS_SYNC_MULTIPLIER / audioStream->time_base.den);
+                if (curr_pts > max_pts) max_pts = curr_pts;
+            }
             // Write packet to file
             outputPacket->stream_index = 1;
-            if(curr_pts >= *min_pts) {
-                ul.unlock();
-                writeFrameToOutput(outputFormatContext, outputPacket, wR);
-            }
+            writeFrameToOutput(outputFormatContext, outputPacket, wR);
 		}
 	}
+
+    if(resync) {
+        std::unique_lock<std::mutex> rl(*r);
+        *mx_pts = max_pts;
+        if(paused->load()) *mn_pts = *mx_pts;
+    }
 	return 0;
 }
 
