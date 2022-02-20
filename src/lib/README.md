@@ -81,7 +81,7 @@ inizializzate e allocate le strutture dati di ffmpeg per la cattura e nella funz
 vengono rilasciate le risorse e reinizializzati i dati per una nuova cattura.
 
 
-###Thread asincroni per la cattura audio/video
+### Thread asincroni per la cattura audio/video
 
 In base alla quantità di thread fisicamente presenti, la classe Recorder si occupa di decidere
 tra due tipi di esecuzione differenti: la prima consiste nell'adoperare due thread di cattura,
@@ -97,7 +97,7 @@ Più in dettaglio:
     può portare allo stop della regitrazione (`stopped == true`) o alla terminazione immediata della
     funzione (`capturing == false`).
     
-###Controllo e gestione errori durante l'esecuzione dei thread asincroni
+### Controllo e gestione errori durante l'esecuzione dei thread asincroni
 
 Nel momento in cui uno qualsiasi dei thread audio/video di cattura/demuxing/conversione lancia
 internamente un'eccezione, questa viene automaticamente gestita dal thread in questione,
@@ -124,20 +124,26 @@ dall'utente, ma come wrapper, appunto per attributi nelle classi `Codec` e `Form
 
 ## Codec
 
-Classe che alloca le risorse per `AVCodec` e `AVCodecContext` per l'input
+`Codec` è la classe che alloca le risorse per `AVCodec` e `AVCodecContext` per l'input
 e l'output, oltre che agli `AVStream` di audio e video. Nelle funzioni d'inizializzazione
 vengono usati parametri di default (non dipendenti dalla piattaforma) e i parametri platform specific
 vengono ricavati con delle funzioni di `platform.cpp` con compilazione condizionale in base all'OS.
 
 ## Format
 
-Classe che alloca le risorse per `AVInputFormat`, `AVOutputFormat` e `AVFormatContext`, rilevando automaticamente
+`Format` è la classe che alloca le risorse per `AVInputFormat`, `AVOutputFormat` e `AVFormatContext`, rilevando automaticamente
 i device e gli input di registrazione supportati. Il parametro `outputContext` è usato per il context del file di 
 destinazione, e viene allocato e deallocato con funzioni diverse rispetto ad `inputContext`.
 
 ## Rescaler
 
-## Packer e Frame
+`Rescaler` è una classe wrapper di `SwsContext` e `SwrContext` che nelle funzioni di cattura servono per la
+conversione del formato pixel video e per il resampling audio, rispettivamente. La classe alloca e dealloca la memoria
+con paradigma RAII ed espone i puntatori con dei metodi get/set.
+
+
+
+## Packet e Frame
 
 Classi wrapper di `AVPacket` e `AVFrame`, per implementare il RAII su questi tipi e quindi poter
 essere usati dentro un ciclo, senza dover deallocare manualmente. Implementano il template `ptr_wrapper` per le
