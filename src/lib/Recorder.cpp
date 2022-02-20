@@ -136,7 +136,7 @@ void Recorder::capture() {
  * Pause the capture
  */
 void Recorder::pause() {
-    std::lock_guard<std::mutex> rl(r);
+    std::unique_lock<std::mutex> rl(r);
     pausing = true;
 }
 
@@ -614,6 +614,7 @@ void Recorder::DemuxAudioInput() {
                 if(pausedAudio) {
                     resumeWait.wait(rl, [this]() ->bool {return pausedVideo;});
                     pausing = false;
+                    syncedAudio = true;
                     resumeWait.notify_all();
                 }
                 rl.unlock();
@@ -622,11 +623,12 @@ void Recorder::DemuxAudioInput() {
                 resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
                 pausedAudio = false;
                 resuming = false;
+                syncedAudio = true;
                 resumeWait.notify_all();
                 rl.unlock();
                 read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             } else {
-                if(frameSyncCounter >= 2 * (AUDIO_SAMPLE_RATE*codec.channels)/frame_size) {//sync with video thread
+                if(frame_size>0 && frameSyncCounter >= 2 * (AUDIO_SAMPLE_RATE*codec.channels)/frame_size) {//sync with video thread every 2 seconds
                     syncedAudio = false;
                     resumeWait.wait(rl, [this]() -> bool { return syncedVideo; });
                     syncedAudio = true;
@@ -635,8 +637,8 @@ void Recorder::DemuxAudioInput() {
                 rl.unlock();
                 read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             }
+            if(frame_size>0 && frameSyncCounter >= 2 * (AUDIO_SAMPLE_RATE*codec.channels)/frame_size) frameSyncCounter = 0;
             frameSyncCounter++;
-            if(frameSyncCounter >= 2 * (AUDIO_SAMPLE_RATE*codec.channels)/frame_size) frameSyncCounter = 0;
 
             if (!pausedAudio) {
                 if(pausing) pausedAudio = true;
@@ -861,18 +863,20 @@ void Recorder::DemuxVideoInput() {
 
             //handle pause/resume
             std::unique_lock<std::mutex> rl(r);
-            if(pausing) {
+            if(pausing) {//handle pause request
                 read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
-                if(frameCount == 0 && !first_pause_frame) {
+                if(frameCount == (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) && !first_pause_frame) {
+                    syncedVideo = true;
                     pausedVideo = true;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool { return !pausing; });
                     first_pause_frame = true;
                 } else if(first_pause_frame) first_pause_frame = false;
                 rl.unlock();
-            } else if(resuming) {
-                if(frameCount == 0 && !first_resume_frame) {
+            } else if(resuming) {//handle resume request
+                if(frameCount == (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) && !first_resume_frame) {
                     read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
+                    syncedVideo = true;
                     pausedVideo = false;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() -> bool { return !resuming; });
@@ -883,7 +887,7 @@ void Recorder::DemuxVideoInput() {
                 }
                 rl.unlock();
             } else {
-                if(frameSyncCounter >= 2 * VIDEO_FRAMERATE) {
+                if(frameSyncCounter >= 2 * VIDEO_FRAMERATE) {//sync with audio thread every 2 seconds
                     syncedVideo = false;
                     resumeWait.wait(rl, [this]() -> bool { return syncedAudio; });
                     syncedVideo = true;
@@ -894,11 +898,10 @@ void Recorder::DemuxVideoInput() {
             }
 
             //update all frame sync counters
+            if(frame_size > 0 && (frameSyncCounter % (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) == 0) )  frameCount = 0;
+            if(frameSyncCounter >= 2 * VIDEO_FRAMERATE) frameSyncCounter = 0;
             frameCount++;
             frameSyncCounter++;
-            auto sync = frameSyncCounter % (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size));
-            if(frame_size > 0 && (frameSyncCounter % (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) != 0) )  frameCount = 0;
-            if(frameSyncCounter >= 2 * VIDEO_FRAMERATE) frameSyncCounter = 0;
 
             //send to converter thread if recording
             if (!pausedVideo) {
