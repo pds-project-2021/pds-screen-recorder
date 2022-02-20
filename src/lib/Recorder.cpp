@@ -785,7 +785,8 @@ void Recorder::DemuxVideoInput() {
         int frameNum = 0;
         int result;
         auto synced = false;
-
+        bool first_pause_frame = true;
+        bool first_resume_frame = true;
         auto start = std::chrono::system_clock::now();
         auto inputFormatContext = format.inputContext.get_video();
         auto inputCodecContext = codec.inputContext.get_video();
@@ -810,19 +811,24 @@ void Recorder::DemuxVideoInput() {
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
                 read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
-                if(frameCount == 0) {
+                if(frameCount == 0 && !first_pause_frame) {
                     pausedVideo = true;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool { return !pausing; });
-                }
+                    first_pause_frame = true;
+                } else if(first_pause_frame) first_pause_frame = false;
                 rl.unlock();
             } else if(resuming) {
-                if(frameCount == 0) {
+                if(frameCount == 0 && !first_resume_frame) {
                     read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
                     pausedVideo = false;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() -> bool { return !resuming; });
-                } else av_read_frame(inputFormatContext, packet.into());
+                    first_resume_frame = true;
+                } else {
+                    av_read_frame(inputFormatContext, packet.into());
+                    if(first_resume_frame) first_resume_frame = false;
+                }
                 rl.unlock();
             } else {
                 rl.unlock();
