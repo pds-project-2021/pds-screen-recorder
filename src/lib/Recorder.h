@@ -30,6 +30,7 @@ class Recorder {
 	// action variable for pause and terminate
 	std::atomic<bool> stopped = false;
     std::atomic<bool> resuming = false;
+    std::atomic<bool> pausing = false;
     std::atomic<bool> pausedVideo = false;
     std::atomic<bool> pausedAudio = false;
 	std::atomic<bool> finishedVideoDemux = false;
