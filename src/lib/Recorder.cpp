@@ -360,20 +360,29 @@ void Recorder::CaptureAudioFrames() {
         auto read_frame = true;
         while (read_frame) {
             auto in_packet = Packet{};
-            if(!capturing) return;
-            if (stopped) break;
+            if (!capturing) {
+                std::unique_lock<std::mutex> rl(r);
+                resumeWait.notify_all();// notify video thread if halted
+                return;
+            }
+            if (stopped) {
+                std::unique_lock<std::mutex> rl(r);
+                resumeWait.notify_all();// notify video thread if halted
+                break;
+            }
+
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
                 read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
                 if(pausedAudio) {
-                    resumeWait.wait(rl, [this]() ->bool {return pausedVideo;});
+                    resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
                     pausing = false;
                     resumeWait.notify_all();
                 }
                 rl.unlock();
             } else if(resuming) {
                 av_read_frame(inputFormatContext, in_packet.into());
-                resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
+                resumeWait.wait(rl, [this]() ->bool {return !pausedVideo || !capturing || stopped;});
                 pausedAudio = false;
                 resuming = false;
                 resumeWait.notify_all();
@@ -385,6 +394,7 @@ void Recorder::CaptureAudioFrames() {
             }
 
             if (!pausedAudio) {
+                if(pausing) pausedAudio = true;
                 auto in_frame =
                         Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout,
                               0};
@@ -482,7 +492,7 @@ void Recorder::CaptureVideoFrames() {
                 if(frameCount == 0 && !first_pause_frame) {
                     pausedVideo = true;
                     resumeWait.notify_all();
-                    resumeWait.wait(rl, [this]() ->bool { return !pausing; });
+                    resumeWait.wait(rl, [this]() ->bool { return !pausing || !capturing || stopped; });
                     first_pause_frame = true;
                 } else if(first_pause_frame) first_pause_frame = false;
                 rl.unlock();
@@ -491,7 +501,7 @@ void Recorder::CaptureVideoFrames() {
                     read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
                     pausedVideo = false;
                     resumeWait.notify_all();
-                    resumeWait.wait(rl, [this]() -> bool { return !resuming; });
+                    resumeWait.wait(rl, [this]() -> bool { return !resuming || !capturing || stopped; });
                     first_resume_frame = true;
                 } else {
                     av_read_frame(inputFormatContext, in_packet.into());
@@ -589,12 +599,18 @@ void Recorder::DemuxAudioInput() {
                 std::unique_lock<std::mutex> ul(aC);
                 finishedAudioDemux = true;
                 audioCnv.notify_one(); // notify converter thread if halted
+                ul.unlock();
+                std::unique_lock<std::mutex> rl(r);
+                resumeWait.notify_all();// notify video thread if halted
                 return;
             }
             if (stopped) {
                 std::unique_lock<std::mutex> ul(aC);
                 finishedAudioDemux = true;
                 audioCnv.notify_one(); // notify converter thread if halted
+                ul.unlock();
+                std::unique_lock<std::mutex> rl(r);
+                resumeWait.notify_all();// notify video thread if halted
                 break;
             }
 
@@ -602,14 +618,14 @@ void Recorder::DemuxAudioInput() {
             if(pausing) {
                 read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
                 if(pausedAudio) {
-                    resumeWait.wait(rl, [this]() ->bool {return pausedVideo;});
+                    resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
                     pausing = false;
                     resumeWait.notify_all();
                 }
                 rl.unlock();
             } else if(resuming) {
                 av_read_frame(inputFormatContext, in_packet.into());
-                resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
+                resumeWait.wait(rl, [this]() ->bool {return !pausedVideo || !capturing || stopped;});
                 pausedAudio = false;
                 resuming = false;
                 resumeWait.notify_all();
@@ -823,12 +839,18 @@ void Recorder::DemuxVideoInput() {
                 std::unique_lock<std::mutex> ul(vC);
                 finishedVideoDemux = true;
                 videoCnv.notify_one(); // notify converter thread if halted
+                ul.unlock();
+                std::unique_lock<std::mutex> rl(r);
+                resumeWait.notify_all();// notify audio thread if halted
                 return;
             }
             if (stopped) {
                 std::unique_lock<std::mutex> ul(vC);
                 finishedVideoDemux = true;
                 videoCnv.notify_one(); // notify converter thread if halted
+                ul.unlock();
+                std::unique_lock<std::mutex> rl(r);
+                resumeWait.notify_all();// notify audio thread if halted
                 break;
             }
 
@@ -838,7 +860,7 @@ void Recorder::DemuxVideoInput() {
                 if(frameCount == 0 && !first_pause_frame) {
                     pausedVideo = true;
                     resumeWait.notify_all();
-                    resumeWait.wait(rl, [this]() ->bool { return !pausing; });
+                    resumeWait.wait(rl, [this]() ->bool { return !pausing || !capturing || stopped; });
                     first_pause_frame = true;
                 } else if(first_pause_frame) first_pause_frame = false;
                 rl.unlock();
@@ -847,7 +869,7 @@ void Recorder::DemuxVideoInput() {
                     read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
                     pausedVideo = false;
                     resumeWait.notify_all();
-                    resumeWait.wait(rl, [this]() -> bool { return !resuming; });
+                    resumeWait.wait(rl, [this]() -> bool { return !resuming || !capturing || stopped; });
                     first_resume_frame = true;
                 } else {
                     av_read_frame(inputFormatContext, packet.into());
