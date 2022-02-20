@@ -7,8 +7,8 @@ Recorder::Recorder(){
 
 Recorder::~Recorder() {
     if(capturing) {
-		terminate();
-	}
+        terminate();
+    }
     log_info("Recorder destroyed");
 }
 
@@ -17,7 +17,7 @@ Recorder::~Recorder() {
  * @return
  */
 [[maybe_unused]] enum AudioLayout Recorder::get_audio_layout() {
-	return audio_layout;
+    return audio_layout;
 }
 
 /**
@@ -25,7 +25,7 @@ Recorder::~Recorder() {
  * @return
  */
 [[maybe_unused]] void Recorder::set_audio_layout(enum AudioLayout layout) {
-	audio_layout = layout;
+    audio_layout = layout;
 }
 
 /**
@@ -33,7 +33,7 @@ Recorder::~Recorder() {
  * @return
  */
 [[maybe_unused]] std::string Recorder::get_audio_codec() {
-	return audio_codec;
+    return audio_codec;
 }
 
 /**
@@ -41,7 +41,7 @@ Recorder::~Recorder() {
  * @return
  */
 [[maybe_unused]] std::string Recorder::get_video_codec() {
-	return video_codec;
+    return video_codec;
 }
 
 /**
@@ -49,7 +49,7 @@ Recorder::~Recorder() {
  * @param device
  */
 [[maybe_unused]] void Recorder::set_audio_codec(const std::string &cod) {
-	audio_codec = cod;
+    audio_codec = cod;
 }
 
 /**
@@ -57,7 +57,7 @@ Recorder::~Recorder() {
  * @param device
  */
 [[maybe_unused]] void Recorder::set_video_codec(const std::string &cod) {
-	video_codec = cod;
+    video_codec = cod;
 }
 
 /**
@@ -65,38 +65,38 @@ Recorder::~Recorder() {
  */
 
 [[maybe_unused]] void Recorder::set_destination(const std::string &dest_path) {
-	auto path = std::filesystem::path(dest_path);
+    auto path = std::filesystem::path(dest_path);
 
-	if (is_file_str(dest_path)) {
-		std::filesystem::create_directories(path.parent_path());
-		destination_path = dest_path;
-	} else {
-		std::filesystem::create_directories(path);
-		destination_path = get_default_path(path);
-	}
+    if (is_file_str(dest_path)) {
+        std::filesystem::create_directories(path.parent_path());
+        destination_path = dest_path;
+    } else {
+        std::filesystem::create_directories(path);
+        destination_path = get_default_path(path);
+    }
 }
 
 std::string Recorder::get_destination() {
-	return destination_path;
+    return destination_path;
 }
 
 void Recorder::set_screen_params(const Screen &params){
-	screen = params;
+    screen = params;
 }
 
 [[maybe_unused]] Screen Recorder::get_screen_params(){
-	return screen;
+    return screen;
 }
 
 [[maybe_unused]]
 void Recorder::print_source_info() {
-	av_dump_format(format.inputContext.get_audio(), 0, format.get_audio_device().c_str(), 0);
-	av_dump_format(format.inputContext.get_video(), 0, format.get_video_device().c_str(), 0);
+    av_dump_format(format.inputContext.get_audio(), 0, format.get_audio_device().c_str(), 0);
+    av_dump_format(format.inputContext.get_video(), 0, format.get_video_device().c_str(), 0);
 }
 
 [[maybe_unused]]
 void Recorder::print_destination_info(const std::string &dest) const {
-	av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
+    av_dump_format(format.outputContext.get_video(), 0, dest.c_str(), 1);
 }
 
 std::string Recorder::get_exec_error(bool& err) {
@@ -117,26 +117,25 @@ std::string Recorder::get_exec_error(bool& err) {
  * Release 2 threads for audio/video demuxing and 2 threads for audio/video frame conversion
  */
 void Recorder::capture() {
-	init();
+    init();
 
-	capturing = true;
+    capturing = true;
 
-	if (num_core > 2) {
-		th_audio_demux = std::thread{&Recorder::DemuxAudioInput, this};
-		th_audio_convert = std::thread{&Recorder::ConvertAudioFrames, this};
-		th_video_demux = std::thread{&Recorder::DemuxVideoInput, this};
-		th_video_convert = std::thread{&Recorder::ConvertVideoFrames, this};
-	} else {
-		th_video = std::thread{&Recorder::CaptureVideoFrames, this};
-		th_audio = std::thread{&Recorder::CaptureAudioFrames, this};
-	}
+    if (num_core > 2) {
+        th_audio_demux = std::thread{&Recorder::DemuxAudioInput, this};
+        th_audio_convert = std::thread{&Recorder::ConvertAudioFrames, this};
+        th_video_demux = std::thread{&Recorder::DemuxVideoInput, this};
+        th_video_convert = std::thread{&Recorder::ConvertVideoFrames, this};
+    } else {
+        th_video = std::thread{&Recorder::CaptureVideoFrames, this};
+        th_audio = std::thread{&Recorder::CaptureAudioFrames, this};
+    }
 }
 
 /**
  * Pause the capture
  */
 void Recorder::pause() {
-    std::unique_lock<std::mutex> rl(r);
     pausing = true;
 }
 
@@ -153,118 +152,118 @@ void Recorder::resume() {
  * End the capture
  */
 void Recorder::terminate() {
-	stopped = true;
+    stopped = true;
 
-	// wait all threads
-	join_all();
+    // wait all threads
+    join_all();
 
-	auto outputFormatContext = format.outputContext.get_video();
+    auto outputFormatContext = format.outputContext.get_video();
 
-	// Write file trailer data
-	auto ret = av_write_trailer(outputFormatContext);
-	if (ret < 0) {
-		throw avException("Error in writing av trailer");
-	}
+    // Write file trailer data
+    auto ret = av_write_trailer(outputFormatContext);
+    if (ret < 0) {
+        throw avException("Error in writing av trailer");
+    }
 
-	reset();
+    reset();
 }
 
 void Recorder::reset() {
-	// reset screen parameters
-	screen = Screen{};
+    // reset screen parameters
+    screen = Screen{};
 
-	// reset libav resources
-	rescaler.reset();
+    // reset libav resources
+    rescaler.reset();
     codec.reset();
     format.reset();
 
-	stopped = false;
-	pausedVideo = false;
-	pausedAudio = false;
-	finishedVideoDemux = false;
-	finishedAudioDemux = false;
-	capturing = false;
+    stopped = false;
+    pausedVideo = false;
+    pausedAudio = false;
+    finishedVideoDemux = false;
+    finishedAudioDemux = false;
+    capturing = false;
 }
 
 /**
  * Check if capture is paused
  */
 bool Recorder::is_paused() {
-	return pausedAudio && pausedVideo;
+    return pausedAudio && pausedVideo;
 }
 
 /**
  * Check if capture is running
  */
 bool Recorder::is_capturing() {
-	return capturing;
+    return capturing;
 }
 
 /**
  * Set the minimum number of threads for capture
  */
 [[maybe_unused]] void Recorder::set_low_profile(){
-	set_threads(2);
+    set_threads(2);
 }
 
 /**
  * Set the maximum number of threads for capture
  */
 [[maybe_unused]] void Recorder::set_high_profile() {
-	set_threads(4);
+    set_threads(4);
 }
 
 /* Private functions */
 
 void Recorder::init() {
 #ifdef WIN32
-	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-	format.set_screen_params(screen);
-	format.set_audio_layout(audio_layout);
-	format.setup_source();
-	format.setup_destination(destination_path);
+    format.set_screen_params(screen);
+    format.set_audio_layout(audio_layout);
+    format.setup_source();
+    format.setup_destination(destination_path);
 
-	auto audioPar = format.get_source_audio_codec();
-	auto videoPar = format.get_source_video_codec();
+    auto audioPar = format.get_source_audio_codec();
+    auto videoPar = format.get_source_video_codec();
 
-	codec.set_source_audio_layout(audio_layout);
-	codec.set_source_audio_parameters(audioPar);
-	codec.set_source_video_parameters(videoPar);
-	codec.setup_source();
+    codec.set_source_audio_layout(audio_layout);
+    codec.set_source_audio_parameters(audioPar);
+    codec.set_source_video_parameters(videoPar);
+    codec.setup_source();
 
-	codec.find_encoders(audio_codec, video_codec);
-	codec.open_streams(format);
+    codec.find_encoders(audio_codec, video_codec);
+    codec.open_streams(format);
 
-	codec.set_destination_audio_parameters(codec.streams.get_audio()->codecpar);
-	codec.set_destination_video_parameters(codec.streams.get_video()->codecpar);
+    codec.set_destination_audio_parameters(codec.streams.get_audio()->codecpar);
+    codec.set_destination_video_parameters(codec.streams.get_video()->codecpar);
 
-	codec.setup_destination();
+    codec.setup_destination();
 
-	create_out_file(destination_path);
-	rescaler.set_audio_scaler(codec);
-	rescaler.set_video_scaler(codec);
+    create_out_file(destination_path);
+    rescaler.set_audio_scaler(codec);
+    rescaler.set_video_scaler(codec);
 
-	format.write_header();
+    format.write_header();
 
 #ifdef WIN32
-	CoUninitialize();
+    CoUninitialize();
 #endif
 //    throw avException("Error");
 }
 
 
 void Recorder::join_all() {
-	if (num_core > 2) {
-		th_audio_demux.join();
+    if (num_core > 2) {
+        th_audio_demux.join();
         th_audio_convert.join();
         th_video_demux.join();
         th_video_convert.join();
-	} else {
+    } else {
         th_audio.join();
         th_video.join();
-	}
+    }
 }
 
 /**
@@ -273,24 +272,24 @@ void Recorder::join_all() {
  * @param th number of threads
  */
 [[maybe_unused]] void Recorder::set_threads(unsigned int th) {
-	num_core = th;
+    num_core = th;
 }
 
 /**
  * Create output media file
  */
 void Recorder::create_out_file(const std::string &dest) const {
-	auto ctx = format.outputContext.get_video();
+    auto ctx = format.outputContext.get_video();
 
-	/* create empty video file */
-	if (!(ctx->flags & AVFMT_NOFILE)) {
-		auto ret = avio_open2(&(ctx->pb), dest.c_str(), AVIO_FLAG_WRITE, nullptr, nullptr);
-		if (ret < 0) {
-			char buf[35];
-			av_strerror(ret, buf, sizeof(buf));
-			throw avException(buf);
-		}
-	}
+    /* create empty video file */
+    if (!(ctx->flags & AVFMT_NOFILE)) {
+        auto ret = avio_open2(&(ctx->pb), dest.c_str(), AVIO_FLAG_WRITE, nullptr, nullptr);
+        if (ret < 0) {
+            char buf[35];
+            av_strerror(ret, buf, sizeof(buf));
+            throw avException(buf);
+        }
+    }
 }
 
 void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& th_num, const  char* what) {
@@ -361,19 +360,8 @@ void Recorder::CaptureAudioFrames() {
         auto read_frame = true;
         while (read_frame) {
             auto in_packet = Packet{};
-
-            //handle error/stop
-            if(!capturing) {
-                std::unique_lock<std::mutex> rl(r);
-                resumeWait.notify_all();// notify audio thread if halted
-                return;
-            }
-            if (stopped) {
-                std::unique_lock<std::mutex> rl(r);
-                resumeWait.notify_all();// notify audio thread if halted
-                break;
-            }
-
+            if(!capturing) return;
+            if (stopped) break;
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
                 read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
@@ -398,8 +386,8 @@ void Recorder::CaptureAudioFrames() {
 
             if (!pausedAudio) {
                 auto in_frame =
-                    Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout,
-                        0};
+                        Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout,
+                              0};
 
                 // Send packet to decoder
                 decode(inputCodecContext, in_packet.into(), in_frame.into(), &got_frame);
@@ -476,7 +464,6 @@ void Recorder::CaptureVideoFrames() {
 
         int64_t count = 0;
         int frameNum = 0; // frame number in a second
-        unsigned int frameSyncCounter = 0;
         int got_frame = 0;
         frameCount = 0;
         bool first_pause_frame = true;
@@ -486,34 +473,22 @@ void Recorder::CaptureVideoFrames() {
         while (read_frame) {
             auto in_packet = Packet{};
 
-            //handle error/stop
-            if(!capturing) {
-                std::unique_lock<std::mutex> rl(r);
-                resumeWait.notify_all();// notify audio thread if halted
-                return;
-            }
-            if (stopped) {
-                std::unique_lock<std::mutex> rl(r);
-                resumeWait.notify_all();// notify audio thread if halted
-                break;
-            }
+            if(!capturing) return;
+            if (stopped) break;
 
-            //handle pause/resume
             std::unique_lock<std::mutex> rl(r);
-            if(pausing) {//handle pause request
+            if(pausing) {
                 read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
-                if(frameCount == (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) && !first_pause_frame) {
-                    syncedVideo = true;
+                if(frameCount == 0 && !first_pause_frame) {
                     pausedVideo = true;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool { return !pausing; });
                     first_pause_frame = true;
                 } else if(first_pause_frame) first_pause_frame = false;
                 rl.unlock();
-            } else if(resuming) {//handle resume request
-                if(frameCount == (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) && !first_resume_frame) {
+            } else if(resuming) {
+                if(frameCount == 0 && !first_resume_frame) {
                     read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
-                    syncedVideo = true;
                     pausedVideo = false;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() -> bool { return !resuming; });
@@ -524,21 +499,11 @@ void Recorder::CaptureVideoFrames() {
                 }
                 rl.unlock();
             } else {
-                if(frameSyncCounter >= 2 * VIDEO_FRAMERATE) {//sync with audio thread every 2 seconds
-                    syncedVideo = false;
-                    resumeWait.wait(rl, [this]() -> bool { return syncedAudio; });
-                    syncedVideo = true;
-                    resumeWait.notify_all();
-                }
                 rl.unlock();
                 read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             }
-
-            //update all frame sync counters
-            if(frame_size > 0 && (frameSyncCounter % (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) == 0) )  frameCount = 0;
-            if(frameSyncCounter >= 2 * VIDEO_FRAMERATE) frameSyncCounter = 0;
             frameCount++;
-            frameSyncCounter++;
+            if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
 
             if (!pausedVideo) {
 //                if(pausedAudio && !pausedVideo) pausedAudio = false;
@@ -612,7 +577,6 @@ void Recorder::DemuxAudioInput() {
         auto end = start;
         bool synced = false;
         int result;
-        int frameSyncCounter = 0;
 
         auto inputFormatContext = format.inputContext.get_audio();
         auto inputCodecContext = codec.inputContext.get_audio();
@@ -625,53 +589,36 @@ void Recorder::DemuxAudioInput() {
                 std::unique_lock<std::mutex> ul(aC);
                 finishedAudioDemux = true;
                 audioCnv.notify_one(); // notify converter thread if halted
-                ul.unlock();
-                std::unique_lock<std::mutex> rl(r);
-                resumeWait.notify_all();// notify video thread if halted
                 return;
             }
             if (stopped) {
                 std::unique_lock<std::mutex> ul(aC);
                 finishedAudioDemux = true;
                 audioCnv.notify_one(); // notify converter thread if halted
-                ul.unlock();
-                std::unique_lock<std::mutex> rl(r);
-                resumeWait.notify_all();// notify video thread if halted
                 break;
             }
 
             std::unique_lock<std::mutex> rl(r);
-            if(pausing) {//handle pausing request
+            if(pausing) {
                 read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
                 if(pausedAudio) {
-                    pausing = false;
-                    syncedAudio = true;
-                    resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool {return pausedVideo;});
+                    pausing = false;
+                    resumeWait.notify_all();
                 }
                 rl.unlock();
-            } else if(resuming) {//handle resume request
+            } else if(resuming) {
                 av_read_frame(inputFormatContext, in_packet.into());
+                resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
                 pausedAudio = false;
                 resuming = false;
-                syncedAudio = true;
                 resumeWait.notify_all();
-                resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
                 rl.unlock();
                 read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             } else {
-                if(frame_size>0 && frameSyncCounter >= 2 * (AUDIO_SAMPLE_RATE*codec.channels)/frame_size) {//sync with video thread every 2 seconds
-                    syncedAudio = false;
-                    resumeWait.notify_all();
-                    resumeWait.wait(rl, [this]() -> bool { return !syncedVideo; });
-                    syncedAudio = true;
-                }
                 rl.unlock();
                 read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             }
-            if(frame_size>0 && frameSyncCounter >= 2 * (AUDIO_SAMPLE_RATE*codec.channels)/frame_size) frameSyncCounter = 0;
-            frameSyncCounter++;
-
             if (!pausedAudio) {
                 if(pausing) pausedAudio = true;
                 end = std::chrono::system_clock::now();
@@ -754,7 +701,7 @@ void Recorder::ConvertAudioFrames() {
         frame_size = 0;
 
         auto in_frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt,
-                  inputCodecContext->channel_layout, 0};
+                              inputCodecContext->channel_layout, 0};
 
         std::unique_lock<std::mutex> ul(aC);
         result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
@@ -860,7 +807,6 @@ void Recorder::DemuxVideoInput() {
     try {
         // frame number in a second
         int frameNum = 0;
-        unsigned int frameSyncCounter = 0;
         int result;
         auto synced = false;
         bool first_pause_frame = true;
@@ -873,42 +819,32 @@ void Recorder::DemuxVideoInput() {
         while (read_frame) {
             auto packet = Packet{};
 
-            //handle error/stop
             if(!capturing) {
                 std::unique_lock<std::mutex> ul(vC);
                 finishedVideoDemux = true;
                 videoCnv.notify_one(); // notify converter thread if halted
-                ul.unlock();
-                std::unique_lock<std::mutex> rl(r);
-                resumeWait.notify_all();// notify audio thread if halted
                 return;
             }
             if (stopped) {
                 std::unique_lock<std::mutex> ul(vC);
                 finishedVideoDemux = true;
                 videoCnv.notify_one(); // notify converter thread if halted
-                ul.unlock();
-                std::unique_lock<std::mutex> rl(r);
-                resumeWait.notify_all();// notify audio thread if halted
                 break;
             }
 
-            //handle pause/resume
             std::unique_lock<std::mutex> rl(r);
-            if(pausing) {//handle pause request
+            if(pausing) {
                 read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
-                if(frameCount == (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) && !first_pause_frame) {
-                    syncedVideo = true;
+                if(frameCount == 0 && !first_pause_frame) {
                     pausedVideo = true;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool { return !pausing; });
                     first_pause_frame = true;
                 } else if(first_pause_frame) first_pause_frame = false;
                 rl.unlock();
-            } else if(resuming) {//handle resume request
-                if(frameCount == (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) && !first_resume_frame) {
+            } else if(resuming) {
+                if(frameCount == 0 && !first_resume_frame) {
                     read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
-                    syncedVideo = true;
                     pausedVideo = false;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() -> bool { return !resuming; });
@@ -919,23 +855,12 @@ void Recorder::DemuxVideoInput() {
                 }
                 rl.unlock();
             } else {
-                if(frameSyncCounter >= 2 * VIDEO_FRAMERATE) {//sync with audio thread every 2 seconds
-                    syncedVideo = false;
-                    resumeWait.notify_all();
-                    resumeWait.wait(rl, [this]() -> bool { return !syncedAudio; });
-                    syncedVideo = true;
-                }
                 rl.unlock();
                 read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
             }
-
-            //update all frame sync counters
-            if(frame_size > 0 && (frameSyncCounter % (VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) == 0) )  frameCount = 0;
-            if(frameSyncCounter >= 2 * VIDEO_FRAMERATE) frameSyncCounter = 0;
             frameCount++;
-            frameSyncCounter++;
+            if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
 
-            //send to converter thread if recording
             if (!pausedVideo) {
                 if (frameNum == 30) {
                     frameNum = 0; // reset every fps frames
