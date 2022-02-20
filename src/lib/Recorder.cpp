@@ -373,9 +373,22 @@ void Recorder::CaptureAudioFrames() {
 
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
+                if(!pausingAudio) {
+                    if(pausingVideo) {
+                        pausingAudio = true;
+                        pausingVideo = false;
+                        resumeWait.notify_all();
+                    }
+                    else {
+                        pausingAudio = true;
+                        resumeWait.wait(rl, [this]() ->bool { return !pausingAudio || !capturing || stopped; });
+                        pausingAudio = true;
+                    }
+                }
                 read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
                 if(pausedAudio) {
                     resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
+                    pausingAudio = false;
                     pausing = false;
                     resumeWait.notify_all();
                 }
@@ -496,8 +509,21 @@ void Recorder::CaptureVideoFrames() {
 
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
+                if(!pausingVideo) {
+                    if(pausingAudio) {
+                        pausingVideo = true;
+                        pausingAudio = false;
+                        resumeWait.notify_all();
+                    }
+                    else {
+                        pausingVideo = true;
+                        resumeWait.wait(rl, [this]() ->bool { return !pausingVideo || !capturing || stopped; });
+                        pausingVideo = true;
+                    }
+                }
                 read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
                 if(frameCount == 0 && !first_pause_frame) {
+                    pausingVideo = false;
                     pausedVideo = true;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool { return !pausing || !capturing || stopped; });

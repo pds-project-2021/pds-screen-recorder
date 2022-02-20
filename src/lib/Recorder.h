@@ -31,6 +31,8 @@ class Recorder {
 	std::atomic<bool> stopped = false;
     std::atomic<bool> resuming = false;
     std::atomic<bool> pausing = false;
+    std::atomic<bool> pausingVideo = false;
+    std::atomic<bool> pausingAudio = false;
     std::atomic<bool> pausedVideo = false;
     std::atomic<bool> pausedAudio = false;
 	std::atomic<bool> finishedVideoDemux = false;
