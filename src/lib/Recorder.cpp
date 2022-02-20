@@ -653,6 +653,9 @@ void Recorder::DemuxAudioInput() {
                 if(!pausingAudio) {
                     pausingAudio = true;
                     resumeWait.notify_all();
+                    if(frameCount == 0) pausedAudio = true;
+                }
+                if(pausedAudio) {
                     resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
                     pausingAudio = false;
                     pausing = false;
@@ -666,13 +669,8 @@ void Recorder::DemuxAudioInput() {
                     resumingAudio = true;
                     resumeWait.notify_all();
                 }
-                if(frameCount != 0) {
-                    avformat_flush(inputFormatContext);
-                    avcodec_flush_buffers(inputCodecContext);
-//                    rl.unlock();
-//                    av_read_frame(inputFormatContext, in_packet.into());
-//                    rl.lock();
-                }
+                avformat_flush(inputFormatContext);
+                avcodec_flush_buffers(inputCodecContext);
                 resumeWait.wait(rl, [this]() ->bool {return !pausedVideo || !capturing || stopped;});
                 pausedAudio = false;
                 resuming = false;
@@ -917,16 +915,11 @@ void Recorder::DemuxVideoInput() {
                 if(!resumingAudio) {
                     resumeWait.wait(rl, [this]() ->bool { return resumingAudio || !capturing || stopped; });
                 }
-                if(frameCount == 0) {
                     pausedVideo = false;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() -> bool { return !resuming || !capturing || stopped; });
-                } else {
                     avformat_flush(inputFormatContext);
                     avcodec_flush_buffers(inputCodecContext);
-                    frameCount  = AUDIO_SAMPLE_RATE;
-//                    av_read_frame(inputFormatContext, in_packet.into());
-                }
             }
             read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
             frameCount++;
