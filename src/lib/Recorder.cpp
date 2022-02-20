@@ -650,28 +650,29 @@ void Recorder::DemuxAudioInput() {
 
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
-                if(!pausingAudio) {
-                    pausingAudio = true;
-                    resumeWait.notify_all();
-                    if(frameCount == 0) pausedAudio = true;
-                }
-                if(pausedAudio) {
-                    resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
-                    pausingAudio = false;
-                    pausing = false;
-                    avformat_flush(inputFormatContext);
-                    avcodec_flush_buffers(inputCodecContext);
-                    resumeWait.notify_all();
-                }
-            }
-            else if(resuming) {
-                if(!resumingAudio) {
-                    resumingAudio = true;
-                    resumeWait.notify_all();
-                }
+//                if(!pausingAudio) {
+//                    pausingAudio = true;
+//                    resumeWait.notify_all();
+//                    if(frameCount == 0) pausedAudio = true;
+//                }
+//                if(pausedAudio) {
+                resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
+//                    pausingAudio = false;
+                pausedAudio = true;
+                pausing = false;
                 avformat_flush(inputFormatContext);
                 avcodec_flush_buffers(inputCodecContext);
+                avformat_flush(format.inputContext.get_video());
+                avcodec_flush_buffers(codec.inputContext.get_video());
+                resumeWait.notify_all();
+//                }
+            }
+            else if(resuming) {
                 resumeWait.wait(rl, [this]() ->bool {return !pausedVideo || !capturing || stopped;});
+                avformat_flush(inputFormatContext);
+                avcodec_flush_buffers(inputCodecContext);
+                avformat_flush(format.inputContext.get_video());
+                avcodec_flush_buffers(codec.inputContext.get_video());
                 pausedAudio = false;
                 resuming = false;
                 resumeWait.notify_all();
@@ -680,7 +681,7 @@ void Recorder::DemuxAudioInput() {
             read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
             if (!pausedAudio) {
-                if(pausing) pausedAudio = true;
+//                if(pausing) pausedAudio = true;
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<double> elapsed_seconds = end - start;
                 log_debug("Received audio packet after " + std::to_string(elapsed_seconds.count()) + " s");
@@ -900,26 +901,23 @@ void Recorder::DemuxVideoInput() {
 
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
-                if(!pausingAudio) {
-                    resumeWait.wait(rl, [this]() ->bool { return pausingAudio || !capturing || stopped; });
-                }
-                if(frameCount == 0) {
+//                if(!pausingAudio) {
+//                    resumeWait.wait(rl, [this]() ->bool { return pausingAudio || !capturing || stopped; });
+//                }
+//                if(frameCount == 0) {
                     pausedVideo = true;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool { return !pausing || !capturing || stopped; });
-                    avformat_flush(inputFormatContext);
-                    avcodec_flush_buffers(inputCodecContext);
-                }
+//                    avformat_flush(inputFormatContext);
+//                    avcodec_flush_buffers(inputCodecContext);
+//                }
             }
             else if(resuming) {
-                if(!resumingAudio) {
-                    resumeWait.wait(rl, [this]() ->bool { return resumingAudio || !capturing || stopped; });
-                }
-                    pausedVideo = false;
-                    resumeWait.notify_all();
-                    resumeWait.wait(rl, [this]() -> bool { return !resuming || !capturing || stopped; });
-                    avformat_flush(inputFormatContext);
-                    avcodec_flush_buffers(inputCodecContext);
+                pausedVideo = false;
+                resumeWait.notify_all();
+                resumeWait.wait(rl, [this]() -> bool { return !resuming || !capturing || stopped; });
+//                avformat_flush(inputFormatContext);
+//                avcodec_flush_buffers(inputCodecContext);
             }
             read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
             frameCount++;
