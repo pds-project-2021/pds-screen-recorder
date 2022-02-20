@@ -143,7 +143,7 @@ con paradigma RAII ed espone i puntatori con dei metodi get/set.
 
 
 
-## Packer e Frame
+## Packet e Frame
 
 Classi wrapper di `AVPacket` e `AVFrame`, per implementare il RAII su questi tipi e quindi poter
 essere usati dentro un ciclo, senza dover deallocare manualmente. Implementano il template `ptr_wrapper` per le
