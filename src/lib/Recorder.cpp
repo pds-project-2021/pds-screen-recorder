@@ -521,7 +521,7 @@ void Recorder::CaptureVideoFrames() {
                 read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             }
             frameCount++;
-            if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
+            if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/(double)((double)(AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
 
             if (!pausedVideo) {
 //                if(pausedAudio && !pausedVideo) pausedAudio = false;
@@ -889,7 +889,7 @@ void Recorder::DemuxVideoInput() {
                 read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
             }
             frameCount++;
-            if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
+            if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/(double)((double)(AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
 
             if (!pausedVideo) {
                 if (frameNum == 30) {
