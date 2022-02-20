@@ -195,6 +195,9 @@ void Recorder::reset() {
     finishedVideoDemux = false;
     finishedAudioDemux = false;
     capturing = false;
+    resuming = false;
+    pausing = false;
+    resync_enabled = true;
     max_pts = 0;
     min_pts = 0;
     resync_enabled = false;
@@ -394,6 +397,8 @@ void Recorder::CaptureAudioFrames() {
                 resumeWait.notify_all();
             }
             else if(resuming) {
+                avformat_flush(inputFormatContext);
+                avcodec_flush_buffers(inputCodecContext);
                 pausedAudio = false;
                 resumeWait.notify_all();
             }
@@ -513,6 +518,8 @@ void Recorder::CaptureVideoFrames() {
                 resumeWait.notify_all();
             }
             else if(resuming) {
+                avformat_flush(inputFormatContext);
+                avcodec_flush_buffers(inputCodecContext);
                 pausedVideo = false;
                 resumeWait.notify_all();
             }
@@ -623,6 +630,8 @@ void Recorder::DemuxAudioInput() {
                 resumeWait.notify_all();
             }
             else if(resuming) {
+                avformat_flush(inputFormatContext);
+                avcodec_flush_buffers(inputCodecContext);
                 pausedAudio = false;
                 resumeWait.notify_all();
             }
@@ -852,6 +861,8 @@ void Recorder::DemuxVideoInput() {
                     resumeWait.notify_all();
             }
             else if(resuming) {
+                avformat_flush(inputFormatContext);
+                avcodec_flush_buffers(inputCodecContext);
                 pausedVideo = false;
                 resumeWait.notify_all();
             }
