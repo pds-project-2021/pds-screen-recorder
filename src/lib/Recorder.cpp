@@ -136,8 +136,7 @@ void Recorder::capture() {
  * Pause the capture
  */
 void Recorder::pause() {
-    pausedVideo = true;
-    pausedAudio = true;
+    pausing = true;
 }
 
 /**
@@ -145,12 +144,8 @@ void Recorder::pause() {
  */
 void Recorder::resume() {
     std::unique_lock<std::mutex> rl(r);
-    avformat_flush(format.inputContext.get_audio());
-    avformat_flush(format.inputContext.get_video());
-    avcodec_flush_buffers(codec.inputContext.get_audio());
-    avcodec_flush_buffers(codec.inputContext.get_video());
     resuming = true;
-    resumeWait.wait(rl, [this]()-> bool {return (!pausedAudio && !pausedVideo);});
+    resumeWait.wait(rl, [this]()-> bool { return (!resuming);});
 }
 
 /**
@@ -368,17 +363,27 @@ void Recorder::CaptureAudioFrames() {
             if(!capturing) return;
             if (stopped) break;
             std::unique_lock<std::mutex> rl(r);
-            if(resuming) {
-                pausedAudio = false;
-                if(pausedVideo) {
-                    resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
-                } else {
-                    resuming = false;
+            if(pausing) {
+                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+                if(pausedAudio) {
+                    resumeWait.wait(rl, [this]() ->bool {return pausedVideo;});
+                    pausing = false;
                     resumeWait.notify_all();
                 }
                 rl.unlock();
-            } else rl.unlock();
-            read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+            } else if(resuming) {
+                av_read_frame(inputFormatContext, in_packet.into());
+                resumeWait.wait(rl, [this]() ->bool {return !pausedVideo;});
+                pausedAudio = false;
+                resuming = false;
+                resumeWait.notify_all();
+                rl.unlock();
+                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+            } else {
+                rl.unlock();
+                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+            }
+
             if (!pausedAudio) {
                 auto in_frame =
                     Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt, inputCodecContext->channel_layout,
@@ -461,27 +466,45 @@ void Recorder::CaptureVideoFrames() {
         int frameNum = 0; // frame number in a second
         int got_frame = 0;
         frameCount = 0;
+        bool first_pause_frame = true;
+        bool first_resume_frame = true;
 
         auto read_frame = true;
         while (read_frame) {
             auto in_packet = Packet{};
+
             if(!capturing) return;
             if (stopped) break;
+
             std::unique_lock<std::mutex> rl(r);
-            if(resuming) {
-                pausedVideo = false;
-                if(pausedAudio) {
-                    resumeWait.wait(rl, [this]() ->bool {return !pausedAudio;});
-                }
-                else {
-                    resuming = false;
+            if(pausing) {
+                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+                if(frameCount == 0 && !first_pause_frame) {
+                    pausedVideo = true;
                     resumeWait.notify_all();
+                    resumeWait.wait(rl, [this]() ->bool { return !pausing; });
+                    first_pause_frame = true;
+                } else if(first_pause_frame) first_pause_frame = false;
+                rl.unlock();
+            } else if(resuming) {
+                if(frameCount == 0 && !first_resume_frame) {
+                    read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+                    pausedVideo = false;
+                    resumeWait.notify_all();
+                    resumeWait.wait(rl, [this]() -> bool { return !resuming; });
+                    first_resume_frame = true;
+                } else {
+                    av_read_frame(inputFormatContext, in_packet.into());
+                    if(first_resume_frame) first_resume_frame = false;
                 }
                 rl.unlock();
-            } else rl.unlock();
-            read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+            } else {
+                rl.unlock();
+                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+            }
             frameCount++;
             if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/((AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
+
             if (!pausedVideo) {
 //                if(pausedAudio && !pausedVideo) pausedAudio = false;
                 if (frameNum++ == 30)
