@@ -136,7 +136,9 @@ void Recorder::capture() {
  * Pause the capture
  */
 void Recorder::pause() {
+    std::unique_lock<std::mutex> rl(r);
     pausing = true;
+    resumeWait.wait(rl, [this]()-> bool { return (!pausing || !capturing || stopped);});
 }
 
 /**
@@ -144,8 +146,14 @@ void Recorder::pause() {
  */
 void Recorder::resume() {
     std::unique_lock<std::mutex> rl(r);
+//    avformat_flush(format.inputContext.get_video());
+//    avformat_flush(format.inputContext.get_audio());
+//    avcodec_flush_buffers(codec.inputContext.get_video());
+//    avcodec_flush_buffers(codec.inputContext.get_audio());
     resuming = true;
-    resumeWait.wait(rl, [this]()-> bool { return (!resuming);});
+    resumeWait.wait(rl, [this]()-> bool { return (!resuming || !capturing || stopped);});
+//    pausedVideo = false;
+//    pausedAudio = false;
 }
 
 /**
@@ -374,37 +382,38 @@ void Recorder::CaptureAudioFrames() {
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
                 if(!pausingAudio) {
-                    if(pausingVideo) {
-                        pausingAudio = true;
-                        pausingVideo = false;
-                        resumeWait.notify_all();
-                    }
-                    else {
-                        pausingAudio = true;
-                        resumeWait.wait(rl, [this]() ->bool { return !pausingAudio || !capturing || stopped; });
-                        pausingAudio = true;
-                    }
+                    pausingAudio = true;
+                    resumeWait.notify_all();
+                    if(frameCount == 0) pausedAudio = true;
                 }
-                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
                 if(pausedAudio) {
                     resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
                     pausingAudio = false;
                     pausing = false;
+                    avformat_flush(inputFormatContext);
+                    avcodec_flush_buffers(inputCodecContext);
                     resumeWait.notify_all();
                 }
-                rl.unlock();
-            } else if(resuming) {
-                av_read_frame(inputFormatContext, in_packet.into());
+            }
+            else if(resuming) {
+                if(!resumingAudio) {
+                    resumingAudio = true;
+                    resumeWait.notify_all();
+                }
+                if(frameCount != 0) {
+                    avformat_flush(inputFormatContext);
+                    avcodec_flush_buffers(inputCodecContext);
+//                    rl.unlock();
+//                    av_read_frame(inputFormatContext, in_packet.into());
+//                    rl.lock();
+                }
                 resumeWait.wait(rl, [this]() ->bool {return !pausedVideo || !capturing || stopped;});
                 pausedAudio = false;
                 resuming = false;
                 resumeWait.notify_all();
-                rl.unlock();
-                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
-            } else {
-                rl.unlock();
-                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             }
+            rl.unlock();
+            read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
 
             if (!pausedAudio) {
                 if(pausing) pausedAudio = true;
@@ -509,45 +518,36 @@ void Recorder::CaptureVideoFrames() {
 
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
-                if(!pausingVideo) {
-                    if(pausingAudio) {
-                        pausingVideo = true;
-                        pausingAudio = false;
-                        resumeWait.notify_all();
-                    }
-                    else {
-                        pausingVideo = true;
-                        resumeWait.wait(rl, [this]() ->bool { return !pausingVideo || !capturing || stopped; });
-                        pausingVideo = true;
-                    }
+                if(!pausingAudio) {
+                    resumeWait.wait(rl, [this]() ->bool { return pausingAudio || !capturing || stopped; });
                 }
-                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
-                if(frameCount == 0 && !first_pause_frame) {
-                    pausingVideo = false;
+                if(frameCount == 0) {
                     pausedVideo = true;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool { return !pausing || !capturing || stopped; });
-                    first_pause_frame = true;
-                } else if(first_pause_frame) first_pause_frame = false;
-                rl.unlock();
-            } else if(resuming) {
-                if(frameCount == 0 && !first_resume_frame) {
-                    read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+                    avformat_flush(inputFormatContext);
+                    avcodec_flush_buffers(inputCodecContext);
+                }
+            }
+            else if(resuming) {
+                if(!resumingAudio) {
+                    resumeWait.wait(rl, [this]() ->bool { return resumingAudio || !capturing || stopped; });
+                }
+                if(frameCount == 0) {
                     pausedVideo = false;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() -> bool { return !resuming || !capturing || stopped; });
-                    first_resume_frame = true;
                 } else {
-                    av_read_frame(inputFormatContext, in_packet.into());
-                    if(first_resume_frame) first_resume_frame = false;
+                    avformat_flush(inputFormatContext);
+                    avcodec_flush_buffers(inputCodecContext);
+                    frameCount  = AUDIO_SAMPLE_RATE;
+//                    av_read_frame(inputFormatContext, in_packet.into());
                 }
-                rl.unlock();
-            } else {
-                rl.unlock();
-                read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             }
+            read_frame = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             frameCount++;
             if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/(double)((double)(AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
+            rl.unlock();
 
             if (!pausedVideo) {
 //                if(pausedAudio && !pausedVideo) pausedAudio = false;
@@ -650,25 +650,40 @@ void Recorder::DemuxAudioInput() {
 
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
-                read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+                if(!pausingAudio) {
+                    pausingAudio = true;
+                    resumeWait.notify_all();
+                    if(frameCount == 0) pausedAudio = true;
+                }
                 if(pausedAudio) {
                     resumeWait.wait(rl, [this]() ->bool {return pausedVideo || !capturing || stopped;});
+                    pausingAudio = false;
                     pausing = false;
+                    avformat_flush(inputFormatContext);
+                    avcodec_flush_buffers(inputCodecContext);
                     resumeWait.notify_all();
                 }
-                rl.unlock();
-            } else if(resuming) {
-                av_read_frame(inputFormatContext, in_packet.into());
+            }
+            else if(resuming) {
+                if(!resumingAudio) {
+                    resumingAudio = true;
+                    resumeWait.notify_all();
+                }
+                if(frameCount != 0) {
+                    avformat_flush(inputFormatContext);
+                    avcodec_flush_buffers(inputCodecContext);
+//                    rl.unlock();
+//                    av_read_frame(inputFormatContext, in_packet.into());
+//                    rl.lock();
+                }
                 resumeWait.wait(rl, [this]() ->bool {return !pausedVideo || !capturing || stopped;});
                 pausedAudio = false;
                 resuming = false;
                 resumeWait.notify_all();
-                rl.unlock();
-                read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
-            } else {
-                rl.unlock();
-                read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
             }
+            rl.unlock();
+            read_packet = av_read_frame(inputFormatContext, in_packet.into()) >= 0;
+
             if (!pausedAudio) {
                 if(pausing) pausedAudio = true;
                 end = std::chrono::system_clock::now();
@@ -890,32 +905,36 @@ void Recorder::DemuxVideoInput() {
 
             std::unique_lock<std::mutex> rl(r);
             if(pausing) {
-                read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
-                if(frameCount == 0 && !first_pause_frame) {
+                if(!pausingAudio) {
+                    resumeWait.wait(rl, [this]() ->bool { return pausingAudio || !capturing || stopped; });
+                }
+                if(frameCount == 0) {
                     pausedVideo = true;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() ->bool { return !pausing || !capturing || stopped; });
-                    first_pause_frame = true;
-                } else if(first_pause_frame) first_pause_frame = false;
-                rl.unlock();
-            } else if(resuming) {
-                if(frameCount == 0 && !first_resume_frame) {
-                    read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
+                    avformat_flush(inputFormatContext);
+                    avcodec_flush_buffers(inputCodecContext);
+                }
+            }
+            else if(resuming) {
+                if(!resumingAudio) {
+                    resumeWait.wait(rl, [this]() ->bool { return resumingAudio || !capturing || stopped; });
+                }
+                if(frameCount == 0) {
                     pausedVideo = false;
                     resumeWait.notify_all();
                     resumeWait.wait(rl, [this]() -> bool { return !resuming || !capturing || stopped; });
-                    first_resume_frame = true;
                 } else {
-                    av_read_frame(inputFormatContext, packet.into());
-                    if(first_resume_frame) first_resume_frame = false;
+                    avformat_flush(inputFormatContext);
+                    avcodec_flush_buffers(inputCodecContext);
+                    frameCount  = AUDIO_SAMPLE_RATE;
+//                    av_read_frame(inputFormatContext, in_packet.into());
                 }
-                rl.unlock();
-            } else {
-                rl.unlock();
-                read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
             }
+            read_frame = av_read_frame(inputFormatContext, packet.into()) >= 0;
             frameCount++;
             if(frame_size > 0 && frameCount >= VIDEO_FRAMERATE/(double)((double)(AUDIO_SAMPLE_RATE*codec.channels)/frame_size)) frameCount = 0;
+            rl.unlock();
 
             if (!pausedVideo) {
                 if (frameNum == 30) {
