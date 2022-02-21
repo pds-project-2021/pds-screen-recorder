@@ -92,11 +92,53 @@ ovvero `th_audio_demux`, `th_audio_convert`, `th_video_demux` e `th_video_conver
 
 Più in dettaglio:
 - `th_audio`:
-    esegue la funzione `CaptureAudioFrames()`, che mantiene un ciclo while di lettura dei 
+    esegue la funzione `CaptureAudioFrames`, che mantiene un ciclo while di lettura dei 
     pacchetti audio in ingresso fino a che non viene convalidata una condizione di terminazione, che
     può portare allo stop della regitrazione (`stopped == true`) o alla terminazione immediata della
     funzione (`capturing == false`).
+    In caso durante il ciclo `pausing == true`, imposta la condizione di pausa
+    e segnala la funzione che ha richiesto la pausa. In tal modo, i frame vengono estratti dallo
+    stream di ingresso ma non vengono processati ulteriormente.
+    Similarmente, lo stesso accade per il caso in cui `resuming == true`, nella quale invece
+    svuota i buffer d'ingresso e rimuove la condizione di pausa.
+    Dunque, se la registrazione non è in pausa, invia i pacchetti alla funzione di decodifica
+    `decode` e successivamente a quella di conversione formato sample e scrittura su file
+    `convertAndWriteAudioFrames`.
+    Al termine del ciclo viene chiamata una funzione `convertAndWriteLastAudioFrames` che si occupa 
+    di convertire e scrivere sul file di uscita tutti i pacchetti rimanenti nella coda interna.
+
+- `th_video`:
+    esegue la funzione `CaptureVideoFrames`, che mantiene un ciclo while di lettura dei
+    pacchetti audio in ingresso fino a che non viene convalidata una condizione di terminazione, che
+    può portare allo stop della regitrazione (`stopped == true`) o alla terminazione immediata della
+    funzione (`capturing == false`).
+    In caso durante il ciclo `pausing == true`, imposta la condizione di pausa
+    e segnala la funzione che ha richiesto la pausa. In tal modo, i frame vengono estratti dallo
+    stream di ingresso ma non vengono processati ulteriormente.
+    Similarmente, lo stesso accade per il caso in cui `resuming == true`, nella quale invece
+    svuota i buffer d'ingresso e rimuove la condizione di pausa.
+    Dunque, se la registrazione non è in pausa, invia i pacchetti alla funzione di decodifica
+    `decode` e successivamente a quella di conversione formato sample e scrittura su file
+    `convertAndWriteVideoFrame`.
+    Al termine del ciclo viene chiamata una funzione `convertAndWriteDelayedVideoFrames` che si occupa
+    di convertire e scrivere sul file di uscita tutti i pacchetti rimanenti nella coda interna.
+
+- `th_audio_demux`:
+    esegue la funzione `DemuxAudioInput`, che mantiene un ciclo while di lettura dei
+    pacchetti audio in ingresso fino a che non viene convalidata una condizione di terminazione, che
+    può portare allo stop della regitrazione (`stopped == true`) o alla terminazione immediata della
+    funzione (`capturing == false`), con impostazione del flag `finishedAudioDemux = true` e segnalazione
+    al thread di conversione che potrebbe essere rimasto in attesa di nuovi pacchetti.
+    In caso durante il ciclo `pausing == true`, imposta la condizione di pausa
+    e segnala la funzione che ha richiesto la pausa. In tal modo, i frame vengono estratti dallo
+    stream di ingresso ma non vengono processati ulteriormente.
+    Similarmente, lo stesso accade per il caso in cui `resuming == true`, nella quale invece
+    svuota i buffer d'ingresso e rimuove la condizione di pausa.
+    Dunque, se la registrazione non è in pausa, invia i pacchetti alla funzione `avcodec_send_packet`
+    che inserisce i pacchetti nella coda di decodifica e segnala al thread di conversione l'avvenuto
+    inserimento.
     
+
 ### Controllo e gestione errori durante l'esecuzione dei thread asincroni
 
 Nel momento in cui uno qualsiasi dei thread audio/video di cattura/demuxing/conversione lancia
