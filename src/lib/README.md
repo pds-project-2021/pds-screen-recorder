@@ -225,24 +225,19 @@ per scrivere i pacchetti in uscita. Eventuali eccezioni generate da questa funzi
 chiamante.
 
 
-- `convertAndWriteAudioFrames`: si occupa di chiamare le funzioni opportune per effettuare resampling,
-                               codifica e scrittura in uscita dei dati presenti in un frame audio d'ingresso.
-                               Eventuali eccezioni generate da queste funzioni si propagano al chiamante.
-                               Se richiesto, viene effettuata resincronia del pts dei frame in base
-                               ai valori forniti.
+- `convertAndWriteAudioFrames`: si occupa di chiamare le funzioni opportune per effettuare resampling, codifica e 
+scrittura in uscita dei dati presenti in un frame audio d'ingresso. Eventuali eccezioni generate da queste funzioni si
+propagano al chiamante. Se richiesto, viene effettuata resincronia del pts dei frame in base ai valori forniti.
 
 
-- `convertAndWriteDelayedAudioFrames`: estrae i pacchetti rimasti nella coda di codifica e chiama la
-                                      funzione opportuna per scrivere i pacchetti in uscita.
-                                      Eventuali eccezioni generate da questa funzione di scrittura si
-                                      propagano al chiamante.
+- `convertAndWriteDelayedAudioFrames`: estrae i pacchetti rimasti nella coda di codifica e chiama la funzione opportuna
+per scrivere i pacchetti in uscita. Eventuali eccezioni generate da questa funzione di scrittura si propagano al
+chiamante.
 
 
-- `convertAndWriteLastAudioFrames`: estrae i pacchetti rimasti nella coda di resampling, li codifica
-                                   e chiama la funzione opportuna per scrivere i pacchetti in uscita.
-                                   Eventuali eccezioni generate da queste funzioni si propagano al chiamante.
-                                   Se richiesto, viene effettuata resincronia del pts dei frame in base
-                                   ai valori forniti.
+- `convertAndWriteLastAudioFrames`: estrae i pacchetti rimasti nella coda di resampling, li codifica e chiama la
+funzione opportuna per scrivere i pacchetti in uscita. Eventuali eccezioni generate da queste funzioni si propagano al
+chiamante. Se richiesto, viene effettuata resincronia del pts dei frame in base ai valori forniti.
 
 
 ### Controllo e gestione errori durante l'esecuzione dei thread asincroni
