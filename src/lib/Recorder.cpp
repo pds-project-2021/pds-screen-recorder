@@ -434,7 +434,7 @@ void Recorder::CaptureAudioFrames() {
                                                &max_pts,
                                                &min_pts,
                                                &pausedAudio,
-                                               resync_enabled);
+                                               resync_enabled.load());
                 } else {
                     throw avException("Failed to decode packet");
                 }
@@ -553,7 +553,7 @@ void Recorder::CaptureVideoFrames() {
                                                   &max_pts,
                                                   &min_pts,
                                                   &pausedVideo,
-                                                  resync_enabled);
+                                                  resync_enabled.load());
                     }
                 }
             }
@@ -718,45 +718,31 @@ void Recorder::ConvertAudioFrames() {
         int result = AVERROR(EAGAIN);
         unsigned int frame_size = 0;
 
-        auto in_frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt,
-                              inputCodecContext->channel_layout, 0};
-
-        std::unique_lock<std::mutex> ul(aC);
-        result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
-        if (result >= 0) {
-            audioCnv.notify_one(); // Signal demuxer thread to resume if halted
-        }
-        ul.unlock();
         while (result >= 0 || result == AVERROR(EAGAIN)) {
             if (!capturing) {
                 return;
             }
+
+            auto in_frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt,
+                                  inputCodecContext->channel_layout, 0};
+            std::unique_lock<std::mutex> ul(aC);
+            result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
+            if (result >= 0) {
+                audioCnv.notify_one(); // Signal demuxer thread to resume if halted
+            }
+            ul.unlock();
+
             if (result >= 0) {
                 //Convert frames and then write them to file
                 if (frame_size == 0) {
                     frame_size = in_frame.into()->nb_samples;
                 }
 
-                convertAndWriteAudioFrames(swrContext,
-                                           outputCodecContext,
-                                           inputCodecContext,
-                                           audioStream,
-                                           outputFormatContext,
-                                           in_frame.into(),
-                                           &pts,
-                                           &wR,
-                                           &r,
-                                           &max_pts,
-                                           &min_pts,
-                                           &pausedAudio,
-                                           resync_enabled);
+                convertAndWriteAudioFrames(swrContext, outputCodecContext, inputCodecContext,
+                                           audioStream, outputFormatContext, in_frame.into(),
+                                           &pts,  &wR, &r, &max_pts,
+                                           &min_pts, &pausedAudio, resync_enabled.load());
             }
-            ul.lock();
-            result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
-            if (result >= 0) {
-                audioCnv.notify_one();// Signal demuxer thread to resume if halted
-            }
-            ul.unlock();
 
             if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
                 ul.lock();
@@ -766,15 +752,20 @@ void Recorder::ConvertAudioFrames() {
                 if (!finishedAudioDemux.load()) {
                     audioCnv.notify_one();// Signal demuxer thread if necessary
                     audioCnv.wait(ul);// Wait for resume signal
-                    result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
-                    if (result >= 0) {
-                        audioCnv.notify_one();// Signal demuxer thread to resume if halted
-                    }
+                    ul.unlock();
                 } else {
-                    result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
+                    auto frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt,
+                                          inputCodecContext->channel_layout, 0};
+                    result = avcodec_receive_frame(inputCodecContext, frame.into()); // Try to get a decoded frame
                     if (result == AVERROR(EAGAIN)) break;
+                    ul.unlock();
+                    if (result >= 0) {
+                        convertAndWriteAudioFrames(swrContext, outputCodecContext, inputCodecContext,
+                                                   audioStream, outputFormatContext, frame.into(),
+                                                   &pts,  &wR, &r, &max_pts,
+                                                   &min_pts, &pausedAudio, resync_enabled.load());
+                    }
                 }
-                ul.unlock();
             }
 
             if (result < 0 && result != AVERROR(EAGAIN)) {
@@ -950,56 +941,50 @@ void Recorder::ConvertVideoFrames() {
         int64_t count = 0;
         int result = AVERROR(EAGAIN);
 
-        auto in_frame = Frame{};
-        std::unique_lock<std::mutex> ul(vC);
-        result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
-        if (result >= 0) {
-            videoCnv.notify_one();// Signal demuxer thread to resume if halted
-        }
-        ul.unlock();
         while (result >= 0 || result == AVERROR(EAGAIN)) {
             if (!capturing) {
                 return;
             }
+            auto in_frame = Frame{};
+            std::unique_lock<std::mutex> ul(vC);
+            result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
+            if (result >= 0) {
+                videoCnv.notify_one();// Signal demuxer thread to resume if halted
+            }
+            ul.unlock();
+
             if (result >= 0) {
                 //Convert frames and then write them to file
                 count++;
-                convertAndWriteVideoFrame(swsContext,
-                                          outputCodecContext,
-                                          inputCodecContext,
-                                          videoStream,
-                                          outputFormatContext,
-                                          in_frame.into(),
-                                          &count,
-                                          &wR,
-                                          &r,
-                                          &max_pts,
-                                          &min_pts,
-                                          &pausedVideo,
-                                          resync_enabled);
+                convertAndWriteVideoFrame(swsContext, outputCodecContext, inputCodecContext,
+                                          videoStream, outputFormatContext, in_frame.into(),
+                                          &count, &wR, &r, &max_pts,
+                                          &min_pts, &pausedVideo, resync_enabled.load());
             }
 
-            ul.lock();
-            result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
-            if (result >= 0) {
-                videoCnv.notify_one(); // Signal demuxer thread to resume if halted
-            }
-            ul.unlock();
             if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
                 ul.lock();
                 if (!capturing) {
                     break;
                 }
-                if (!finishedVideoDemux.load()) {
+                if (!finishedVideoDemux) {
                     videoCnv.notify_one();// Signal demuxer thread if necessary
                     videoCnv.wait(ul);// Wait for resume signal
-                    result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
-                    if (result >= 0) videoCnv.notify_one();// Signal demuxer thread to resume if halted
+                    ul.unlock();
                 } else {
-                    result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame
+                    auto frame = Frame{};
+                    result = avcodec_receive_frame(inputCodecContext, frame.into()); // Try to get a decoded frame
                     if (result == AVERROR(EAGAIN)) break;
+                    ul.unlock();
+                    if (result >= 0) {
+                        //Convert frames and then write them to file
+                        count++;
+                        convertAndWriteVideoFrame(swsContext, outputCodecContext, inputCodecContext,
+                                                  videoStream, outputFormatContext, frame.into(),
+                                                  &count, &wR, &r, &max_pts,
+                                                  &min_pts, &pausedVideo, resync_enabled.load());
+                    }
                 }
-                ul.unlock();
             }
 
             if (result < 0 && result != AVERROR_EOF && result != AVERROR(EAGAIN)) {
