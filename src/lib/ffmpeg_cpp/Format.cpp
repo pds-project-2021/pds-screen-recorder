@@ -62,7 +62,7 @@ void Format::set_screen_parameters(AVDictionary *options) const {
 }
 
 void Format::set_audio_parameters(AVDictionary *options) const {
-	av_dict_set(&options, "audio_layout", std::to_string(audio_layout).c_str(), 0);
+	av_dict_set(&options, "channels", std::to_string(audio_layout).c_str(), 0);
 }
 
 void Format::destination_context(const std::string &dest) {
