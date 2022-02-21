@@ -42,26 +42,44 @@
 int decode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_frame);
 int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet);
 
-void writeFrameToOutput(AVFormatContext *outputFormatContext,
-                        AVPacket *outPacket,
-                        std::mutex *wR);
+void writeFrameToOutput(AVFormatContext *outputFormatContext, AVPacket *outPacket, std::mutex *wR);
+
 // Video functions
 
-void
-convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext,
-                          AVStream *videoStream, AVFormatContext *outputFormatContext, AVFrame *frame,
-                          int64_t *pts_p, std::mutex *wR, std::mutex *r, int64_t *mx_pts, int64_t *mn_pts,
-                          std::atomic<bool> *paused, bool resync);
+void convertAndWriteVideoFrame(SwsContext *swsContext,
+                               AVCodecContext *outputCodecContext,
+                               AVCodecContext *inputCodecContext,
+                               AVStream *videoStream,
+                               AVFormatContext *outputFormatContext,
+                               AVFrame *frame,
+                               int64_t *pts_p,
+                               std::mutex *wR,
+                               std::mutex *r,
+                               int64_t *mx_pts,
+                               int64_t *mn_pts,
+                               std::atomic<bool> *paused,
+                               bool resync);
 
-void convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream,
-                                       AVFormatContext *outputFormatContext, std::mutex *wR);
+void convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
+                                       AVStream *videoStream,
+                                       AVFormatContext *outputFormatContext,
+                                       std::mutex *wR);
 
 // Audio functions
 
-void convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
-                                AVCodecContext *inputCodecContext, AVStream *audioStream,
-                                AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, std::mutex *wR,
-                                std::mutex *r, int64_t *mx_pts, int64_t *mn_pts, std::atomic<bool> *paused, bool resync);
+void convertAndWriteAudioFrames(SwrContext *swrContext,
+                                AVCodecContext *outputCodecContext,
+                                AVCodecContext *inputCodecContext,
+                                AVStream *audioStream,
+                                AVFormatContext *outputFormatContext,
+                                AVFrame *frame,
+                                int64_t *pts_p,
+                                std::mutex *wR,
+                                std::mutex *r,
+                                int64_t *mx_pts,
+                                int64_t *mn_pts,
+                                std::atomic<bool> *paused,
+                                bool resync);
 
 void convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
                                     AVCodecContext *inputCodecContext, AVStream *audioStream,

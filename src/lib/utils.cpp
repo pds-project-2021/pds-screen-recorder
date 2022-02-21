@@ -53,6 +53,12 @@ void delete_file(const std::string &filename) {
 	}
 }
 
+/**
+ * Retrive a string of the path where store output media file
+ *
+ * @param path filesystem path
+ * @return a string with output path
+ */
 std::string get_default_path(const fs::path &path) {
 	return (path / "output.mp4").string();
 }
@@ -73,11 +79,11 @@ void log_error(const std::string &str) {
 	std::cout << "[ERROR] " + str << std::endl;
 }
 
-void print_version(){
+void print_version() {
 	std::cout << PROJECT_NAME << " version: " << PROJECT_VER << std::endl;
 }
 
-void print_helper(){
+void print_helper() {
 	print_version();
 
 	std::cout << "\nUSAGE: recs <args>" << std::endl;
@@ -87,13 +93,18 @@ void print_helper(){
 	std::cout << "  -h, --help      Show this helper" << std::endl;
 }
 
+/**
+ * Retrive local current datetime
+ *
+ * @return a string `%Y-%m-%d_%H.%M.%S` for Windows and `%Y-%m-%d_%H:%M:%S` for unix systems
+ */
 std::string get_current_time_str() {
 	char buff[100];
 	auto time_ref = std::time(nullptr);
 #ifdef WIN32
-    std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H.%M.%S", std::localtime(&time_ref));
+	std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H.%M.%S", std::localtime(&time_ref));
 #else
-    std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H:%M:%S", std::localtime(&time_ref));
+	std::strftime(buff, sizeof(buff), "%Y-%m-%d_%H:%M:%S", std::localtime(&time_ref));
 #endif
 
 	return buff;

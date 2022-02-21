@@ -6,7 +6,6 @@ Packet::Packet() {
 	if (!inner) {
 		throw avException("Error on packet initialization");
 	}
-
 }
 
 Packet::~Packet() {

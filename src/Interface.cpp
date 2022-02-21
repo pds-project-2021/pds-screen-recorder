@@ -1,7 +1,7 @@
 #include "Interface.h"
 
 // global ref of the interface for gtk callbacks
-std::unique_ptr<Interface> t = nullptr;
+std::unique_ptr <Interface> t = nullptr;
 
 int launchUI(int argc, char **argv) {
 #ifdef WIN32
@@ -20,98 +20,98 @@ int launchUI(int argc, char **argv) {
 }
 
 void Interface::enable_blink() {
-    // execute periodically blink image function with timeout for feedback when app is recording
-    g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
-    blink_enabled = true;
+	// execute periodically blink image function with timeout for feedback when app is recording
+	g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(switchImageRec), window);
+	blink_enabled = true;
 }
 
 void Interface::enable_rec_execution_error_handler() const {
-    // execute periodically blink image function with timeout for feedback when app is recording
-    g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(checkRecExecErrors), window);
+	// execute periodically blink image function with timeout for feedback when app is recording
+	g_timeout_add_seconds(1, reinterpret_cast<GSourceFunc>(checkRecExecErrors), window);
 }
 
 gboolean Interface::checkRecExecErrors() {
-    bool err;
-    std::string str_err;
-    try {
-        if(t->s == nullptr) return TRUE;
-        str_err = t->s->get_exec_error(err);
-        if(err) {
-            std::cerr << str_err << std::endl;
-            t->s = nullptr;
-            t->ready = false;
-            gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
-            gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Pause");
-            gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
-            gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
-            gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
-            gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), true);
-            gtk_widget_queue_draw(t->window);
-            //show error message dialog
-            if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
-            gtk_widget_show(t->dialog);
-        }
-    }
-    catch(...) {
-        std::cerr << "[FATAL] Unexpected error during recorder execution error control" << std::endl;
-        g_application_quit(G_APPLICATION(t->g_application));
-        return FALSE;
-    }
-    return TRUE;
+	bool err;
+	std::string str_err;
+	try {
+		if (t->s == nullptr) return TRUE;
+		str_err = t->s->get_exec_error(err);
+		if (err) {
+			std::cerr << str_err << std::endl;
+			t->s = nullptr;
+			t->ready = false;
+			gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
+			gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Pause");
+			gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
+			gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
+			gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
+			gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), true);
+			gtk_widget_queue_draw(t->window);
+			//show error message dialog
+			if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
+			gtk_widget_show(t->dialog);
+		}
+	}
+	catch (...) {
+		std::cerr << "[FATAL] Unexpected error during recorder execution error control" << std::endl;
+		g_application_quit(G_APPLICATION(t->g_application));
+		return FALSE;
+	}
+	return TRUE;
 }
 
 gboolean Interface::switchImageRec() {
-    try{
-        if (t->window == nullptr) return FALSE;
-        if(t->s == nullptr) return TRUE;
-        if (t->s->is_capturing() && !t->s->is_paused()) {
-            if (t->img_on) {
-                t->setImageRecOff();
-            }else {
-                t->setImageRecOn();
-            }
-        } else if (!t->img_on) {
-            t->setImageRecOn();
-        }
-        gtk_widget_queue_draw(t->window);
-    }
-    catch(std::runtime_error &e) {
-        std::cerr << "Error updating blinking recording icon for user notification: " << e.what() << std::endl;
-        t->blink_enabled = false;
-        return FALSE;
-    }
-    catch(std::exception &e) {
-        std::cerr << "Error updating blinking recording icon for user notification: " << e.what() << std::endl;
-        t->blink_enabled = false;
-        return FALSE;
-    }
-    catch(...) {
-        std::cerr << "Error updating blinking recording icon for user notification" << std::endl;
-        t->blink_enabled = false;
-        return FALSE;
-    }
+	try {
+		if (t->window == nullptr) return FALSE;
+		if (t->s == nullptr) return TRUE;
+		if (t->s->is_capturing() && !t->s->is_paused()) {
+			if (t->img_on) {
+				t->setImageRecOff();
+			} else {
+				t->setImageRecOn();
+			}
+		} else if (!t->img_on) {
+			t->setImageRecOn();
+		}
+		gtk_widget_queue_draw(t->window);
+	}
+	catch (std::runtime_error &e) {
+		std::cerr << "Error updating blinking recording icon for user notification: " << e.what() << std::endl;
+		t->blink_enabled = false;
+		return FALSE;
+	}
+	catch (std::exception &e) {
+		std::cerr << "Error updating blinking recording icon for user notification: " << e.what() << std::endl;
+		t->blink_enabled = false;
+		return FALSE;
+	}
+	catch (...) {
+		std::cerr << "Error updating blinking recording icon for user notification" << std::endl;
+		t->blink_enabled = false;
+		return FALSE;
+	}
 	return TRUE;
 }
 
 void Interface::init_error_dialog() {
 	GtkWidget *content_area;
-	auto flags = (GtkDialogFlags) (GTK_DIALOG_MODAL);
+	auto flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
 	dialog = gtk_dialog_new_with_buttons("Error",
 	                                     GTK_WINDOW(window),
 	                                     flags,
 	                                     "_OK",
 	                                     GTK_RESPONSE_CLOSE,
 	                                     nullptr);
-	content_area = gtk_dialog_get_content_area(GTK_DIALOG (dialog));
+	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	label = gtk_label_new("Unexpected error!");
-	g_signal_connect (dialog, "response",
-	                  G_CALLBACK(gtk_widget_hide),
-	                  nullptr);
-	g_signal_connect (dialog, "destroy",
-	                  G_CALLBACK(gtk_widget_hide),
-	                  nullptr);
+	g_signal_connect(dialog, "response",
+	                 G_CALLBACK(gtk_widget_hide),
+	                 nullptr);
+	g_signal_connect(dialog, "destroy",
+	                 G_CALLBACK(gtk_widget_hide),
+	                 nullptr);
 	gtk_window_set_deletable(GTK_WINDOW(dialog), false);
-	gtk_box_append(GTK_BOX (content_area), label);
+	gtk_box_append(GTK_BOX(content_area), label);
 	gtk_widget_show(dialog);
 	gtk_widget_hide(dialog);
 }
@@ -119,24 +119,24 @@ void Interface::init_error_dialog() {
 void Interface::set_error_dialog_msg(const char *msg) const {
 	if (msg != nullptr) {
 		GtkWidget *content_area;
-		content_area = gtk_dialog_get_content_area(GTK_DIALOG (t->dialog));
-		gtk_box_remove(GTK_BOX (content_area), t->label);
+		content_area = gtk_dialog_get_content_area(GTK_DIALOG(t->dialog));
+		gtk_box_remove(GTK_BOX(content_area), t->label);
 		t->label = gtk_label_new(msg);
-		gtk_box_append(GTK_BOX (content_area), label);
+		gtk_box_append(GTK_BOX(content_area), label);
 	}
 }
 
 gboolean Interface::on_dialog_deleted() {
 	gtk_window_destroy(GTK_WINDOW(t->dialog));
-	auto flags = (GtkDialogFlags) (GTK_DIALOG_MODAL);
+	auto flags = (GtkDialogFlags)(GTK_DIALOG_MODAL);
 	t->dialog = gtk_message_dialog_new(GTK_WINDOW(t->window),
 	                                   flags,
 	                                   GTK_MESSAGE_ERROR,
 	                                   GTK_BUTTONS_CLOSE,
 	                                   "Unexpected error!");
-	g_signal_connect (t->dialog, "response",
-	                  G_CALLBACK(Interface::on_dialog_deleted),
-	                  nullptr);
+	g_signal_connect(t->dialog, "response",
+	                 G_CALLBACK(Interface::on_dialog_deleted),
+	                 nullptr);
 	log_info("Error dialog closed");
 	gtk_widget_show(t->dialog);
 	gtk_widget_hide(t->dialog);
@@ -147,7 +147,7 @@ gboolean Interface::on_widget_deleted() {
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
 	delete_file(t->dest);
 
-	gtk_window_close(GTK_WINDOW (t->fileChoiceDialog));
+	gtk_window_close(GTK_WINDOW(t->fileChoiceDialog));
 #ifdef WIN32
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 	gtk_window_minimize(GTK_WINDOW(t->window));
@@ -176,8 +176,8 @@ Interface::Interface(GtkApplication *app) {
 	headerBar = gtk_header_bar_new();
 	auto pix = gdk_pixbuf_new_from_xpm_data(icon_on);
 	image = gtk_image_new_from_pixbuf(pix);
-    auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_on);
-    auto audio_image = gtk_image_new_from_pixbuf(pix2);
+	auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_on);
+	auto audio_image = gtk_image_new_from_pixbuf(pix2);
 	title = gtk_text_buffer_new(nullptr);
 	gtk_text_buffer_set_text(GTK_TEXT_BUFFER(title), "  ", 2);
 	titleView = gtk_text_view_new_with_buffer(title);
@@ -189,7 +189,7 @@ Interface::Interface(GtkApplication *app) {
 #elif linux
 	gtk_window_set_default_size(GTK_WINDOW(window), 600, 50);
 #else
-    gtk_window_set_default_size(GTK_WINDOW(window), 570, 50);
+	gtk_window_set_default_size(GTK_WINDOW(window), 570, 50);
 #endif
 	gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
 	// get full screen geometry for `selectionWindow` size setup
@@ -213,15 +213,15 @@ Interface::Interface(GtkApplication *app) {
 	pauseButton = gtk_button_new_with_label("Pause");
 	stopButton = gtk_button_new_with_label("Stop");
 	startRecordButton = gtk_button_new_with_label("Start recording");
-    muteButton = gtk_button_new();
-    gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
-    gtk_button_set_child (GTK_BUTTON (muteButton), audio_image);
+	muteButton = gtk_button_new();
+	gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
+	gtk_button_set_child(GTK_BUTTON(muteButton), audio_image);
 
 	g_signal_connect(recordButton, "clicked", G_CALLBACK(select_record_region), nullptr);
 	g_signal_connect(startRecordButton, "clicked", G_CALLBACK(handleRecord), nullptr);
 	g_signal_connect(pauseButton, "clicked", G_CALLBACK(handlePause), nullptr);
 	g_signal_connect(stopButton, "clicked", G_CALLBACK(handleStop), nullptr);
-    g_signal_connect(muteButton, "clicked", G_CALLBACK(handleMute), nullptr);
+	g_signal_connect(muteButton, "clicked", G_CALLBACK(handleMute), nullptr);
 
 	gtk_window_set_child(GTK_WINDOW(window), headerBar);
 	gtk_window_set_child(GTK_WINDOW(recordWindow), startRecordButton);
@@ -229,7 +229,7 @@ Interface::Interface(GtkApplication *app) {
 	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
 	gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(headerBar), ":minimize,close");
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
-    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), muteButton);
+	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), muteButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
@@ -247,16 +247,16 @@ Interface::Interface(GtkApplication *app) {
 												   nullptr);
 #else
 	fileChoiceDialog = gtk_file_chooser_dialog_new("Save File",
-                                                GTK_WINDOW(window),
-                                                action,
-                                                ("_Cancel"),
-                                                GTK_RESPONSE_CANCEL,
-                                                ("_Save"),
-                                                GTK_RESPONSE_ACCEPT,
-                                                nullptr);
+	                                               GTK_WINDOW(window),
+	                                               action,
+	                                               ("_Cancel"),
+	                                               GTK_RESPONSE_CANCEL,
+	                                               ("_Save"),
+	                                               GTK_RESPONSE_ACCEPT,
+	                                               nullptr);
 #endif
 
-	fileChooser = GTK_FILE_CHOOSER (fileChoiceDialog);
+	fileChooser = GTK_FILE_CHOOSER(fileChoiceDialog);
 
 	auto filter = gtk_file_filter_new();
 	gtk_file_filter_add_pattern(filter, "*.mp4");
@@ -266,12 +266,12 @@ Interface::Interface(GtkApplication *app) {
 	gtk_file_chooser_set_current_name(fileChooser, ("Untitled.mp4"));
 #endif
 
-	fileHandler = g_signal_connect (fileChoiceDialog, "response",
-	                                G_CALLBACK(on_save_response),
-	                                nullptr);
-	fileHandler = g_signal_connect (fileChoiceDialog, "destroy",
-	                                G_CALLBACK(on_widget_deleted),
-	                                nullptr);
+	fileHandler = g_signal_connect(fileChoiceDialog, "response",
+	                               G_CALLBACK(on_save_response),
+	                               nullptr);
+	fileHandler = g_signal_connect(fileChoiceDialog, "destroy",
+	                               G_CALLBACK(on_widget_deleted),
+	                               nullptr);
 
 	gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), true);
 	gtk_window_set_title(GTK_WINDOW(fileChoiceDialog), "Choose video capture file destination");
@@ -281,22 +281,22 @@ Interface::Interface(GtkApplication *app) {
 	gtk_window_set_child(GTK_WINDOW(selectWindow), selectionArea);
 	leftGesture = gtk_gesture_click_new();
 	rightGesture = gtk_gesture_click_new();
-	gtk_gesture_single_set_button(GTK_GESTURE_SINGLE (leftGesture), 1);
-	gtk_gesture_single_set_button(GTK_GESTURE_SINGLE (rightGesture), 3);
+	gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(leftGesture), 1);
+	gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(rightGesture), 3);
 	motionController = gtk_event_controller_motion_new();
-	g_signal_connect (motionController, "motion",
-	                  G_CALLBACK(motion_detected), selectionArea);
-	g_signal_connect (leftGesture, "pressed",
-	                  G_CALLBACK(left_btn_pressed), selectionArea);
-	g_signal_connect (leftGesture, "released",
-	                  G_CALLBACK(left_btn_released), selectionArea);
-	g_signal_connect (rightGesture, "pressed",
-	                  G_CALLBACK(right_btn_pressed), selectionArea);
-	g_signal_connect (rightGesture, "released",
-	                  G_CALLBACK(right_btn_released), selectionArea);
-	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (leftGesture));
-	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (rightGesture));
-	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER (motionController));
+	g_signal_connect(motionController, "motion",
+	                 G_CALLBACK(motion_detected), selectionArea);
+	g_signal_connect(leftGesture, "pressed",
+	                 G_CALLBACK(left_btn_pressed), selectionArea);
+	g_signal_connect(leftGesture, "released",
+	                 G_CALLBACK(left_btn_released), selectionArea);
+	g_signal_connect(rightGesture, "pressed",
+	                 G_CALLBACK(right_btn_pressed), selectionArea);
+	g_signal_connect(rightGesture, "released",
+	                 G_CALLBACK(right_btn_released), selectionArea);
+	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER(leftGesture));
+	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER(rightGesture));
+	gtk_widget_add_controller(selectionArea, GTK_EVENT_CONTROLLER(motionController));
 	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(handleClose), nullptr);
 	gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(selectionArea), draw, nullptr, nullptr);
 	gtk_window_present(GTK_WINDOW(window));
@@ -319,12 +319,12 @@ Interface::Interface(GtkApplication *app) {
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
 
-    //enable blinking user notification for recording
-    enable_blink();
-    //start recording error control
-    enable_rec_execution_error_handler();
+	//enable blinking user notification for recording
+	enable_blink();
+	//start recording error control
+	enable_rec_execution_error_handler();
 	// error dialog for runtime exceptions
-    init_error_dialog();
+	init_error_dialog();
 }
 
 Interface::~Interface() {
@@ -354,66 +354,66 @@ void Interface::getRectCoordinates(double &offsetX, double &offsetY, double &wid
 
 void Interface::reset_gui_from_file_dialog() {
 
-    gtk_window_close(GTK_WINDOW (fileChoiceDialog));
+	gtk_window_close(GTK_WINDOW(fileChoiceDialog));
 #ifdef WIN32
-    gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
-    //prevents freeze on windows (nvidia)
-    gtk_window_minimize(GTK_WINDOW(window));
-    gtk_window_present(GTK_WINDOW(window));
-    gtk_window_unminimize(GTK_WINDOW(window));
+	gtk_window_set_hide_on_close(GTK_WINDOW(window), false);
+	//prevents freeze on windows (nvidia)
+	gtk_window_minimize(GTK_WINDOW(window));
+	gtk_window_present(GTK_WINDOW(window));
+	gtk_window_unminimize(GTK_WINDOW(window));
 #else
-    gtk_window_present(GTK_WINDOW(t->window));
+	gtk_window_present(GTK_WINDOW(t->window));
 #endif
-    // the user can record again only if the file dialog window is closed
-    gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
+	// the user can record again only if the file dialog window is closed
+	gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
 }
 
 void Interface::on_save_response(GtkDialog *, int response) {
-    try {
-        if (response == GTK_RESPONSE_ACCEPT) {
-            auto folder = g_file_get_path(gtk_file_chooser_get_current_folder(t->fileChooser));
-            auto file_name = gtk_file_chooser_get_current_name(t->fileChooser);
-            auto destPath = (std::filesystem::path(folder) / file_name).string();
+	try {
+		if (response == GTK_RESPONSE_ACCEPT) {
+			auto folder = g_file_get_path(gtk_file_chooser_get_current_folder(t->fileChooser));
+			auto file_name = gtk_file_chooser_get_current_name(t->fileChooser);
+			auto destPath = (std::filesystem::path(folder) / file_name).string();
 
-            move_file(t->dest, destPath);
-            log_info("Saved file in: " + destPath);
-        } else if (response == GTK_RESPONSE_CANCEL) {
-            delete_file(t->dest);
-        }
-        t->reset_gui_from_file_dialog();
-    }
-    catch (std::exception &e) {// handle recoverable std::exceptions during file save
-        if (response == GTK_RESPONSE_ACCEPT) {
-            std::string str_err = "Error during file save: ";
-            str_err.append(e.what());
-            log_error(str_err);
-            if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
-        } else {
-            std::string str_err = "Error in file save dialog: ";
-            str_err.append(e.what());
-            log_error(str_err);
-            if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
-        }
-        //reset gui state
-        t->reset_gui_from_file_dialog();
-        //show error message dialog
-        gtk_widget_show(t->dialog);
-    }
-    catch (...) {// handle unexpected exceptions during file save
-        if (response == GTK_RESPONSE_ACCEPT) {
-            log_error("Unexpected error during file save!");
-            //set error message dialog
-            if (t->dialog) t->set_error_dialog_msg("Unexpected error during file save!");
-        } else {
-            log_error("Unexpected error in file save dialog!");
-            //set error message dialog
-            if (t->dialog) t->set_error_dialog_msg("Unexpected error in file save dialog!");
-        }
-        //reset gui state
-        t->reset_gui_from_file_dialog();
-        //show error message dialog
-        gtk_widget_show(t->dialog);
-    }
+			move_file(t->dest, destPath);
+			log_info("Saved file in: " + destPath);
+		} else if (response == GTK_RESPONSE_CANCEL) {
+			delete_file(t->dest);
+		}
+		t->reset_gui_from_file_dialog();
+	}
+	catch (std::exception &e) {// handle recoverable std::exceptions during file save
+		if (response == GTK_RESPONSE_ACCEPT) {
+			std::string str_err = "Error during file save: ";
+			str_err.append(e.what());
+			log_error(str_err);
+			if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
+		} else {
+			std::string str_err = "Error in file save dialog: ";
+			str_err.append(e.what());
+			log_error(str_err);
+			if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
+		}
+		//reset gui state
+		t->reset_gui_from_file_dialog();
+		//show error message dialog
+		gtk_widget_show(t->dialog);
+	}
+	catch (...) {// handle unexpected exceptions during file save
+		if (response == GTK_RESPONSE_ACCEPT) {
+			log_error("Unexpected error during file save!");
+			//set error message dialog
+			if (t->dialog) t->set_error_dialog_msg("Unexpected error during file save!");
+		} else {
+			log_error("Unexpected error in file save dialog!");
+			//set error message dialog
+			if (t->dialog) t->set_error_dialog_msg("Unexpected error in file save dialog!");
+		}
+		//reset gui state
+		t->reset_gui_from_file_dialog();
+		//show error message dialog
+		gtk_widget_show(t->dialog);
+	}
 }
 
 void Interface::setImageRecOff() {
@@ -471,7 +471,7 @@ void Interface::right_btn_pressed(GtkGestureClick *, int, double x, double y, Gt
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
 	gtk_window_close(GTK_WINDOW(t->recordWindow));
 	if (t->surface) cairo_surface_destroy(t->surface);
-    t->surface = nullptr;
+	t->surface = nullptr;
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
 	gtk_window_present(GTK_WINDOW(t->window));
 }
@@ -480,7 +480,7 @@ void Interface::right_btn_released(GtkGestureClick *gesture, int, double x, doub
 	log_info("Right button released");
 	log_info("End coordinates: " + std::to_string(x) + ", " + std::to_string(y));
 
-	gtk_gesture_set_state(GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+	gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
 void Interface::left_btn_pressed(GtkGestureClick *, int, double x, double y, GtkWidget *) {
@@ -505,7 +505,7 @@ void Interface::left_btn_released(GtkGestureClick *gesture, int, double x, doubl
 	t->selection_enabled = false;
 	t->endX = x;
 	t->endY = y;
-	gtk_gesture_set_state(GTK_GESTURE (gesture),
+	gtk_gesture_set_state(GTK_GESTURE(gesture),
 	                      GTK_EVENT_SEQUENCE_CLAIMED);
 	cairo_t *cr;
 	cr = cairo_create(t->surface);
@@ -539,9 +539,9 @@ void Interface::init_recorder(double sX, double sY, double eX, double eY) {
 	} else {
 		log_info("Recording " + screen.get_video_size() + " area, with offset " + screen.get_offset_str());
 	}
-    t->s = std::make_unique<Recorder>();
+	t->s = std::make_unique<Recorder>();
 	t->s->set_screen_params(screen);
-    t->s->set_audio_layout(t->audio_on ? MONO:NONE);
+	t->s->set_audio_layout(t->audio_on ? MONO : NONE);
 	log_info("Initialized input streams");
 	t->ready = true;
 }
@@ -550,35 +550,35 @@ void Interface::startRecording() {
 	try {
 		if (!t->ready) {
 			t->init_recorder(t->startX, t->startY, t->endX, t->endY);
-            //reset screen selection coordinates
-            t->startX = 0;
-            t->startY = 0;
-            t->endX = 0;
-            t->endY = 0;
+			//reset screen selection coordinates
+			t->startX = 0;
+			t->startY = 0;
+			t->endX = 0;
+			t->endY = 0;
 		}
 		if (t->s->is_paused()) {
 			t->s->resume();
-		} else if (!t->s->is_capturing()){
+		} else if (!t->s->is_capturing()) {
 			t->s->capture();
 		}
 
-        if (!t->blink_enabled) t->enable_blink();
+		if (!t->blink_enabled) t->enable_blink();
 		gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Recording");
 		gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), false);
 		gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), true);
 		gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), true);
-        gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), false);
+		gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), false);
 
 	}
 	catch (avException &e) {// handle recoverable libav exceptions during initialization
 		log_error("Error initializing recorder structures: " + std::string(e.what()));
-        t->reset_gui_from_start();
+		t->reset_gui_from_start();
 		if (t->dialog) t->set_error_dialog_msg(e.what());
 		gtk_widget_show(t->dialog);
 	}
 	catch (...) {// handle unexpected exceptions during initialization
 		log_error("Unexpected error!");
-        t->reset_gui_from_start();
+		t->reset_gui_from_start();
 		if (t->dialog) t->set_error_dialog_msg(nullptr);
 		gtk_widget_show(t->dialog);
 	}
@@ -602,7 +602,7 @@ void Interface::stopRecording() {
 	//get temporary file location
 	t->dest = t->s->get_destination();
 	// reset recorder
-    t->s->terminate();
+	t->s->terminate();
 	t->ready = false;
 	// set temporary name to current time
 	auto file_name = get_current_time_str() + ".mp4";
@@ -611,7 +611,7 @@ void Interface::stopRecording() {
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
 	gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
-    gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), true);
+	gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), true);
 }
 
 void Interface::select_record_region(GtkWidget *, gpointer) {
@@ -628,29 +628,28 @@ void Interface::select_record_region(GtkWidget *, gpointer) {
 	log_info("Record button pressed");
 }
 
-
 void Interface::reset_gui_from_start() {
-    // delete recorder
-    s = std::make_unique<Recorder>();
-    ready = false;
-    // reset action buttons
-    gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
-    gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
-    gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
-    gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
-    gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
-}
-
-void Interface::reset_gui_from_pause() {
 	// delete recorder
-    s = std::make_unique<Recorder>();
-    ready = false;
+	s = std::make_unique<Recorder>();
+	ready = false;
 	// reset action buttons
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
 	gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
-    gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
+	gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
+}
+
+void Interface::reset_gui_from_pause() {
+	// delete recorder
+	s = std::make_unique<Recorder>();
+	ready = false;
+	// reset action buttons
+	gtk_button_set_label(reinterpret_cast<GtkButton *>(recordButton), "Record");
+	gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
+	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
+	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
+	gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
 #ifdef WIN32
 	gtk_window_minimize(GTK_WINDOW(window));
 	gtk_window_present(GTK_WINDOW(window));
@@ -669,7 +668,7 @@ void Interface::reset_gui_from_stop() {
 	gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
-    gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
+	gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
 	// restore windows' states
 	gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
 	gtk_window_close(GTK_WINDOW(fileChoiceDialog));
@@ -696,11 +695,11 @@ void Interface::handleRecord(GtkWidget *, gpointer) {
 	gtk_window_close(GTK_WINDOW(t->selectWindow));
 #ifdef WIN32
 	gtk_window_set_hide_on_close(GTK_WINDOW(t->window), false);
-    gtk_window_present(GTK_WINDOW(t->window));
-    //prevent freezes on Windows (Nvidia)
-    gtk_widget_queue_draw(t->window);
+	gtk_window_present(GTK_WINDOW(t->window));
+	//prevent freezes on Windows (Nvidia)
+	gtk_widget_queue_draw(t->window);
 #else
-    gtk_window_present(GTK_WINDOW(t->window));
+	gtk_window_present(GTK_WINDOW(t->window));
 #endif
 	gtk_window_present(GTK_WINDOW(t->window));
 	log_info("Start recording button pressed");
@@ -729,79 +728,78 @@ void Interface::handlePause(GtkWidget *, gpointer) {
 }
 
 void Interface::handleStop(GtkWidget *, gpointer) {
-    try {
-        t->rec = std::async(std::launch::async, stopRecording);
-        log_info("Stop button pressed");
-        // variable to check if windows' states need to be restored
-        // wait until the registration is completed
-	    t->rec.get();
-        // set windows' states for file saving
-        gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
+	try {
+		t->rec = std::async(std::launch::async, stopRecording);
+		log_info("Stop button pressed");
+		// variable to check if windows' states need to be restored
+		// wait until the registration is completed
+		t->rec.get();
+		// set windows' states for file saving
+		gtk_window_set_hide_on_close(GTK_WINDOW(t->fileChoiceDialog), true);
 #ifdef WIN32
-        gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
-        gtk_window_close(GTK_WINDOW(t->window));
+		gtk_window_set_hide_on_close(GTK_WINDOW(t->window), true);
+		gtk_window_close(GTK_WINDOW(t->window));
 #endif
-        gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
-    }
-    catch(avException &e) {// handle recoverable libav exceptions during termination
-        log_error("Error closing output streams: " + std::string(e.what()));
-        t->reset_gui_from_stop();
-        //show error message dialog
-        if (t->dialog) t->set_error_dialog_msg(e.what());
-        gtk_widget_show(t->dialog);
-    }
-    catch(...) {// handle unexpected exceptions during termination
-        log_error("Unexpected error!");
-        t->reset_gui_from_stop();
-        //show error message dialog
-        if (t->dialog) t->set_error_dialog_msg(nullptr);
-        gtk_widget_show(t->dialog);
-    }
+		gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
+	}
+	catch (avException &e) {// handle recoverable libav exceptions during termination
+		log_error("Error closing output streams: " + std::string(e.what()));
+		t->reset_gui_from_stop();
+		//show error message dialog
+		if (t->dialog) t->set_error_dialog_msg(e.what());
+		gtk_widget_show(t->dialog);
+	}
+	catch (...) {// handle unexpected exceptions during termination
+		log_error("Unexpected error!");
+		t->reset_gui_from_stop();
+		//show error message dialog
+		if (t->dialog) t->set_error_dialog_msg(nullptr);
+		gtk_widget_show(t->dialog);
+	}
 }
 
 void Interface::handleClose(GtkWidget *, gpointer) {
 	log_info("Close button pressed");
 //	g_application_quit(G_APPLICATION(t->g_application));
-    try {
-        g_application_quit(G_APPLICATION(t->g_application));
-    }
-    catch(...) {
-        throw uiException("Error while closing user interface");
-    }
+	try {
+		g_application_quit(G_APPLICATION(t->g_application));
+	}
+	catch (...) {
+		throw uiException("Error while closing user interface");
+	}
 }
 
 void Interface::handleMute(GtkWidget *, gpointer) {
-    try {
-        if(t->audio_on) {
-            t->audio_on = false;
-            auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_off);
-            auto audio_image = gtk_image_new_from_pixbuf(pix2);
-            gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
-            gtk_button_set_child (GTK_BUTTON (t->muteButton), audio_image);
-        }
-        else {
-            t->audio_on = true;
-            auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_on);
-            auto audio_image = gtk_image_new_from_pixbuf(pix2);
-            gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
-            gtk_button_set_child (GTK_BUTTON (t->muteButton), audio_image);
-        }
-    }
-    catch(...) {
-        throw uiException("Error while changing audio mute settings");
-    }
+	try {
+		if (t->audio_on) {
+			t->audio_on = false;
+			auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_off);
+			auto audio_image = gtk_image_new_from_pixbuf(pix2);
+			gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
+			gtk_button_set_child(GTK_BUTTON (t->muteButton), audio_image);
+		} else {
+			t->audio_on = true;
+			auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_on);
+			auto audio_image = gtk_image_new_from_pixbuf(pix2);
+			gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
+			gtk_button_set_child(GTK_BUTTON (t->muteButton), audio_image);
+		}
+	}
+	catch (...) {
+		throw uiException("Error while changing audio mute settings");
+	}
 }
 
 void Interface::activate(GtkApplication *app, gpointer) {
 	if (app == nullptr) {
 		throw uiException("Invalid application window");
 	}
-    try {
-        t = std::make_unique<Interface>(app);
-    }
-    catch(...) {
-        std::cerr << "Error during interface initialization" << std::endl;
-        throw uiException("Could not launch user interface");
-    }
+	try {
+		t = std::make_unique<Interface>(app);
+	}
+	catch (...) {
+		std::cerr << "Error during interface initialization" << std::endl;
+		throw uiException("Could not launch user interface");
+	}
 }
 

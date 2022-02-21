@@ -3,11 +3,12 @@
 
 /* Private methods */
 
-void Format::source_audio_context() {\
-	if (audio_layout == NONE) return;
+void Format::source_audio_context() {
+	\
+    if (audio_layout == NONE) return;
 
 	auto audioFormat = get_audio_input_format();
-	auto audio = (AVInputFormat*) av_find_input_format(audioFormat.c_str());
+	auto audio = (AVInputFormat *) av_find_input_format(audioFormat.c_str());
 	input.set_audio(audio);
 
 	auto options = get_audio_options();
@@ -30,7 +31,7 @@ void Format::source_audio_context() {\
 
 void Format::source_video_context() {
 	auto videoFormat = get_video_input_format();
-	auto video = (AVInputFormat*) av_find_input_format(videoFormat.c_str());
+	auto video = (AVInputFormat *) av_find_input_format(videoFormat.c_str());
 	input.set_video(video);
 
 	AVDictionary *options = get_video_options();
@@ -80,7 +81,7 @@ void Format::destination_context(const std::string &dest) {
 
 	outputContext.set_video(ctx);
 
-	auto fmt = (AVOutputFormat*) av_guess_format(nullptr, dest.c_str(), nullptr);
+	auto fmt = (AVOutputFormat *) av_guess_format(nullptr, dest.c_str(), nullptr);
 	if (!fmt) {
 		throw avException("Error in guessing the video format. try with correct format");
 	}
@@ -159,7 +160,7 @@ void Format::reset() {
 	inputContext.set_video(nullptr);
 	outputContext.set_video(nullptr);
 
-	if(audio_layout != NONE) {
+	if (audio_layout != NONE) {
 		inputContext.set_audio(nullptr);
 		outputContext.set_audio(nullptr);
 	}

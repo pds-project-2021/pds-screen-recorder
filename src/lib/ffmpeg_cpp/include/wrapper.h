@@ -6,10 +6,9 @@
 #include "utils.h"
 
 #include "ffmpegc.h"
-#include "Tracker.h"
 
 template<typename T>
-class wrapper : public Tracker<wrapper<T>> {
+class wrapper {
   protected:
 	T *audio = nullptr;
 	T *video = nullptr;
@@ -21,8 +20,8 @@ class wrapper : public Tracker<wrapper<T>> {
 	[[nodiscard]] T *get_audio() const;
 	[[nodiscard]] T *get_video() const;
 
-	void set_audio(T *ptr);
-	void set_video(T *ptr);
+	[[maybe_unused]] void set_audio(T *ptr);
+	[[maybe_unused]] void set_video(T *ptr);
 };
 
 /* General template functions */
@@ -56,7 +55,7 @@ T *wrapper<T>::get_video() const {
  * @param ptr pointer of the audio instance of T
  */
 template<typename T>
-void wrapper<T>::set_audio(T *ptr) {
+[[maybe_unused]] void wrapper<T>::set_audio(T *ptr) {
 	audio = ptr;
 }
 
@@ -65,7 +64,7 @@ void wrapper<T>::set_audio(T *ptr) {
  * @param ptr pointer of the video instance of T
  */
 template<typename T>
-void wrapper<T>::set_video(T *ptr) {
+[[maybe_unused]] void wrapper<T>::set_video(T *ptr) {
 	video = ptr;
 }
 
@@ -75,9 +74,10 @@ void wrapper<T>::set_video(T *ptr) {
  * Set audio instance
  * @param ptr pointer of the audio instance of `AVCodecContext`
  */
-template<> inline
+template<>
+inline
 void wrapper<AVCodecContext>::set_audio(AVCodecContext *ptr) {
-	if (audio != nullptr){
+	if (audio != nullptr) {
 		avcodec_free_context(&audio);
 	}
 
@@ -88,9 +88,10 @@ void wrapper<AVCodecContext>::set_audio(AVCodecContext *ptr) {
  * Set video instance
  * @param ptr pointer of the video instance of `AVCodecContext`
  */
-template<> inline
+template<>
+inline
 void wrapper<AVCodecContext>::set_video(AVCodecContext *ptr) {
-	if (video != nullptr){
+	if (video != nullptr) {
 		avcodec_free_context(&video);
 	}
 
@@ -101,9 +102,10 @@ void wrapper<AVCodecContext>::set_video(AVCodecContext *ptr) {
  * Set audio instance
  * @param ptr pointer of the audio instance of `AVFormatContext`
  */
-template<> inline
+template<>
+inline
 void wrapper<AVFormatContext>::set_audio(AVFormatContext *ptr) {
-	if (audio != nullptr){
+	if (audio != nullptr) {
 		avformat_close_input(&audio);
 		avformat_free_context(audio);
 	}
@@ -115,9 +117,10 @@ void wrapper<AVFormatContext>::set_audio(AVFormatContext *ptr) {
  * Set video instance
  * @param ptr pointer of the video instance of `AVFormatContext`
  */
-template<> inline
+template<>
+inline
 void wrapper<AVFormatContext>::set_video(AVFormatContext *ptr) {
-	if (video != nullptr){
+	if (video != nullptr) {
 		if (is_file(video->url) && !(video->flags & AVFMT_NOFILE)) {
 			avio_close(video->pb);
 		} else {
@@ -133,9 +136,10 @@ void wrapper<AVFormatContext>::set_video(AVFormatContext *ptr) {
  * Set audio instance
  * @param ptr pointer of the audio instance of `AVDictionary`
  */
-template<> inline
+template<>
+inline
 void wrapper<AVDictionary>::set_audio(AVDictionary *ptr) {
-	if (audio != nullptr){
+	if (audio != nullptr) {
 		av_dict_free(&audio);
 	}
 
@@ -146,9 +150,10 @@ void wrapper<AVDictionary>::set_audio(AVDictionary *ptr) {
  * Set video instance
  * @param ptr pointer of the video instance of `AVDictionary`
  */
-template<> inline
+template<>
+inline
 void wrapper<AVDictionary>::set_video(AVDictionary *ptr) {
-	if (video != nullptr){
+	if (video != nullptr) {
 		av_dict_free(&video);
 	}
 
