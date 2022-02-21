@@ -3,6 +3,8 @@
 /* Private methods */
 
 void Codec::source_audio_context() {
+	if(audio_layout == NONE) return;
+
 	auto audio = input.get_audio();
 	auto audioCtx = avcodec_alloc_context3(audio);
 	if (audioCtx == nullptr) {
@@ -45,6 +47,8 @@ void Codec::source_video_context() {
 }
 
 void Codec::destination_audio_context() {
+	if(audio_layout == NONE) return;
+
 	auto audio = output.get_audio();
 	auto audioCtx = avcodec_alloc_context3(audio);
 	if (!audioCtx) {
@@ -96,6 +100,8 @@ void Codec::destination_video_context() {
 }
 
 void Codec::find_audio_encoder(const std::string &codec_name) {
+	if(audio_layout == NONE) return;
+
 #ifdef linux
 	auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
 #elif WIN32
@@ -146,16 +152,24 @@ void Codec::open_streams(const Format &format) {
 	video->time_base = {1, VIDEO_FRAMERATE};
 	streams.set_video(video);
 
-	auto audio = avformat_new_stream(format.outputContext.get_audio(), output.get_audio());
-	if (!audio) {
-		throw avException("Error in creating a av format new audio streams");
+	set_destination_video_parameters(video->codecpar);
+
+	if (audio_layout != NONE) {
+		auto audio = avformat_new_stream(format.outputContext.get_audio(), output.get_audio());
+		if (!audio) {
+			throw avException("Error in creating a av format new audio streams");
+		}
+		audio->time_base = {1, inputContext.get_audio()->sample_rate};
+		streams.set_audio(audio);
+
+		set_destination_audio_parameters(audio->codecpar);
 	}
-	audio->time_base = {1, inputContext.get_audio()->sample_rate};
-	streams.set_audio(audio);
 }
 
 
-void Codec::set_source_audio_layout(enum AudioLayout layout) {
+void Codec::set_audio_layout(AudioLayout layout) {
+	audio_layout = layout;
+
 	if (layout == MONO) {
 		channel_layout = AV_CH_LAYOUT_MONO;
 		channels = 1;
@@ -166,6 +180,8 @@ void Codec::set_source_audio_layout(enum AudioLayout layout) {
 }
 
 void Codec::set_source_audio_parameters(AVCodecParameters *par) {
+	if(audio_layout == NONE) return;
+
 	inputPar.set_audio(par);
 
 	par->format = AV_SAMPLE_FMT_S16;
@@ -196,6 +212,8 @@ void Codec::set_source_video_parameters(AVCodecParameters *par) {
 }
 
 void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
+	if(audio_layout == NONE) return;
+
 	outputPar.set_audio(par);
 
 	par->codec_id = output.get_audio()->id;
@@ -220,16 +238,12 @@ void Codec::set_destination_video_parameters(AVCodecParameters *par) {
 }
 
 void Codec::reset() {
-	inputContext.set_audio(nullptr);
 	inputContext.set_video(nullptr);
-	outputContext.set_audio(nullptr);
 	outputContext.set_video(nullptr);
-//    input.set_audio(nullptr);
-//    input.set_video(nullptr);
-//    output.set_audio(nullptr);
-//    output.set_video(nullptr);
-//    streams.set_audio(nullptr);
-//    streams.set_video(nullptr);
-}
+
+	if(audio_layout != NONE) {
+		inputContext.set_audio(nullptr);
+		outputContext.set_audio(nullptr);
+	}}
 
 

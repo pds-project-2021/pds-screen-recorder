@@ -27,7 +27,7 @@ class Format {
 	std::string audioDevice;
 	std::string videoDevice;
 
-	enum AudioLayout channels = MONO;
+	AudioLayout audio_layout = MONO;
 
 	// save screen parameters for initialization of AVDictionary
 	Screen screen;
@@ -48,7 +48,7 @@ class Format {
 	Format() = default;
 	~Format() = default;
 	void set_screen_params(const Screen &params);
-	void set_audio_layout(enum AudioLayout layout);
+	void set_audio_layout(AudioLayout layout);
 	void setup_source();
 	void setup_destination(const std::string &dest);
 

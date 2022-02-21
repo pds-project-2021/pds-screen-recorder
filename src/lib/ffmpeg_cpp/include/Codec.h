@@ -18,6 +18,7 @@ class Codec {
 
 	wrapper<AVStream> streams;
 
+	AudioLayout audio_layout;
 	uint64_t channel_layout;
 	uint16_t channels;
 
@@ -36,7 +37,7 @@ class Codec {
 	void open_streams(const Format &format);
 	void reset();
 
-	void set_source_audio_layout(enum AudioLayout);
+	void set_audio_layout(AudioLayout);
 	void set_source_audio_parameters(AVCodecParameters *par);
 	void set_source_video_parameters(AVCodecParameters *par);
 	void set_destination_audio_parameters(AVCodecParameters *par);

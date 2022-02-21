@@ -12,7 +12,7 @@ class Recorder {
 	Screen screen;
 
 	// output codec
-	enum AudioLayout audio_layout = MONO;
+	AudioLayout audio_layout = MONO;
 	std::string audio_codec = DEFAULT_AUDIO_CODEC;
 	std::string video_codec = DEFAULT_VIDEO_CODEC;
 	std::string destination_path = get_default_path();
@@ -37,9 +37,12 @@ class Recorder {
 	std::atomic<bool> finishedVideoDemux = false;
 	std::atomic<bool> finishedAudioDemux = false;
     std::atomic<bool> resync_enabled = true;
-    int64_t max_pts = 0;
+
+	int64_t max_pts = 0;
     int64_t min_pts = 0;
-    bool rec_error = false;
+
+	bool rec_error = false;
+
 	std::mutex r;
     std::mutex vC;
     std::mutex aC;
@@ -74,13 +77,9 @@ class Recorder {
     Recorder();
 	~Recorder();
 
-//    TODO: da sistemare
-//    Recorder& operator=(const Recorder& source);
-//    Recorder& operator=(Recorder&& source) noexcept;
-
 	// recorder parameters functions
-	[[maybe_unused]] enum AudioLayout get_audio_layout();
-	[[maybe_unused]] void set_audio_layout(enum AudioLayout layout);
+	[[maybe_unused]] AudioLayout get_audio_layout();
+	[[maybe_unused]] void set_audio_layout(AudioLayout layout);
 
 	[[maybe_unused]] std::string get_audio_codec();
     [[maybe_unused]] void set_audio_codec(const std::string &cod);

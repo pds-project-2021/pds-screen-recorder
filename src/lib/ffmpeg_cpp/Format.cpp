@@ -3,7 +3,9 @@
 
 /* Private methods */
 
-void Format::source_audio_context() {
+void Format::source_audio_context() {\
+	if (audio_layout == NONE) return;
+
 	auto audioFormat = get_audio_input_format();
 	auto audio = (AVInputFormat*) av_find_input_format(audioFormat.c_str());
 	input.set_audio(audio);
@@ -60,7 +62,7 @@ void Format::set_screen_parameters(AVDictionary *options) const {
 }
 
 void Format::set_audio_parameters(AVDictionary *options) const {
-	av_dict_set(&options, "channels", std::to_string(channels).c_str(), 0);
+	av_dict_set(&options, "audio_layout", std::to_string(audio_layout).c_str(), 0);
 }
 
 void Format::destination_context(const std::string &dest) {
@@ -86,6 +88,8 @@ void Format::destination_context(const std::string &dest) {
 }
 
 void Format::find_source_audio_stream_info() {
+	if (audio_layout == NONE) return;
+
 	auto audio = inputContext.get_audio();
 	audioStreamIndex = av_find_best_stream(audio, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 	if (audioStreamIndex == -1) {
@@ -107,8 +111,8 @@ void Format::set_screen_params(const Screen &params) {
 	screen = params;
 }
 
-void Format::set_audio_layout(enum AudioLayout layout) {
-	channels = layout;
+void Format::set_audio_layout(AudioLayout layout) {
+	audio_layout = layout;
 }
 
 void Format::setup_source() {
@@ -152,12 +156,11 @@ void Format::write_header() const {
 }
 
 void Format::reset() {
-	inputContext.set_audio(nullptr);
 	inputContext.set_video(nullptr);
-    outputContext.set_audio(nullptr);
 	outputContext.set_video(nullptr);
-//    input.set_audio(nullptr);
-//    input.set_video(nullptr);
-//    output.set_audio(nullptr);
-//    output.set_video(nullptr);
+
+	if(audio_layout != NONE) {
+		inputContext.set_audio(nullptr);
+		outputContext.set_audio(nullptr);
+	}
 }

@@ -36,6 +36,8 @@ void Rescaler::set_video_scaler(const Codec &codec) {
 }
 
 void Rescaler::set_audio_scaler(const Codec &codec) {
+	if(audio_layout == NONE) return;
+
 	if (swrCtx != nullptr) {
 		swr_free(&swrCtx);
 		swrCtx = nullptr;
@@ -55,6 +57,10 @@ void Rescaler::set_audio_scaler(const Codec &codec) {
 	if (res < 0) {
 		throw avException("Impossible to initialize resample context for audio conversion");
 	}
+}
+
+void Rescaler::set_audio_layout(AudioLayout layout) {
+	audio_layout = layout;
 }
 
 SwsContext *Rescaler::get_sws() {

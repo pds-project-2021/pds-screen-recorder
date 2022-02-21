@@ -12,6 +12,7 @@
 #include "exceptions.h"
 
 enum AudioLayout : unsigned int {
+	NONE = 0,
 	MONO = 1,
 	STEREO = 2
 };

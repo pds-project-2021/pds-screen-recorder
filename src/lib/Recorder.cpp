@@ -16,7 +16,7 @@ Recorder::~Recorder() {
  * Get audio layout
  * @return
  */
-[[maybe_unused]] enum AudioLayout Recorder::get_audio_layout() {
+[[maybe_unused]] AudioLayout Recorder::get_audio_layout() {
     return audio_layout;
 }
 
@@ -24,7 +24,7 @@ Recorder::~Recorder() {
  * Set audio layout [choices: MONO, STEREO]
  * @return
  */
-[[maybe_unused]] void Recorder::set_audio_layout(enum AudioLayout layout) {
+[[maybe_unused]] void Recorder::set_audio_layout(AudioLayout layout) {
     audio_layout = layout;
 }
 
@@ -130,13 +130,15 @@ void Recorder::capture() {
     capturing = true;
 
     if (num_core > 2) {
-        th_audio_demux = std::thread{&Recorder::DemuxAudioInput, this};
-        th_audio_convert = std::thread{&Recorder::ConvertAudioFrames, this};
-        th_video_demux = std::thread{&Recorder::DemuxVideoInput, this};
+		if (audio_layout != NONE) {
+			th_audio_demux = std::thread{&Recorder::DemuxAudioInput, this};
+			th_audio_convert = std::thread{&Recorder::ConvertAudioFrames, this};
+		}
+		th_video_demux = std::thread{&Recorder::DemuxVideoInput, this};
         th_video_convert = std::thread{&Recorder::ConvertVideoFrames, this};
     } else {
         th_video = std::thread{&Recorder::CaptureVideoFrames, this};
-        th_audio = std::thread{&Recorder::CaptureAudioFrames, this};
+		if (audio_layout != NONE) th_audio = std::thread{&Recorder::CaptureAudioFrames, this};
     }
 }
 
@@ -181,9 +183,6 @@ void Recorder::terminate() {
 }
 
 void Recorder::reset() {
-    // reset screen parameters
-    screen = Screen{};
-
     // reset libav resources
     rescaler.reset();
     codec.reset();
@@ -243,23 +242,21 @@ void Recorder::init() {
     format.setup_source();
     format.setup_destination(destination_path);
 
-    auto audioPar = format.get_source_audio_codec();
-    auto videoPar = format.get_source_video_codec();
+	auto audioPar = format.get_source_audio_codec();
+	auto videoPar = format.get_source_video_codec();
 
-    codec.set_source_audio_layout(audio_layout);
-    codec.set_source_audio_parameters(audioPar);
+	codec.set_audio_layout(audio_layout);
+	codec.set_source_audio_parameters(audioPar);
     codec.set_source_video_parameters(videoPar);
+
     codec.setup_source();
 
     codec.find_encoders(audio_codec, video_codec);
     codec.open_streams(format);
-
-    codec.set_destination_audio_parameters(codec.streams.get_audio()->codecpar);
-    codec.set_destination_video_parameters(codec.streams.get_video()->codecpar);
-
     codec.setup_destination();
 
     create_out_file(destination_path);
+	rescaler.set_audio_layout(audio_layout);
     rescaler.set_audio_scaler(codec);
     rescaler.set_video_scaler(codec);
 
@@ -274,12 +271,14 @@ void Recorder::init() {
 
 void Recorder::join_all() {
     if (num_core > 2) {
-        th_audio_demux.join();
-        th_audio_convert.join();
+       if(audio_layout != NONE) {
+	       th_audio_demux.join();
+	       th_audio_convert.join();
+       }
         th_video_demux.join();
         th_video_convert.join();
     } else {
-        th_audio.join();
+      if(audio_layout != NONE) th_audio.join();
         th_video.join();
     }
 }

@@ -12,9 +12,13 @@ class Rescaler : public Tracker<Rescaler> {
 	SwsContext *swsCtx = nullptr;
 	SwrContext *swrCtx = nullptr;
 
+	AudioLayout audio_layout;
+
   public:
 	Rescaler() = default;
 	~Rescaler();
+
+	void set_audio_layout(AudioLayout layout);
 
 	void set_video_scaler(const Codec &codec);
 	void set_audio_scaler(const Codec &codec);
