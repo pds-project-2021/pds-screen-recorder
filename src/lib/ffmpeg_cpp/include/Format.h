@@ -15,7 +15,7 @@ class Format {
 	wrapper<AVDictionary> inputOptions;
 
 	wrapper<AVOutputFormat> output;
-    wrapper<AVDictionary> outputOptions;
+	wrapper<AVDictionary> outputOptions;
 
 	wrapper<AVFormatContext> inputContext;
 	wrapper<AVFormatContext> outputContext;

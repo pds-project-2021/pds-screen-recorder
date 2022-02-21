@@ -3,7 +3,7 @@
 /* Private methods */
 
 void Codec::source_audio_context() {
-	if(audio_layout == NONE) return;
+	if (audio_layout == NONE) return;
 
 	auto audio = input.get_audio();
 	auto audioCtx = avcodec_alloc_context3(audio);
@@ -47,7 +47,7 @@ void Codec::source_video_context() {
 }
 
 void Codec::destination_audio_context() {
-	if(audio_layout == NONE) return;
+	if (audio_layout == NONE) return;
 
 	auto audio = output.get_audio();
 	auto audioCtx = avcodec_alloc_context3(audio);
@@ -100,12 +100,12 @@ void Codec::destination_video_context() {
 }
 
 void Codec::find_audio_encoder(const std::string &codec_name) {
-	if(audio_layout == NONE) return;
+	if (audio_layout == NONE) return;
 
 #ifdef linux
 	auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
 #elif WIN32
-    auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
+	auto audio = avcodec_find_encoder_by_name(codec_name.c_str());
 #else
 	auto audio = (AVCodec*) avcodec_find_encoder_by_name(codec_name.c_str());
 #endif
@@ -116,14 +116,15 @@ void Codec::find_audio_encoder(const std::string &codec_name) {
 }
 
 void Codec::find_video_encoder(const std::string &codec_name) {
-	auto video = (AVCodec*) avcodec_find_encoder_by_name(codec_name.c_str());
-    if (!video) {
-        video = (AVCodec*) avcodec_find_encoder_by_name(FALLBACK_VIDEO_CODEC);
-        std::cerr << "Requested codec was not found, selecting default fallback codec: " << FALLBACK_VIDEO_CODEC <<std::endl;
-        if (!video) {
-            throw avException("Error in finding the video av codecs");
-        }
-    }
+	auto video = (AVCodec *) avcodec_find_encoder_by_name(codec_name.c_str());
+	if (!video) {
+		video = (AVCodec *) avcodec_find_encoder_by_name(FALLBACK_VIDEO_CODEC);
+		std::cerr << "Requested codec was not found, selecting default fallback codec: " << FALLBACK_VIDEO_CODEC
+		          << std::endl;
+		if (!video) {
+			throw avException("Error in finding the video av codecs");
+		}
+	}
 	output.set_video(video);
 }
 
@@ -166,7 +167,6 @@ void Codec::open_streams(const Format &format) {
 	}
 }
 
-
 void Codec::set_audio_layout(AudioLayout layout) {
 	audio_layout = layout;
 
@@ -180,7 +180,7 @@ void Codec::set_audio_layout(AudioLayout layout) {
 }
 
 void Codec::set_source_audio_parameters(AVCodecParameters *par) {
-	if(audio_layout == NONE) return;
+	if (audio_layout == NONE) return;
 
 	inputPar.set_audio(par);
 
@@ -188,11 +188,11 @@ void Codec::set_source_audio_parameters(AVCodecParameters *par) {
 	par->sample_rate = AUDIO_SAMPLE_RATE;
 	par->codec_id = AV_CODEC_ID_PCM_S16LE;
 	par->codec_type = AVMEDIA_TYPE_AUDIO;
-	par->frame_size = AUDIO_SAMPLE_RATE/2; // set number of audio samples in each frame
+	par->frame_size = AUDIO_SAMPLE_RATE / 2; // set number of audio samples in each frame
 	par->channel_layout = channel_layout;
 	par->channels = channels;
 
-	auto audioCodec = (AVCodec*)  avcodec_find_decoder(par->codec_id);
+	auto audioCodec = (AVCodec *) avcodec_find_decoder(par->codec_id);
 	if (audioCodec == nullptr) {
 		throw avException("Unable to find the audio decoder");
 	}
@@ -204,7 +204,7 @@ void Codec::set_source_video_parameters(AVCodecParameters *par) {
 
 	par->format = AV_PIX_FMT_BGR0;
 
-	auto videoCodec = (AVCodec*) avcodec_find_decoder(par->codec_id);
+	auto videoCodec = (AVCodec *) avcodec_find_decoder(par->codec_id);
 	if (videoCodec == nullptr) {
 		throw avException("Unable to find the video decoder");
 	}
@@ -212,7 +212,7 @@ void Codec::set_source_video_parameters(AVCodecParameters *par) {
 }
 
 void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
-	if(audio_layout == NONE) return;
+	if (audio_layout == NONE) return;
 
 	outputPar.set_audio(par);
 
@@ -223,7 +223,7 @@ void Codec::set_destination_audio_parameters(AVCodecParameters *par) {
 	par->channel_layout = inputContext.get_audio()->channel_layout;
 	par->sample_rate = inputContext.get_audio()->sample_rate;
 	par->format = output.get_audio()->sample_fmts[0];
-	par->frame_size = AUDIO_SAMPLE_RATE/2;
+	par->frame_size = AUDIO_SAMPLE_RATE / 2;
 }
 
 void Codec::set_destination_video_parameters(AVCodecParameters *par) {
@@ -241,9 +241,10 @@ void Codec::reset() {
 	inputContext.set_video(nullptr);
 	outputContext.set_video(nullptr);
 
-	if(audio_layout != NONE) {
+	if (audio_layout != NONE) {
 		inputContext.set_audio(nullptr);
 		outputContext.set_audio(nullptr);
-	}}
+	}
+}
 
 

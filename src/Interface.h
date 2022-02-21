@@ -49,10 +49,10 @@ class Interface {
 	GtkWidget *startRecordButton = nullptr;
 	GtkWidget *pauseButton = nullptr;
 	GtkWidget *stopButton = nullptr;
-    GtkWidget *muteButton = nullptr;
+	GtkWidget *muteButton = nullptr;
 	GtkWidget *headerBar = nullptr;
 	GtkWidget *selectionArea = nullptr;
-    [[maybe_unused]] GtkWidget *titleView = nullptr;
+	GtkWidget *titleView = nullptr;
 	GtkWidget *fileChoiceDialog = nullptr;
 	GtkWidget *image = nullptr;
 	GtkWidget *dialog = nullptr;
@@ -62,7 +62,7 @@ class Interface {
 	std::atomic<bool> ready = false;
 	std::atomic<bool> blink_enabled = false;
 	std::atomic<bool> img_on = true;
-    std::atomic<bool> audio_on = true;
+	std::atomic<bool> audio_on = true;
 
 	GtkTextBuffer *title = nullptr;
 	GtkGesture *leftGesture = nullptr;
@@ -78,7 +78,7 @@ class Interface {
 	double endY = 0;
 
 	std::unique_ptr<Recorder> s = nullptr;
-    [[maybe_unused]] unsigned long fileHandler{};
+	unsigned long fileHandler;
 	std::string dest;
 	cairo_surface_t *surface = nullptr;
 	std::future<void> rec;
@@ -93,7 +93,7 @@ class Interface {
 	static void startRecording();
 	static void pauseRecording();
 	static void stopRecording();
-    static gboolean checkRecExecErrors();
+	static gboolean checkRecExecErrors();
 	static gboolean switchImageRec();
 	void setImageRecOff();
 	void setImageRecOn();
@@ -103,8 +103,8 @@ class Interface {
 	void reset_gui_from_pause();
 	void reset_gui_from_stop();
 	void enable_blink();
-    void enable_rec_execution_error_handler() const;
-    void reset_gui_from_file_dialog();
+	void enable_rec_execution_error_handler() const;
+	void reset_gui_from_file_dialog();
 
 	// callback
 	static gboolean on_dialog_deleted();
@@ -121,7 +121,7 @@ class Interface {
 	static void handlePause(GtkWidget *widget, gpointer data);
 	static void handleStop(GtkWidget *widget, gpointer data);
 	static void handleClose(GtkWidget *widget, gpointer data);
-    static void handleMute(GtkWidget *widget, gpointer data);
+	static void handleMute(GtkWidget *widget, gpointer data);
 
 	static void right_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
 	static void left_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);

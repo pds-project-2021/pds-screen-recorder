@@ -4,6 +4,7 @@
 
 #pragma once
 
+// NOTE: required for libav
 #define __STDC_CONSTANT_MACROS
 
 extern "C" {

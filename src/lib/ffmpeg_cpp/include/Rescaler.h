@@ -4,10 +4,9 @@
 
 #pragma once
 
-#include "Tracker.h"
 #include "Codec.h"
 
-class Rescaler : public Tracker<Rescaler> {
+class Rescaler {
   protected:
 	SwsContext *swsCtx = nullptr;
 	SwrContext *swrCtx = nullptr;
@@ -22,7 +21,7 @@ class Rescaler : public Tracker<Rescaler> {
 
 	void set_video_scaler(const Codec &codec);
 	void set_audio_scaler(const Codec &codec);
-    void reset();
+	void reset();
 
 	SwsContext *get_sws();
 	SwrContext *get_swr();

@@ -1,9 +1,7 @@
 #pragma once
 
-#include "Tracker.h"
-
 template<typename T>
-class ptr_wrapper : public Tracker<ptr_wrapper<T>> {
+class ptr_wrapper {
   protected:
 	T *inner = nullptr;
 

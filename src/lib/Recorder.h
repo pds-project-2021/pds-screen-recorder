@@ -16,9 +16,9 @@ class Recorder {
 	std::string audio_codec = DEFAULT_AUDIO_CODEC;
 	std::string video_codec = DEFAULT_VIDEO_CODEC;
 	std::string destination_path = get_default_path();
-    std::string err_string;
+	std::string err_string;
 
-    std::thread th_audio_demux;
+	std::thread th_audio_demux;
 	std::thread th_audio_convert;
 	std::thread th_video_demux;
 	std::thread th_video_convert;
@@ -28,30 +28,30 @@ class Recorder {
 	unsigned int num_core = std::thread::hardware_concurrency();
 
 	// action variable for pause and terminate
-    std::atomic<bool> capturing = false;
+	std::atomic<bool> capturing = false;
 	std::atomic<bool> stopped = false;
-    std::atomic<bool> resuming = false;
-    std::atomic<bool> pausing = false;
-    std::atomic<bool> pausedVideo = false;
-    std::atomic<bool> pausedAudio = false;
+	std::atomic<bool> resuming = false;
+	std::atomic<bool> pausing = false;
+	std::atomic<bool> pausedVideo = false;
+	std::atomic<bool> pausedAudio = false;
 	std::atomic<bool> finishedVideoDemux = false;
 	std::atomic<bool> finishedAudioDemux = false;
-    std::atomic<bool> resync_enabled = true;
+	std::atomic<bool> resync_enabled = true;
 
 	int64_t max_pts = 0;
-    int64_t min_pts = 0;
+	int64_t min_pts = 0;
 
 	bool rec_error = false;
 
 	std::mutex r;
-    std::mutex vC;
-    std::mutex aC;
+	std::mutex vC;
+	std::mutex aC;
 	std::mutex wR;
-    std::mutex eM;
+	std::mutex eM;
 
 	std::condition_variable videoCnv;
 	std::condition_variable audioCnv;
-    std::condition_variable resumeWait;
+	std::condition_variable resumeWait;
 
 	/* private functions */
 
@@ -61,7 +61,7 @@ class Recorder {
 
 	void join_all();
 	void create_out_file(const std::string &dest) const;
-    void handle_rec_error(const std::string& th_name, const unsigned int& th_num, const char* what = nullptr);
+	void handle_rec_error(const std::string &th_name, const unsigned int &th_num, const char *what = nullptr);
 
 	// single thread (de)muxing
 	void CaptureAudioFrames();
@@ -74,7 +74,7 @@ class Recorder {
 	void DemuxVideoInput();
 
   public:
-    Recorder();
+	Recorder();
 	~Recorder();
 
 	// recorder parameters functions
@@ -82,7 +82,7 @@ class Recorder {
 	[[maybe_unused]] void set_audio_layout(AudioLayout layout);
 
 	[[maybe_unused]] std::string get_audio_codec();
-    [[maybe_unused]] void set_audio_codec(const std::string &cod);
+	[[maybe_unused]] void set_audio_codec(const std::string &cod);
 
 	[[maybe_unused]] std::string get_video_codec();
 	[[maybe_unused]] void set_video_codec(const std::string &cod);
@@ -96,8 +96,8 @@ class Recorder {
 	[[maybe_unused]] void set_low_profile();
 	[[maybe_unused]] void set_high_profile();
 
-    [[maybe_unused]] bool get_forced_resync();
-    [[maybe_unused]] void set_forced_resync(bool s);
+	[[maybe_unused]] bool get_forced_resync();
+	[[maybe_unused]] void set_forced_resync(bool s);
 
 	// recorder functions
 	void capture();
@@ -108,7 +108,7 @@ class Recorder {
 	bool is_paused();
 	bool is_capturing();
 
-    std::string get_exec_error(bool&);
+	std::string get_exec_error(bool &);
 
 	// log functions
 	[[maybe_unused]] void print_source_info();

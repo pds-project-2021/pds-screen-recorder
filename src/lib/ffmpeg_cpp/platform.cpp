@@ -1,7 +1,4 @@
-
 #include "platform.h"
-
-//using namespace std;
 
 #ifdef WIN32
 
@@ -43,7 +40,6 @@ void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *au
 			hr = pPropBag->Read(L"FriendlyName", &var, nullptr);
 		}
 		if (SUCCEEDED(hr)) {
-//            printf("%S\n", var.bstrVal);
 			std::wstring ws(var.bstrVal);// Convert to wstring
 			std::string device_name(ws.begin(), ws.end());// Convert to string
 			audioDevices->push_back(device_name);// Add to device names vector
@@ -56,7 +52,6 @@ void getDshowDeviceInformation(IEnumMoniker *pEnum, std::vector<std::string> *au
 
 AVDictionary* get_audio_options(){
 	AVDictionary* options = nullptr;
-//	av_dict_set(&options, "rtbufsize", "3M", 0);
 	av_dict_set(&options, "sample_rate", std::to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
 	return options;
 }
@@ -73,8 +68,7 @@ std::string get_audio_input_format(){
 }
 
 std::string get_audio_input_device(){
-	// todo get audio
-		// Set COM to multithreaded model
+	// Set COM to multithreaded model
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	auto audio_devices = std::vector<std::string>();
 	if (SUCCEEDED(hr))
@@ -119,7 +113,6 @@ std::string get_video_input_device(const std::string &_offset){
 
 AVDictionary *get_audio_options() {
 	AVDictionary *options = nullptr;
-//	av_dict_set(&options, "rtbufsize", "10M", 0);
 	av_dict_set(&options, "sample_rate", std::to_string(AUDIO_SAMPLE_RATE).c_str(), 0);
 	return options;
 }
@@ -146,10 +139,6 @@ std::string get_video_input_format() {
 std::string get_video_input_device(const std::string &_offset) {
 	auto name = DEFAULT_VIDEO_INPUT_DEVICE;
 	return std::string(name) + _offset;
-}
-
-int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
-	return std::min(ctx.get_audio()->start_time, ctx.get_video()->start_time);
 }
 
 #else
@@ -181,12 +170,6 @@ std::string get_video_input_format(){
 
 std::string get_video_input_device(const std::string &_offset){
 	return DEFAULT_VIDEO_INPUT_DEVICE;
-}
-
-int64_t get_ref_time(const wrapper<AVFormatContext> &ctx) {
-	auto video_time = ctx.get_video()->start_time;
-	auto audio_time = ctx.get_audio()->start_time;
-	return video_time > audio_time ? video_time : audio_time;
 }
 
 #endif

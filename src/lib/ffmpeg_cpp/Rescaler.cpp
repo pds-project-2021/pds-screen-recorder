@@ -14,7 +14,7 @@ Rescaler::~Rescaler() {
 }
 
 void Rescaler::set_video_scaler(const Codec &codec) {
-	if (swsCtx != nullptr){
+	if (swsCtx != nullptr) {
 		sws_freeContext(swsCtx);
 		swsCtx = nullptr;
 	}
@@ -36,7 +36,7 @@ void Rescaler::set_video_scaler(const Codec &codec) {
 }
 
 void Rescaler::set_audio_scaler(const Codec &codec) {
-	if(audio_layout == NONE) return;
+	if (audio_layout == NONE) return;
 
 	if (swrCtx != nullptr) {
 		swr_free(&swrCtx);
@@ -72,12 +72,12 @@ SwrContext *Rescaler::get_swr() {
 }
 
 void Rescaler::reset() {
-    if (swsCtx != nullptr){
-        sws_freeContext(swsCtx);
-        swsCtx = nullptr;
-    }
-    if (swrCtx != nullptr) {
-        swr_free(&swrCtx);
-        swrCtx = nullptr;
-    }
+	if (swsCtx != nullptr) {
+		sws_freeContext(swsCtx);
+		swsCtx = nullptr;
+	}
+	if (swrCtx != nullptr) {
+		swr_free(&swrCtx);
+		swrCtx = nullptr;
+	}
 }
