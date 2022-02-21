@@ -533,6 +533,7 @@ void Interface::init_recorder(double sX, double sY, double eX, double eY) {
 	}
     t->s = std::make_unique<Recorder>();
 	t->s->set_screen_params(screen);
+    t->s->set_audio_layout(NONE);
 	log_info("Initialized input streams");
 	t->ready = true;
 }

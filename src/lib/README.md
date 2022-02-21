@@ -190,6 +190,7 @@ Più in dettaglio:
     Al termine del ciclo viene chiamata la funzione `convertAndWriteLastAudioFrames` che si occupa di
     svuotare le code interne scrivendo i frame rimasti su file.
 
+
 - `th_video_convert`:
     esegue la funzione `ConvertVideoFrames`, che mantiene un ciclo while di lettura dei
     pacchetti audio decodificati tramite la funzione `avcodec_receive_frame` fino a che non viene

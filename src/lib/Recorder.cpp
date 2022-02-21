@@ -148,6 +148,7 @@ void Recorder::capture() {
 void Recorder::pause() {
     std::unique_lock<std::mutex> rl(r);
     pausing = true;
+    if (audio_layout == NONE) pausedAudio = true;
     resumeWait.wait(rl, [this]()-> bool { return ((pausedVideo && pausedAudio) || !capturing || stopped);});
     pausing = false;
 }
@@ -158,6 +159,7 @@ void Recorder::pause() {
 void Recorder::resume() {
     std::unique_lock<std::mutex> rl(r);
     resuming = true;
+    if (audio_layout == NONE) pausedAudio = false;
     resumeWait.wait(rl, [this]()-> bool { return ((!pausedVideo && !pausedAudio) || !capturing || stopped);});
     resuming = false;
 }
@@ -278,7 +280,7 @@ void Recorder::join_all() {
         th_video_demux.join();
         th_video_convert.join();
     } else {
-      if(audio_layout != NONE) th_audio.join();
+        if(audio_layout != NONE) th_audio.join();
         th_video.join();
     }
 }
@@ -324,18 +326,20 @@ void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& 
         err_string.append(what);
     }
     if (num_core > 2) {
-        if(th_num != 1) th_audio_demux.join();
-        else {
-            th_audio_demux.join();
-            std::lock_guard<std::mutex> ul(aC);
-            finishedAudioDemux = true;
-            audioCnv.notify_one(); // notify thread if halted
-        }
-        if(th_num != 2) th_audio_convert.join();
-        else {
-            th_audio_convert.join();
-            std::unique_lock<std::mutex> ul(aC);
-            audioCnv.notify_one();// notify thread if halted
+        if(audio_layout != NONE) {
+            if (th_num != 1) th_audio_demux.join();
+            else {
+                th_audio_demux.join();
+                std::lock_guard<std::mutex> ul(aC);
+                finishedAudioDemux = true;
+                audioCnv.notify_one(); // notify thread if halted
+            }
+            if (th_num != 2) th_audio_convert.join();
+            else {
+                th_audio_convert.join();
+                std::unique_lock<std::mutex> ul(aC);
+                audioCnv.notify_one();// notify thread if halted
+            }
         }
         if(th_num != 3) th_video_demux.join();
         else {
@@ -351,7 +355,7 @@ void Recorder::handle_rec_error(const std::string& th_name, const unsigned int& 
             videoCnv.notify_one(); // notify thread if halted
         }
     } else {
-        th_audio.join();
+        if(audio_layout != NONE) th_audio.join();
         th_video.join();
     }
     stopped = true;
@@ -957,7 +961,6 @@ void Recorder::ConvertVideoFrames() {
                                           &count, &wR, &r, &max_pts,
                                           &min_pts, &pausedVideo, resync_enabled.load());
             }
-
             if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
                 ul.lock();
                 if (!capturing) {
