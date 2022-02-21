@@ -229,16 +229,38 @@ durante le varie fasi di conversione e scrittura su file dei frame/pacchetti.
                         nel caso in cui avvengano degli errori durante la scrittura.
 
 
--`convertAndWriteVideoFrame`: si occupa di chiamare le funzioni opportune per effettuare rescaling,
+- `convertAndWriteVideoFrame`: si occupa di chiamare le funzioni opportune per effettuare rescaling,
                               codifica e scrittura in uscita di un frame video.
                               Eventuali eccezioni generate da queste funzioni si propagano al chiamante.
                               Se richiesto, viene effettuata resincronia del pts dei frame in base
                               ai valori forniti.
 
--`convertAndWriteDelayedVideoFrames`: estrae i pacchetti rimasti nella coda di codifica e chiama la
+
+- `convertAndWriteDelayedVideoFrames`: estrae i pacchetti rimasti nella coda di codifica e chiama la
                                       funzione opportuna per scrivere i pacchetti in uscita.
                                       Eventuali eccezioni generate da questa funzione di scrittura si
                                       propagano al chiamante.
+
+
+- `convertAndWriteAudioFrames`: si occupa di chiamare le funzioni opportune per effettuare resampling,
+                               codifica e scrittura in uscita dei dati presenti in un frame audio d'ingresso.
+                               Eventuali eccezioni generate da queste funzioni si propagano al chiamante.
+                               Se richiesto, viene effettuata resincronia del pts dei frame in base
+                               ai valori forniti.
+
+
+- `convertAndWriteDelayedAudioFrames`: estrae i pacchetti rimasti nella coda di codifica e chiama la
+                                      funzione opportuna per scrivere i pacchetti in uscita.
+                                      Eventuali eccezioni generate da questa funzione di scrittura si
+                                      propagano al chiamante.
+
+
+- `convertAndWriteLastAudioFrames`: estrae i pacchetti rimasti nella coda di resampling, li codifica
+                                   e chiama la funzione opportuna per scrivere i pacchetti in uscita.
+                                   Eventuali eccezioni generate da queste funzioni si propagano al chiamante.
+                                   Se richiesto, viene effettuata resincronia del pts dei frame in base
+                                   ai valori forniti.
+
 
 ### Controllo e gestione errori durante l'esecuzione dei thread asincroni
 

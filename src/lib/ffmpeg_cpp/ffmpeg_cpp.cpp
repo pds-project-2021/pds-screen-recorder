@@ -376,19 +376,11 @@ void convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outp
 			}
 		} else std::cout << "Last not delayed audio frame could not be encoded successfully" << std::endl;
 
-        convertAndWriteDelayedAudioFrames(inputCodecContext,
-                                          outputCodecContext,
-                                          audioStream,
-                                          outputFormatContext,
-                                          got_samples,
-                                          wR);
+        convertAndWriteDelayedAudioFrames(inputCodecContext, outputCodecContext, audioStream,
+                                          outputFormatContext,  got_samples, wR);
 	} else {
-        convertAndWriteDelayedAudioFrames(inputCodecContext,
-                                          outputCodecContext,
-                                          audioStream,
-                                          outputFormatContext,
-                                          got_samples,
-                                          wR);
+        convertAndWriteDelayedAudioFrames(inputCodecContext, outputCodecContext, audioStream,
+                                          outputFormatContext, got_samples, wR);
     }
 }
 
