@@ -72,8 +72,10 @@ però all'utente di scegliere il profilo di esecuzione della cattura con `set_lo
 
 Per interazione asincrona con i thread di cattura sono esposte delle funzioni di controllo:
 `pause()` e `is_paused()` per mettere in pausa e controllare che la cattura sia in pausa,
-`resume()` per riprendere dopo un comando di pausa e `is_capturing()` che controlla che sia
+`resume()` per riprendere dopo un comando di pausa, `is_capturing()` che controlla che sia
 stato avviato il muxing/demux e quindi sia finita la fase di inizializzazione.
+e infine `terminate()` che permette di terminare la cattura.
+
 
 Le funzioni private della classe sono per lo più per l'inizializzazione e l'implementazione
 dell'algoritmo di codifica e decodifica. In particolare nella funzione `init()` vengono 
@@ -205,9 +207,35 @@ Più in dettaglio:
 
     Al termine del ciclo viene chiamata la funzione `convertAndWriteDelayedVideoFrames` che si occupa di
     svuotare le code interne scrivendo i frame rimasti su file.
-    
+
+###Funzioni di conversione/scrittura
+
+All'interno del file `ffmpeg_cpp.cpp` sono presenti varie funzioni che vengono adoperate dai thread
+durante le varie fasi di conversione e scrittura su file dei frame/pacchetti.
+
+- `decode`: riceve un `AVCodecContext*` relativo al codec in uso, un `AVPacket*` in ingresso,
+            un `AVFrame*` da fornire in uscita e un `int*` per comunicare se è stato possibile estrarre
+            un frame. Internamente inserisce i pacchetti in una coda di decodifica da cui estrae,
+            se possibile, i frame decodificati.
+            Lancia `avException("Failed to send packet to decoder")` in caso di errore.
 
 
+- `encode`: riceve un `AVCodecContext*` relativo al codec in uso, un `AVPacket*` da fornire in uscita,
+            un `AVFrame*` in ingresso e un `int*` per comunicare se è stato possibile estrarre
+            un pacchetto. Internamente inserisce i frame in una coda di codifica da cui estrae,
+            se possibile, i pacchetti codificati.
+            Lancia `avException("Failed to send frame to encoder")` in caso di errore.
+
+
+-`writeFrameToOutput`: riceve un `AVFormatContext*` relativo al formato di uscita, un `AVPacket*`
+                       relativo al pacchetto che si intende scrivere in uscita e un `std::mutex`
+                       adoperato durante la scrittura. Scrive in modo thread safe nell'uscita desiderata.
+                       Lancia `avException("Provided null output values, data could not be written")`
+                       se riceve dei parametri `null` e `avException("Error in writing media frame")`
+                       nel caso in cui avvengano degli errori durante la scrittura.
+
+
+-`convertAndWriteVideoFrame`: 
 ### Controllo e gestione errori durante l'esecuzione dei thread asincroni
 
 Nel momento in cui uno qualsiasi dei thread audio/video di cattura/demuxing/conversione lancia
@@ -219,11 +247,19 @@ funzione e una stringa che specifica il tipo di errore che si è verificato.
 La funzione si occupa quindi di salvare i dati relativi all'errore in una variabile interna
 alla classe e di interrompere l'esecuzione dei thread audio/video, oltre che di ripristinare
 lo stato delle strutture dati interne. 
+
 Dopodichè il thread secondario termina e sarà possibile accedere ai dati relativi all'errore
 verificatosi tramite una chiamata al metodo pubblico `get_exec_error` che riceve tramite
 riferimento una variabile bool nella quale viene memorizzato l'effettivo avvenire di un errore
 durante la fase di registrazione entro il momento della chiamata del metodo e restituisce una
 stringa con i dettagli sull'errore in caso affermativo.
+
+Durante l'esecuzione dei thread audio/video le eventuali eccezioni lanciate non si propagano
+direttamente all'esterno della struttura Recorder ma eventuali condizioni d'errore devono essere
+monitorate periodicamente durante l'esecuzione tramite `get_exec_error`;
+
+
+### Condizioni di errore
 
 
 ## Template `wrapper`

@@ -26,6 +26,7 @@ Recorder::~Recorder() {
  */
 [[maybe_unused]] void Recorder::set_audio_layout(AudioLayout layout) {
     audio_layout = layout;
+    if(layout == NONE) resync_enabled = false;
 }
 
 /**
