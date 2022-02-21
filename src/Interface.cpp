@@ -9,6 +9,7 @@ int launchUI(int argc, char **argv) {
 	AllocConsole();
 	Window = FindWindowA("ConsoleWindowClass", nullptr);
 	ShowWindow(Window,0);
+//    g_setenv("XDG_DATA_DIRS", "./share", TRUE);
 #endif
 	auto app = gtk_application_new("org.gtk.recs", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK(Interface::activate), nullptr);

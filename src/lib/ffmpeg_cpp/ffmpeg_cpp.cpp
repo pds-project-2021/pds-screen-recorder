@@ -392,8 +392,6 @@ void convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outp
 		                                  got_samples,
 		                                  wR);
 	} else {
-
-    }
 		convertAndWriteDelayedAudioFrames(inputCodecContext,
 		                                  outputCodecContext,
 		                                  audioStream,

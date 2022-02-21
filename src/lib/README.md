@@ -263,6 +263,34 @@ tramite `get_exec_error`;
 
 ### Condizioni di errore
 
+- **Fase di inizializzazione della registrazione**: durante l'esecuzione della funzione `init()` possono essere lanciate
+eccezioni dovute (solitamente) a errori legati a codec mancanti o errata inizializzazione di ingressi o uscite (file
+di uscita), al seguito dei quali sarà necessario distruggere l'oggetto e inizializzarne uno nuovo.
+ 
+
+- **Fase di esecuzione della registrazione**: durante l'esecuzione dei thread audio/video si possono verificare condizioni
+di errore dovute, eccetto casi imprevisti, a problemi nelle operazioni di codifica/decodifica, rescaling/resampling e
+scrittura su file. Per verificare se sia avvenuto un errore in questa fase è necessario adoperare il metodo
+`get_exec_error` a cui si passa un valore `bool` per riferimento nel quale viene scritta l'effettiva avvenuta di
+eventuali errori e che ritorna in caso positivo una `std::string` con il relativo messaggio d'errore.
+È sufficiente, in caso di errore (salvo casi catastrofici), effettuare una nuova `capture()` in quanto internamente le
+strutture dati dell'oggetto vengono automaticamente deinizializzate/ripristinate, ma è ugualmente possibile distruggere
+l'oggetto e crearne uno nuovo.
+
+
+- **Fase di pausa/ripresa della registrazione**: non vengono eseguite funzioni che normalmente generano eccezioni. 
+Nel caso si verifichino errori (gravi) imprevisti, sarà necessaria la sua distruzione dell'oggetto Recorder.
+
+
+- **Fase di terminazione della registrazione**: durante la fase di terminazione possono verificarsi  eccezioni dovute ad
+errori nell'accesso al file in uscita. In caso di errore sarà necessaria la distruzione dell'oggetto Recorder.
+
+
+- **Fase di salvataggio/cancellazione del file finale**: durante questa fase non viene adoperata la classe Recorder ma
+la funzione `move_file` che si occupa di spostare il file temporaneo di uscita alla destinazione richiesta in caso di
+salvataggio. In caso di annullamento, il file viene eliminato dalla funzione `delete_file`.
+Entrambe le funzioni posso lanciare eccezioni dovute ad errori nell'accesso a file e/o filesystem o al passaggio di
+parametri non corretti.
 
 ## Template `wrapper`
 

@@ -2,7 +2,6 @@
 
 /** Initialize lib codecs and devices */
 Recorder::Recorder() {
-	avdevice_register_all();
 }
 
 Recorder::~Recorder() {
@@ -246,6 +245,7 @@ void Recorder::init() {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
+    avdevice_register_all();
 	format.set_screen_params(screen);
 	format.set_audio_layout(audio_layout);
 	format.setup_source();
@@ -365,6 +365,7 @@ void Recorder::handle_rec_error(const std::string &th_name, const unsigned int &
 		th_video.join();
 	}
 	stopped = true;
+    reset();
 }
 
 /* single thread (de)muxing */
@@ -848,7 +849,6 @@ void Recorder::DemuxVideoInput() {
 				videoCnv.notify_one(); // notify converter thread if halted
 				break;
 			}
-
 			std::unique_lock<std::mutex> rl(r);
 			if (pausing) {
 				pausedVideo = true;
