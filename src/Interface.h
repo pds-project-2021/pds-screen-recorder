@@ -13,6 +13,8 @@
 
 #include "icon_on.xpm"
 #include "icon_off.xpm"
+#include "microphone_on.xpm"
+#include "microphone_off.xpm"
 
 const GOptionEntry cmd_params[] = {
 	{

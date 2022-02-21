@@ -176,6 +176,8 @@ Interface::Interface(GtkApplication *app) {
 	headerBar = gtk_header_bar_new();
 	auto pix = gdk_pixbuf_new_from_xpm_data(icon_on);
 	image = gtk_image_new_from_pixbuf(pix);
+    auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_on);
+    auto audio_image = gtk_image_new_from_pixbuf(pix2);
 	title = gtk_text_buffer_new(nullptr);
 	gtk_text_buffer_set_text(GTK_TEXT_BUFFER(title), "  ", 2);
 	titleView = gtk_text_view_new_with_buffer(title);
@@ -183,11 +185,11 @@ Interface::Interface(GtkApplication *app) {
 
 	// setup windows' size
 #ifdef WIN32
-	gtk_window_set_default_size(GTK_WINDOW(window), 550, 50);
+	gtk_window_set_default_size(GTK_WINDOW(window), 520, 50);
 #elif linux
-	gtk_window_set_default_size(GTK_WINDOW(window), 650, 50);
+	gtk_window_set_default_size(GTK_WINDOW(window), 600, 50);
 #else
-    gtk_window_set_default_size(GTK_WINDOW(window), 620, 50);
+    gtk_window_set_default_size(GTK_WINDOW(window), 670, 50);
 #endif
 	gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
 	// get full screen geometry for `selectionWindow` size setup
@@ -211,7 +213,9 @@ Interface::Interface(GtkApplication *app) {
 	pauseButton = gtk_button_new_with_label("Pause");
 	stopButton = gtk_button_new_with_label("Stop");
 	startRecordButton = gtk_button_new_with_label("Start recording");
-    muteButton = gtk_button_new_with_label("Audio on");
+    muteButton = gtk_button_new();
+    gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
+    gtk_button_set_child (GTK_BUTTON (muteButton), audio_image);
 
 	g_signal_connect(recordButton, "clicked", G_CALLBACK(select_record_region), nullptr);
 	g_signal_connect(startRecordButton, "clicked", G_CALLBACK(handleRecord), nullptr);
@@ -770,11 +774,17 @@ void Interface::handleMute(GtkWidget *, gpointer) {
     try {
         if(t->audio_on) {
             t->audio_on = false;
-            gtk_button_set_label(reinterpret_cast<GtkButton *>(t->muteButton), "Audio off");
+            auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_off);
+            auto audio_image = gtk_image_new_from_pixbuf(pix2);
+            gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
+            gtk_button_set_child (GTK_BUTTON (t->muteButton), audio_image);
         }
         else {
             t->audio_on = true;
-            gtk_button_set_label(reinterpret_cast<GtkButton *>(t->muteButton), "Audio on");
+            auto pix2 = gdk_pixbuf_new_from_xpm_data(microphone_on);
+            auto audio_image = gtk_image_new_from_pixbuf(pix2);
+            gtk_image_set_pixel_size(GTK_IMAGE(audio_image), 19);
+            gtk_button_set_child (GTK_BUTTON (t->muteButton), audio_image);
         }
     }
     catch(...) {
