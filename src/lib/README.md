@@ -211,16 +211,17 @@ fasi di conversione e scrittura su file dei frame/pacchetti.
   Lancia `avException("Failed to send frame to encoder")` in caso di errore.
 
 
-- `writeFrameToOutput`: scrive in modo thread safe nell'uscita desiderata.
-  Lancia `avException("Provided null output values, data could not be written")`
-  se riceve dei parametri `null` e `avException("Error in writing media frame")`
-  nel caso in cui avvengano degli errori durante la scrittura.
+- `writeFrameToOutput`: scrive in modo thread safe nell'uscita desiderata. Lancia `avException("Provided null output
+values, data could not be written")` se riceve dei parametri `null` e `avException("Error in writing media frame")`
+nel caso in cui avvengano degli errori durante la scrittura.
 
--`convertAndWriteVideoFrame`: si occupa di chiamare le funzioni opportune per effettuare rescaling, codifica e scrittura
+
+- `convertAndWriteVideoFrame`: si occupa di chiamare le funzioni opportune per effettuare rescaling, codifica e scrittura
 in uscita di un frame video. Eventuali eccezioni generate da queste funzioni si propagano al chiamante. Se richiesto,
 viene effettuata resincronia del pts dei frame in base ai valori forniti.
 
--`convertAndWriteDelayedVideoFrames`: estrae i pacchetti rimasti nella coda di codifica e chiama la funzione opportuna
+
+- `convertAndWriteDelayedVideoFrames`: estrae i pacchetti rimasti nella coda di codifica e chiama la funzione opportuna
 per scrivere i pacchetti in uscita. Eventuali eccezioni generate da questa funzione di scrittura si propagano al
 chiamante.
 
