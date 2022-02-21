@@ -47,6 +47,7 @@ class Interface {
 	GtkWidget *startRecordButton = nullptr;
 	GtkWidget *pauseButton = nullptr;
 	GtkWidget *stopButton = nullptr;
+    GtkWidget *muteButton = nullptr;
 	GtkWidget *headerBar = nullptr;
 	GtkWidget *selectionArea = nullptr;
     [[maybe_unused]] GtkWidget *titleView = nullptr;
@@ -59,6 +60,7 @@ class Interface {
 	std::atomic<bool> ready = false;
 	std::atomic<bool> blink_enabled = false;
 	std::atomic<bool> img_on = true;
+    std::atomic<bool> audio_on = true;
 
 	GtkTextBuffer *title = nullptr;
 	GtkGesture *leftGesture = nullptr;
@@ -117,6 +119,7 @@ class Interface {
 	static void handlePause(GtkWidget *widget, gpointer data);
 	static void handleStop(GtkWidget *widget, gpointer data);
 	static void handleClose(GtkWidget *widget, gpointer data);
+    static void handleMute(GtkWidget *widget, gpointer data);
 
 	static void right_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);
 	static void left_btn_pressed(GtkGestureClick *gesture, int n_press, double x, double y, GtkWidget *widget);

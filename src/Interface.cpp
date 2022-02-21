@@ -45,6 +45,7 @@ gboolean Interface::checkRecExecErrors() {
             gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), true);
             gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
             gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
+            gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), true);
             gtk_widget_queue_draw(t->window);
             //show error message dialog
             if (t->dialog) t->set_error_dialog_msg(str_err.c_str());
@@ -182,7 +183,7 @@ Interface::Interface(GtkApplication *app) {
 
 	// setup windows' size
 #ifdef WIN32
-	gtk_window_set_default_size(GTK_WINDOW(window), 463, 50);
+	gtk_window_set_default_size(GTK_WINDOW(window), 550, 50);
 #elif linux
 	gtk_window_set_default_size(GTK_WINDOW(window), 550, 50);
 #else
@@ -210,11 +211,13 @@ Interface::Interface(GtkApplication *app) {
 	pauseButton = gtk_button_new_with_label("Pause");
 	stopButton = gtk_button_new_with_label("Stop");
 	startRecordButton = gtk_button_new_with_label("Start recording");
+    muteButton = gtk_button_new_with_label("Audio on");
 
 	g_signal_connect(recordButton, "clicked", G_CALLBACK(select_record_region), nullptr);
 	g_signal_connect(startRecordButton, "clicked", G_CALLBACK(handleRecord), nullptr);
 	g_signal_connect(pauseButton, "clicked", G_CALLBACK(handlePause), nullptr);
 	g_signal_connect(stopButton, "clicked", G_CALLBACK(handleStop), nullptr);
+    g_signal_connect(muteButton, "clicked", G_CALLBACK(handleMute), nullptr);
 
 	gtk_window_set_child(GTK_WINDOW(window), headerBar);
 	gtk_window_set_child(GTK_WINDOW(recordWindow), startRecordButton);
@@ -222,6 +225,7 @@ Interface::Interface(GtkApplication *app) {
 	gtk_image_set_pixel_size(GTK_IMAGE(image), 32);
 	gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(headerBar), ":minimize,close");
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(headerBar), image);
+    gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), muteButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), stopButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), pauseButton);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(headerBar), recordButton);
@@ -533,7 +537,7 @@ void Interface::init_recorder(double sX, double sY, double eX, double eY) {
 	}
     t->s = std::make_unique<Recorder>();
 	t->s->set_screen_params(screen);
-//    t->s->set_audio_layout(NONE);
+    t->s->set_audio_layout(t->audio_on ? MONO:NONE);
 	log_info("Initialized input streams");
 	t->ready = true;
 }
@@ -559,6 +563,7 @@ void Interface::startRecording() {
 		gtk_widget_set_sensitive(GTK_WIDGET(t->recordButton), false);
 		gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), true);
 		gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), true);
+        gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), false);
 
 	}
 	catch (avException &e) {// handle recoverable libav exceptions during initialization
@@ -602,6 +607,7 @@ void Interface::stopRecording() {
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
 	gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), true);
 }
 
 void Interface::select_record_region(GtkWidget *, gpointer) {
@@ -628,6 +634,7 @@ void Interface::reset_gui_from_start() {
     gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
     gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
     gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
 }
 
 void Interface::reset_gui_from_pause() {
@@ -639,6 +646,7 @@ void Interface::reset_gui_from_pause() {
 	gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
 #ifdef WIN32
 	gtk_window_minimize(GTK_WINDOW(window));
 	gtk_window_present(GTK_WINDOW(window));
@@ -657,6 +665,7 @@ void Interface::reset_gui_from_stop() {
 	gtk_widget_set_sensitive(GTK_WIDGET(recordButton), true);
 	gtk_widget_set_sensitive(GTK_WIDGET(pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(stopButton), false);
+    gtk_widget_set_sensitive(GTK_WIDGET(muteButton), true);
 	// restore windows' states
 	gtk_window_set_hide_on_close(GTK_WINDOW(fileChoiceDialog), false);
 	gtk_window_close(GTK_WINDOW(fileChoiceDialog));
@@ -754,6 +763,22 @@ void Interface::handleClose(GtkWidget *, gpointer) {
     }
     catch(...) {
         throw uiException("Error while closing user interface");
+    }
+}
+
+void Interface::handleMute(GtkWidget *, gpointer) {
+    try {
+        if(t->audio_on) {
+            t->audio_on = false;
+            gtk_button_set_label(reinterpret_cast<GtkButton *>(t->muteButton), "Audio off");
+        }
+        else {
+            t->audio_on = true;
+            gtk_button_set_label(reinterpret_cast<GtkButton *>(t->muteButton), "Audio on");
+        }
+    }
+    catch(...) {
+        throw uiException("Error while changing audio mute settings");
     }
 }
 
