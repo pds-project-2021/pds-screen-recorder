@@ -368,7 +368,6 @@ void Recorder::CaptureAudioFrames() {
         auto audioStream = codec.streams.get_audio();
         auto swrContext = rescaler.get_swr();
 
-        unsigned int frame_size = 0;
         int got_frame = 0;
         int64_t pts = 0;
 
@@ -418,10 +417,6 @@ void Recorder::CaptureAudioFrames() {
                 if (got_frame > 0) { // frame is ready
 
                     // Convert and write frames
-                    if (frame_size == 0) {
-                        frame_size = in_frame.into()->nb_samples;
-                    }
-
                     convertAndWriteAudioFrames(swrContext,
                                                outputCodecContext,
                                                inputCodecContext,
@@ -716,7 +711,6 @@ void Recorder::ConvertAudioFrames() {
 
         int64_t pts = 0;
         int result = AVERROR(EAGAIN);
-        unsigned int frame_size = 0;
 
         while (result >= 0 || result == AVERROR(EAGAIN)) {
             if (!capturing) {
@@ -734,17 +728,13 @@ void Recorder::ConvertAudioFrames() {
 
             if (result >= 0) {
                 //Convert frames and then write them to file
-                if (frame_size == 0) {
-                    frame_size = in_frame.into()->nb_samples;
-                }
-
                 convertAndWriteAudioFrames(swrContext, outputCodecContext, inputCodecContext,
                                            audioStream, outputFormatContext, in_frame.into(),
                                            &pts,  &wR, &r, &max_pts,
                                            &min_pts, &pausedAudio, resync_enabled.load());
             }
 
-            if (result == AVERROR(EAGAIN)) {//buffer is not ready or could not acquire lock, wait and retry
+            if (result == AVERROR(EAGAIN)) {//buffer is not ready, wait and retry
                 ul.lock();
                 if (!capturing) {
                     break;
