@@ -185,11 +185,11 @@ Interface::Interface(GtkApplication *app) {
 
 	// setup windows' size
 #ifdef WIN32
-	gtk_window_set_default_size(GTK_WINDOW(window), 520, 50);
+	gtk_window_set_default_size(GTK_WINDOW(window), 513, 50);
 #elif linux
 	gtk_window_set_default_size(GTK_WINDOW(window), 600, 50);
 #else
-    gtk_window_set_default_size(GTK_WINDOW(window), 670, 50);
+    gtk_window_set_default_size(GTK_WINDOW(window), 570, 50);
 #endif
 	gtk_window_set_default_size(GTK_WINDOW(recordWindow), 120, 30);
 	// get full screen geometry for `selectionWindow` size setup

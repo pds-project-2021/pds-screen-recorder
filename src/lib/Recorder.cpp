@@ -125,20 +125,22 @@ std::string Recorder::get_exec_error(bool& err) {
  * Release 2 threads for audio/video demuxing and 2 threads for audio/video frame conversion
  */
 void Recorder::capture() {
-    init();
+    if(!capturing) {
+        init();
 
-    capturing = true;
+        capturing = true;
 
-    if (num_core > 2) {
-		if (audio_layout != NONE) {
-			th_audio_demux = std::thread{&Recorder::DemuxAudioInput, this};
-			th_audio_convert = std::thread{&Recorder::ConvertAudioFrames, this};
-		}
-		th_video_demux = std::thread{&Recorder::DemuxVideoInput, this};
-        th_video_convert = std::thread{&Recorder::ConvertVideoFrames, this};
-    } else {
-        th_video = std::thread{&Recorder::CaptureVideoFrames, this};
-		if (audio_layout != NONE) th_audio = std::thread{&Recorder::CaptureAudioFrames, this};
+        if (num_core > 2) {
+            if (audio_layout != NONE) {
+                th_audio_demux = std::thread{&Recorder::DemuxAudioInput, this};
+                th_audio_convert = std::thread{&Recorder::ConvertAudioFrames, this};
+            }
+            th_video_demux = std::thread{&Recorder::DemuxVideoInput, this};
+            th_video_convert = std::thread{&Recorder::ConvertVideoFrames, this};
+        } else {
+            th_video = std::thread{&Recorder::CaptureVideoFrames, this};
+            if (audio_layout != NONE) th_audio = std::thread{&Recorder::CaptureAudioFrames, this};
+        }
     }
 }
 
@@ -168,20 +170,22 @@ void Recorder::resume() {
  * End the capture
  */
 void Recorder::terminate() {
-    stopped = true;
+    if(capturing && !stopped) {
+        stopped = true;
 
-    // wait all threads
-    join_all();
+        // wait all threads
+        join_all();
 
-    auto outputFormatContext = format.outputContext.get_video();
+        auto outputFormatContext = format.outputContext.get_video();
 
-    // Write file trailer data
-    auto ret = av_write_trailer(outputFormatContext);
-    if (ret < 0) {
-        throw avException("Error in writing av trailer");
+        // Write file trailer data
+        auto ret = av_write_trailer(outputFormatContext);
+        if (ret < 0) {
+            throw avException("Error in writing av trailer");
+        }
+
+        reset();
     }
-
-    reset();
 }
 
 void Recorder::reset() {
