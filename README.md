@@ -65,7 +65,7 @@ Sarà necessario aggiungere alle variabili di ambiente `XDG_DATA_DIRS={vcpkg-roo
 
 ## Esecuzione
 
-Eseguire con `./recs`, si possono aggiunger dei flag da linea di comando:
+Eseguire con `./recs`, si possono aggiungere dei flag da linea di comando:
 
 ```shell
 USAGE: recs <args>

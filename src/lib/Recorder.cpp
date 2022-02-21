@@ -1,8 +1,7 @@
 #include "Recorder.h"
 
 /** Initialize lib codecs and devices */
-Recorder::Recorder() {
-}
+Recorder::Recorder() = default;
 
 Recorder::~Recorder() {
 	if (capturing) {
@@ -187,6 +186,9 @@ void Recorder::terminate() {
 	}
 }
 
+/**
+ * Reset recorder state
+ */
 void Recorder::reset() {
 	// reset libav resources
 	rescaler.reset();
@@ -277,6 +279,9 @@ void Recorder::init() {
 //    throw avException("Error");
 }
 
+/**
+ * Join running audio/video threads
+ */
 void Recorder::join_all() {
 	if (num_core > 2) {
 		if (audio_layout != NONE) {
@@ -317,6 +322,9 @@ void Recorder::create_out_file(const std::string &dest) const {
 	}
 }
 
+/**
+ * Handle errors during recording
+ */
 void Recorder::handle_rec_error(const std::string &th_name, const unsigned int &th_num, const char *what) {
 	std::lock_guard<std::mutex> lg(eM);
 	if (capturing) capturing = false;
@@ -368,7 +376,9 @@ void Recorder::handle_rec_error(const std::string &th_name, const unsigned int &
     reset();
 }
 
-/* single thread (de)muxing */
+/**
+ * single threaded audio capture
+ */
 void Recorder::CaptureAudioFrames() {
 	try {
 		auto inputFormatContext = format.inputContext.get_audio();
@@ -487,6 +497,9 @@ void Recorder::CaptureAudioFrames() {
 	}
 }
 
+/**
+ * single threaded video capture
+ */
 void Recorder::CaptureVideoFrames() {
 	try {
 		auto inputFormatContext = format.inputContext.get_video();
@@ -600,8 +613,11 @@ void Recorder::CaptureVideoFrames() {
 	}
 }
 
-/* multi thread (de)muxing */
 
+
+/**
+ * audio demuxing thread
+ */
 void Recorder::DemuxAudioInput() {
 	try {
 		auto start = std::chrono::system_clock::now();
@@ -711,6 +727,9 @@ void Recorder::DemuxAudioInput() {
 	}
 }
 
+/**
+ * audio conversion thread
+ */
 void Recorder::ConvertAudioFrames() {
 	try {
 		auto inputCodecContext = codec.inputContext.get_audio();
@@ -821,6 +840,9 @@ void Recorder::ConvertAudioFrames() {
 	}
 }
 
+/**
+ * video demuxing thread
+ */
 void Recorder::DemuxVideoInput() {
 	try {
 		// frame number in a second
@@ -932,6 +954,10 @@ void Recorder::DemuxVideoInput() {
 	}
 }
 
+
+/**
+ * video conversion thread
+ */
 void Recorder::ConvertVideoFrames() {
 	try {
 		auto inputCodecContext = codec.inputContext.get_video();
