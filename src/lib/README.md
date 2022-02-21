@@ -114,7 +114,7 @@ Più in dettaglio:
 - `th_video`:
     esegue la funzione `CaptureVideoFrames`, che mantiene un ciclo while di lettura dei
     pacchetti audio in ingresso fino a che non viene convalidata una condizione di terminazione, che
-    può portare allo stop della regitrazione (`stopped == true`) o alla terminazione immediata della
+    può portare allo stop della registrazione (`stopped == true`) o alla terminazione immediata della
     funzione (`capturing == false`).
 
     In caso durante il ciclo `pausing == true`, imposta la condizione di pausa
@@ -134,7 +134,7 @@ Più in dettaglio:
 - `th_audio_demux`:
     esegue la funzione `DemuxAudioInput`, che mantiene un ciclo while di lettura dei
     pacchetti audio in ingresso fino a che non viene convalidata una condizione di terminazione, che
-    può portare allo stop della regitrazione (`stopped == true`) o alla terminazione immediata della
+    può portare allo stop della registrazione (`stopped == true`) o alla terminazione immediata della
     funzione (`capturing == false`), con impostazione del flag `finishedAudioDemux = true` e segnalazione
     al thread di conversione che potrebbe essere rimasto in attesa di nuovi pacchetti.
 
@@ -156,7 +156,7 @@ Più in dettaglio:
 - `th_video_demux`:
     esegue la funzione `DemuxVideoInput`, che mantiene un ciclo while di lettura dei
     pacchetti audio in ingresso fino a che non viene convalidata una condizione di terminazione, che
-    può portare allo stop della regitrazione (`stopped == true`) o alla terminazione immediata della
+    può portare allo stop della registrazione (`stopped == true`) o alla terminazione immediata della
     funzione (`capturing == false`), con impostazione del flag `finishedVideoDemux = true` e segnalazione
     al thread di conversione che potrebbe essere rimasto in attesa di nuovi pacchetti.
 
@@ -173,7 +173,39 @@ Più in dettaglio:
 
     In caso contrario, se la coda di decodifica è piena si mette in attesa di un segnale da parte
     del thread di conversione, altrimenti viene generata un'eccezione.
+
+
+- `th_audio_convert`:
+    esegue la funzione `ConvertAudioFrames`, che mantiene un ciclo while di lettura dei
+    pacchetti audio decodificati tramite la funzione `avcodec_receive_frame` fino a che non viene 
+    convalidata una condizione di terminazione, che può portare allo stop della registrazione 
+    (`finishedAudioDemux == true`) o alla terminazione immediata della funzione (`capturing == false`).
+
+    Se i pacchetti decodificati vengono ricevuti con successo, questi vengono processati dalla funzione
+    `convertAndWriteAudioFrames` che si occuperà di effettuare resampling, encoding e scrittura su file.
     
+    Altrimenti, se la coda di decodifica è vuota, si mette in attesa di un segnale da parte del demuxer.
+    Nel caso siano presenti altri tipi di errore viene lanciata un'eccezione.
+    
+    Al termine del ciclo viene chiamata la funzione `convertAndWriteLastAudioFrames` che si occupa di
+    svuotare le code interne scrivendo i frame rimasti su file.
+
+- `th_video_convert`:
+    esegue la funzione `ConvertVideoFrames`, che mantiene un ciclo while di lettura dei
+    pacchetti audio decodificati tramite la funzione `avcodec_receive_frame` fino a che non viene
+    convalidata una condizione di terminazione, che può portare allo stop della registrazione
+    (`finishedVideoDemux == true`) o alla terminazione immediata della funzione (`capturing == false`).
+
+    Se i pacchetti decodificati vengono ricevuti con successo, questi vengono processati dalla funzione
+    `convertAndWriteVideoFrame` che si occuperà di effettuare resampling, encoding e scrittura su file.
+
+    Altrimenti, se la coda di decodifica è vuota, si mette in attesa di un segnale da parte del demuxer.
+    Nel caso siano presenti altri tipi di errore viene lanciata un'eccezione.
+
+    Al termine del ciclo viene chiamata la funzione `convertAndWriteDelayedVideoFrames` che si occupa di
+    svuotare le code interne scrivendo i frame rimasti su file.
+    
+
 
 ### Controllo e gestione errori durante l'esecuzione dei thread asincroni
 
