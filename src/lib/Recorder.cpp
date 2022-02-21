@@ -370,6 +370,7 @@ void Recorder::CaptureAudioFrames() {
 
         int got_frame = 0;
         int64_t pts = 0;
+        unsigned int frame_size = 0;
 
         // Handle audio input stream packets
         avformat_flush(inputFormatContext);
@@ -415,7 +416,9 @@ void Recorder::CaptureAudioFrames() {
 
                 // check if decoded frame is ready
                 if (got_frame > 0) { // frame is ready
-
+                    //Update frame size to correct value if needed
+//                    if (frame_size == 0) frame_size = in_frame.into()->nb_samples;
+//                    if (frame_size > 0) inputCodecContext->frame_size = frame_size;
                     // Convert and write frames
                     convertAndWriteAudioFrames(swrContext,
                                                outputCodecContext,
@@ -711,14 +714,15 @@ void Recorder::ConvertAudioFrames() {
 
         int64_t pts = 0;
         int result = AVERROR(EAGAIN);
+        int frame_size = 0;
 
         while (result >= 0 || result == AVERROR(EAGAIN)) {
             if (!capturing) {
                 return;
             }
-
             auto in_frame = Frame{inputCodecContext->frame_size, inputCodecContext->sample_fmt,
                                   inputCodecContext->channel_layout, 0};
+
             std::unique_lock<std::mutex> ul(aC);
             result = avcodec_receive_frame(inputCodecContext, in_frame.into()); // Try to get a decoded frame without waiting
             if (result >= 0) {
@@ -727,6 +731,9 @@ void Recorder::ConvertAudioFrames() {
             ul.unlock();
 
             if (result >= 0) {
+                //Update frame size to correct value if needed
+//                if (frame_size == 0) frame_size = in_frame.into()->nb_samples;
+//                if (frame_size > 0) inputCodecContext->frame_size = frame_size;
                 //Convert frames and then write them to file
                 convertAndWriteAudioFrames(swrContext, outputCodecContext, inputCodecContext,
                                            audioStream, outputFormatContext, in_frame.into(),
