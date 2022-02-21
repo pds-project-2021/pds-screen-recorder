@@ -98,7 +98,7 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext,
     ul.unlock();
 }
 
-int
+void
 convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext,
                           AVStream *videoStream, AVFormatContext *outputFormatContext, AVFrame *frame,
                           int64_t *pts_p, std::mutex *wR, std::mutex *r, int64_t *mx_pts, int64_t *mn_pts,
@@ -162,11 +162,10 @@ convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecCon
         *mx_pts = max_pts;
         if(paused->load()) *mn_pts = *mx_pts;
     }
-	return 0;
 }
 
-int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream,
-                                      AVFormatContext *outputFormatContext, std::mutex *wR) {
+void convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream,
+                                       AVFormatContext *outputFormatContext, std::mutex *wR) {
 
 	while (true) {
 		auto out_packet = Packet{};
@@ -192,14 +191,12 @@ int convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStre
 			break;
 		}
 	}
-
-	return 0;
 }
 
-int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
-                               AVCodecContext *inputCodecContext, AVStream *audioStream,
-                               AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, std::mutex *wR,
-                               std::mutex *r, int64_t *mx_pts, int64_t *mn_pts, std::atomic<bool> *paused, bool resync) {
+void convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
+                                AVCodecContext *inputCodecContext, AVStream *audioStream,
+                                AVFormatContext *outputFormatContext, AVFrame *frame, int64_t *pts_p, std::mutex *wR,
+                                std::mutex *r, int64_t *mx_pts, int64_t *mn_pts, std::atomic<bool> *paused, bool resync) {
 
     int64_t min_pts = 0;
     int64_t max_pts =0;
@@ -291,12 +288,11 @@ int convertAndWriteAudioFrames(SwrContext *swrContext, AVCodecContext *outputCod
         *mx_pts = max_pts;
         if(paused->load()) *mn_pts = *mx_pts;
     }
-	return 0;
 }
 
-int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodecContext *outputCodecContext,
-                                      AVStream *audioStream, AVFormatContext *outputFormatContext, int finalSize,
-                                      std::mutex *wR) {
+void convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodecContext *outputCodecContext,
+                                       AVStream *audioStream, AVFormatContext *outputFormatContext, int finalSize,
+                                       std::mutex *wR) {
 	auto out_packet = Packet{};
 	auto outPacket = out_packet.into();
 	auto next_packet = Packet{};
@@ -338,12 +334,11 @@ int convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodec
 			log_debug("Final pts value is: " + std::to_string(outPacket->pts));
 		}
 	}
-	return 0;
 }
 
-int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
-                                   AVCodecContext *inputCodecContext, AVStream *audioStream,
-                                   AVFormatContext *outputFormatContext, int64_t *pts_p, std::mutex *wR) {
+void convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
+                                    AVCodecContext *inputCodecContext, AVStream *audioStream,
+                                    AVFormatContext *outputFormatContext, int64_t *pts_p, std::mutex *wR) {
 
 	auto out_packet = Packet{};
 	auto outputPacket = out_packet.into();
@@ -395,7 +390,5 @@ int convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outpu
                                           got_samples,
                                           wR);
     }
-
-	return 0;
 }
 

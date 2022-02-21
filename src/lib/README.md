@@ -213,29 +213,33 @@ Più in dettaglio:
 All'interno del file `ffmpeg_cpp.cpp` sono presenti varie funzioni che vengono adoperate dai thread
 durante le varie fasi di conversione e scrittura su file dei frame/pacchetti.
 
-- `decode`: riceve un `AVCodecContext*` relativo al codec in uso, un `AVPacket*` in ingresso,
-            un `AVFrame*` da fornire in uscita e un `int*` per comunicare se è stato possibile estrarre
-            un frame. Internamente inserisce i pacchetti in una coda di decodifica da cui estrae,
+- `decode`: inserisce i pacchetti in una coda di decodifica da cui estrae,
             se possibile, i frame decodificati.
             Lancia `avException("Failed to send packet to decoder")` in caso di errore.
 
 
-- `encode`: riceve un `AVCodecContext*` relativo al codec in uso, un `AVPacket*` da fornire in uscita,
-            un `AVFrame*` in ingresso e un `int*` per comunicare se è stato possibile estrarre
-            un pacchetto. Internamente inserisce i frame in una coda di codifica da cui estrae,
+- `encode`: inserisce i frame in una coda di codifica da cui estrae,
             se possibile, i pacchetti codificati.
             Lancia `avException("Failed to send frame to encoder")` in caso di errore.
 
 
--`writeFrameToOutput`: riceve un `AVFormatContext*` relativo al formato di uscita, un `AVPacket*`
-                       relativo al pacchetto che si intende scrivere in uscita e un `std::mutex`
-                       adoperato durante la scrittura. Scrive in modo thread safe nell'uscita desiderata.
-                       Lancia `avException("Provided null output values, data could not be written")`
-                       se riceve dei parametri `null` e `avException("Error in writing media frame")`
-                       nel caso in cui avvengano degli errori durante la scrittura.
+- `writeFrameToOutput`: scrive in modo thread safe nell'uscita desiderata.
+                        Lancia `avException("Provided null output values, data could not be written")`
+                        se riceve dei parametri `null` e `avException("Error in writing media frame")`
+                        nel caso in cui avvengano degli errori durante la scrittura.
 
 
--`convertAndWriteVideoFrame`: 
+-`convertAndWriteVideoFrame`: si occupa di chiamare le funzioni opportune per effettuare rescaling,
+                              codifica e scrittura in uscita di un frame video.
+                              Eventuali eccezioni generate da queste funzioni si propagano al chiamante.
+                              Se richiesto, viene effettuata resincronia del pts dei frame in base
+                              ai valori forniti.
+
+-`convertAndWriteDelayedVideoFrames`: estrae i pacchetti rimasti nella coda di codifica e chiama la
+                                      funzione opportuna per scrivere i pacchetti in uscita.
+                                      Eventuali eccezioni generate da questa funzione di scrittura si
+                                      propagano al chiamante.
+
 ### Controllo e gestione errori durante l'esecuzione dei thread asincroni
 
 Nel momento in cui uno qualsiasi dei thread audio/video di cattura/demuxing/conversione lancia
