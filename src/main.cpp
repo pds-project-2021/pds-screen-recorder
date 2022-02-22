@@ -2,6 +2,9 @@
 #include "Interface.h"
 
 int main(int argc, char **argv) {
+#ifdef WIN32
+    if(argc < 2) FreeConsole();
+#endif
 	if (argc == 2) {
 		// set logging level to `info`
 		if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--info") == 0) {
