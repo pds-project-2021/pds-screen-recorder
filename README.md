@@ -61,7 +61,9 @@ Sarà inoltre necessario aggiungere `-DCMAKE_TOOLCHAIN_FILE={vcpkg-root-folder}/
 
 A questo punto tutte le dipendenze necessarie possono essere installate tramite vcpkg e verranno riconosciute automaticamente.
 
-Sarà necessario aggiungere alle variabili di ambiente `XDG_DATA_DIRS={vcpkg-root-folder}\installed\x64-windows\share` per permettere il corretto funzionamento di gtk4 nel caso di installazione tramite vcpkg.
+È richiesto aggiungere alle variabili di ambiente `XDG_DATA_DIRS={vcpkg-root-folder}\installed\x64-windows\share` per permettere il corretto funzionamento di gtk4 nel caso di installazione tramite vcpkg.
+
+Le procedure descritte non sono invece necessarie nel caso si adoperino i binari contenuti nei file zip di release.
 
 ## Esecuzione
 
