@@ -83,6 +83,13 @@ int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet
 	}
 }
 
+/**
+ * Encode a frame and write a packet
+ *
+ * @param avctoutputFormatContextx Context
+ * @param outPacket Packet to write
+ * @param wR Access mutex
+ */
 void writeFrameToOutput(AVFormatContext *outputFormatContext,
                         AVPacket *outPacket,
                         std::mutex *wR) {
@@ -98,6 +105,23 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext,
 	ul.unlock();
 }
 
+/**
+ * Encode a frame and write a packet
+ *
+ * @param swsContext Scaler context
+ * @param outputCodecContext Output codec context
+ * @param inputCodecContext Input codec context
+ * @param videoStream Input video stream
+ * @param outputFormatContext Output format context
+ * @param frame Frame to rescale, encode and write
+ * @param pts_p Frame counter
+ * @param wR File write mutex
+ * @param r Frame resync mutex
+ * @param mx_pts Max pts value
+ * @param mn_pts Min pts value
+ * @param paused Pause state atomic variable
+ * @param resync Resync enabled variable
+ */
 void
 convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext,
                           AVStream *videoStream, AVFormatContext *outputFormatContext, AVFrame *frame,
@@ -164,6 +188,14 @@ convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecCon
 	}
 }
 
+/**
+ * Encode a frame and write a packet
+ *
+ * @param outputCodecContext Output codec context
+ * @param videoStream Input video stream
+ * @param outputFormatContext Output format context
+ * @param wR File write mutex
+ */
 void convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStream *videoStream,
                                        AVFormatContext *outputFormatContext, std::mutex *wR) {
 
@@ -193,6 +225,23 @@ void convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStr
 	}
 }
 
+/**
+ * Encode a frame and write a packet
+ *
+ * @param swrContext Resampler context
+ * @param outputCodecContext Output codec context
+ * @param inputCodecContext Input codec context
+ * @param audioStream Input audio stream
+ * @param outputFormatContext Output format context
+ * @param frame Frame to resample, encode and write
+ * @param pts_p Frame counter
+ * @param wR File write mutex
+ * @param r Frame resync mutex
+ * @param mx_pts Max pts value
+ * @param mn_pts Min pts value
+ * @param paused Pause state atomic variable
+ * @param resync Resync enabled variable
+ */
 void convertAndWriteAudioFrames(SwrContext *swrContext,
                                 AVCodecContext *outputCodecContext,
                                 AVCodecContext *inputCodecContext,
@@ -299,6 +348,16 @@ void convertAndWriteAudioFrames(SwrContext *swrContext,
 	}
 }
 
+/**
+ * Encode a frame and write a packet
+ *
+ * @param inputCodecContext Input codec context
+ * @param outputCodecContext Output codec context
+ * @param audioStream Input audio stream
+ * @param outputFormatContext Output format context
+ * @param finalSize Final frame sample size
+ * @param wR File write mutex
+ */
 void convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCodecContext *outputCodecContext,
                                        AVStream *audioStream, AVFormatContext *outputFormatContext, int finalSize,
                                        std::mutex *wR) {
@@ -345,6 +404,17 @@ void convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCode
 	}
 }
 
+/**
+ * Encode a frame and write a packet
+ *
+ * @param swrContext Resampler context
+ * @param outputCodecContext Output codec context
+ * @param inputCodecContext Input codec context
+ * @param audioStream Input audio stream
+ * @param outputFormatContext Output format context
+ * @param pts_p Frame counter
+ * @param wR File write mutex
+ */
 void convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
                                     AVCodecContext *inputCodecContext, AVStream *audioStream,
                                     AVFormatContext *outputFormatContext, int64_t *pts_p, std::mutex *wR) {
