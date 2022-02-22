@@ -99,7 +99,7 @@ std::string get_audio_input_device(){
 		}
 		curr_name++;
 	}
-	return "";
+	return "audioInputName";
 }
 
 std::string get_video_input_format(){
