@@ -93,6 +93,7 @@ std::string get_audio_input_device(){
 	auto curr_name = audio_devices.begin();
 	for (int i = 0; curr_name != audio_devices.end(); i++) {// Select first available audio device
 		if(i==DEFAULT_AUDIO_INPUT_DEVICE) {
+            log_debug("Audio input device: " + *curr_name + " selected");
 			audioInputName.append(*curr_name);// Write value to string
 			break;
 		}

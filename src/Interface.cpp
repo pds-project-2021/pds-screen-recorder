@@ -4,12 +4,12 @@
 std::unique_ptr <Interface> t = nullptr;
 
 int launchUI(int argc, char **argv) {
+    std::string gtk_config_path;
+    auto share_path = g_getenv("XDG_DATA_DIRS");
+    if(share_path) gtk_config_path.append(share_path);
+    log_debug("XDG_DATA_DIRS found: " + gtk_config_path);
 #ifdef WIN32
-	HWND Window;
-	AllocConsole();
-	Window = FindWindowA("ConsoleWindowClass", nullptr);
-	ShowWindow(Window,0);
-//    g_setenv("XDG_DATA_DIRS", "./share", TRUE);
+    g_setenv("XDG_DATA_DIRS", "./share", FALSE);
 #endif
 	auto app = gtk_application_new("org.gtk.recs", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK(Interface::activate), nullptr);
