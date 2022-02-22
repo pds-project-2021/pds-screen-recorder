@@ -25,7 +25,7 @@ class Recorder {
 	std::thread th_video;
 	std::thread th_audio;
 
-	unsigned int num_core = std::thread::hardware_concurrency();
+	unsigned int num_core = std::thread::hardware_concurrency()/2;
 
 	// action variable for pause and terminate
 	std::atomic<bool> capturing = false;

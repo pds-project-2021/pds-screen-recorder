@@ -9,6 +9,10 @@ int launchUI(int argc, char **argv) {
     if(share_path) gtk_config_path.append(share_path);
     log_debug("XDG_DATA_DIRS found: " + gtk_config_path);
 #ifdef WIN32
+    HWND Window;
+    AllocConsole();
+    Window = FindWindowA("ConsoleWindowClass", nullptr);
+    ShowWindow(Window,0);
     g_setenv("XDG_DATA_DIRS", "./share", FALSE);
 #endif
 	auto app = gtk_application_new("org.gtk.recs", G_APPLICATION_FLAGS_NONE);
