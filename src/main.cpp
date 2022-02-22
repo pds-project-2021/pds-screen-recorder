@@ -3,7 +3,13 @@
 
 int main(int argc, char **argv) {
 #ifdef WIN32
-    if(argc < 2) FreeConsole();
+    if(argc < 2) {
+        FreeConsole();
+        HWND Window;
+        AllocConsole();
+        Window = FindWindowA("ConsoleWindowClass", nullptr);
+        ShowWindow(Window,0);
+    }
 #endif
 	if (argc == 2) {
 		// set logging level to `info`
