@@ -1,6 +1,3 @@
-//
-// Created by gabriele on 23/12/21.
-//
 
 #include "ffmpeg_cpp.h"
 
@@ -96,13 +93,12 @@ void writeFrameToOutput(AVFormatContext *outputFormatContext,
 	if (outputFormatContext == nullptr || outPacket == nullptr) {
 		throw avException("Provided null output values, data could not be written");
 	}
-
-	std::unique_lock<std::mutex> ul(*wR);
+    //write to file using mutex
+	std::lock_guard<std::mutex> lg(*wR);
 	auto res = av_interleaved_write_frame(outputFormatContext, outPacket); // Write packet to file
 	if (res < 0) {
 		throw avException("Error in writing media frame");
 	}
-	ul.unlock();
 }
 
 /**
@@ -130,12 +126,13 @@ convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecCon
 
 	int64_t min_pts = 0;
 	int64_t max_pts = 0;
+    //check resync values if enabled
 	if (resync) {
 		std::unique_lock<std::mutex> rl(*r);
 		min_pts = *mn_pts;
 		max_pts = *mx_pts;
 	}
-
+    //init data structures
 	auto out_frame =
 		Frame{outputCodecContext->width, outputCodecContext->height, (AVPixelFormat) outputCodecContext->pix_fmt, 32};
 	auto out_packet = Packet{};
@@ -181,6 +178,7 @@ convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecCon
 		writeFrameToOutput(outputFormatContext, outputPacket, wR);
 	}
 
+    //update resync values if enabled
 	if (resync) {
 		std::unique_lock<std::mutex> rl(*r);
 		*mx_pts = max_pts;
@@ -202,10 +200,11 @@ void convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStr
 	while (true) {
 		auto out_packet = Packet{};
 		auto outPacket = out_packet.into();
-
+        //empty frame queue
 		avcodec_send_frame(outputCodecContext, nullptr);
 
 		if (avcodec_receive_packet(outputCodecContext, outPacket) == 0) { // Try to get packet
+            //set correct output pts values
 			if (outPacket->pts != AV_NOPTS_VALUE) {
 				outPacket->pts =
 					av_rescale_q(outPacket->pts, outputCodecContext->time_base,
@@ -218,6 +217,7 @@ void convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext, AVStr
 			}
 			outPacket->duration = av_rescale_q(1, outputCodecContext->time_base,
 			                                   videoStream->time_base);
+            //write frame to file
 			writeFrameToOutput(outputFormatContext, outPacket, wR);
 		} else { // No remaining frames to handle
 			break;
@@ -258,6 +258,7 @@ void convertAndWriteAudioFrames(SwrContext *swrContext,
 
 	int64_t min_pts = 0;
 	int64_t max_pts = 0;
+    //check resync values if enabled
 	if (resync) {
 		std::unique_lock<std::mutex> rl(*r);
 		min_pts = *mn_pts;
@@ -294,6 +295,7 @@ void convertAndWriteAudioFrames(SwrContext *swrContext,
 
 	// Frame was sent successfully
 	if (got_packet > 0) { // Packet received successfully
+        //set correct output pts values
 		if (outputPacket->pts != AV_NOPTS_VALUE) {
 			outputPacket->pts = av_rescale_q(outputPacket->pts, bq, audioStream->time_base);
 		}
@@ -323,6 +325,7 @@ void convertAndWriteAudioFrames(SwrContext *swrContext,
 
 		// Frame was sent successfully
 		if (got_packet > 0) { // Packet received successfully
+            //set correct output pts values
 			if (outputPacket->pts != AV_NOPTS_VALUE) {
 				outputPacket->pts = av_rescale_q(outputPacket->pts, bq, audioStream->time_base);
 			}
@@ -341,6 +344,7 @@ void convertAndWriteAudioFrames(SwrContext *swrContext,
 		}
 	}
 
+    //update resync values if enabled
 	if (resync) {
 		std::unique_lock<std::mutex> rl(*r);
 		*mx_pts = max_pts;
@@ -372,9 +376,11 @@ void convertAndWriteDelayedAudioFrames(AVCodecContext *inputCodecContext, AVCode
 	avcodec_send_frame(outputCodecContext, nullptr);
 	auto receive = avcodec_receive_packet(outputCodecContext, outPacket);
 	while (receive >= 0) {// Try to get packet
+        //empty frame queue
 		avcodec_send_frame(outputCodecContext, nullptr);
 		receive = avcodec_receive_packet(outputCodecContext, nextOutPacket);
 
+        //set correct output pts values
 		if (outPacket->pts != AV_NOPTS_VALUE) {
 			outPacket->pts = av_rescale_q(outPacket->pts, bq, audioStream->time_base);
 		}
@@ -439,6 +445,7 @@ void convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outp
 
 		// Frame was sent successfully
 		if (got_packet > 0) { // Packet received successfully
+            //set correct output pts values
 			if (outputPacket->pts != AV_NOPTS_VALUE) {
 				outputPacket->pts = av_rescale_q(outputPacket->pts, bq, audioStream->time_base);
 			}
