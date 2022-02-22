@@ -467,21 +467,21 @@ void Recorder::CaptureAudioFrames() {
 		                               &pts,
 		                               &wR);
 	}
-	catch (avException &e) {
+	catch (const avException &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("audio", 1, e.what()); });
 		t.detach();
 	}
-	catch (std::runtime_error &e) {
+	catch (const std::runtime_error &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("audio", 1, e.what()); });
 		t.detach();
 	}
-	catch (std::exception &e) {
+	catch (const std::exception &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
@@ -583,21 +583,21 @@ void Recorder::CaptureVideoFrames() {
 		                                  outputFormatContext,
 		                                  &wR);
 	}
-	catch (avException &e) {
+	catch (const avException &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("video", 0, e.what()); });
 		t.detach();
 	}
-	catch (std::runtime_error &e) {
+	catch (const std::runtime_error &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("video", 0, e.what()); });
 		t.detach();
 	}
-	catch (std::exception &e) {
+	catch (const std::exception &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
@@ -697,21 +697,21 @@ void Recorder::DemuxAudioInput() {
 			}
 		}
 	}
-	catch (avException &e) {
+	catch (const avException &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("audio demux", 1, e.what()); });
 		t.detach();
 	}
-	catch (std::runtime_error &e) {
+	catch (const std::runtime_error &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("audio demux", 1, e.what()); });
 		t.detach();
 	}
-	catch (std::exception &e) {
+	catch (const std::exception &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
@@ -810,21 +810,21 @@ void Recorder::ConvertAudioFrames() {
 		                               &pts,
 		                               &wR);
 	}
-	catch (avException &e) {
+	catch (const avException &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("audio converter", 2, e.what()); });
 		t.detach();
 	}
-	catch (std::runtime_error &e) {
+	catch (const std::runtime_error &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("audio converter", 2, e.what()); });
 		t.detach();
 	}
-	catch (std::exception &e) {
+	catch (const std::exception &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
@@ -924,21 +924,21 @@ void Recorder::DemuxVideoInput() {
 			}
 		}
 	}
-	catch (avException &e) {
+	catch (const avException &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("video demux", 3, e.what()); });
 		t.detach();
 	}
-	catch (std::runtime_error &e) {
+	catch (const std::runtime_error &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("video demux", 3, e.what()); });
 		t.detach();
 	}
-	catch (std::exception &e) {
+	catch (const std::exception &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
@@ -1031,21 +1031,21 @@ void Recorder::ConvertVideoFrames() {
 		                                  outputFormatContext,
 		                                  &wR);
 	}
-	catch (avException &e) {
+	catch (const avException &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("video converter", 4, e.what()); });
 		t.detach();
 	}
-	catch (std::runtime_error &e) {
+	catch (const std::runtime_error &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;
 		std::thread t = std::thread([this, e] { handle_rec_error("video converter", 4, e.what()); });
 		t.detach();
 	}
-	catch (std::exception &e) {
+	catch (const std::exception &e) {
 		std::lock_guard<std::mutex> lg(eM);
 		if (!capturing) return;
 		capturing = false;

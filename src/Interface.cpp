@@ -76,12 +76,12 @@ gboolean Interface::switchImageRec() {
 		}
 		gtk_widget_queue_draw(t->window);
 	}
-	catch (std::runtime_error &e) {
+	catch (const std::runtime_error &e) {
 		std::cerr << "Error updating blinking recording icon for user notification: " << e.what() << std::endl;
 		t->blink_enabled = false;
 		return FALSE;
 	}
-	catch (std::exception &e) {
+	catch (const std::exception &e) {
 		std::cerr << "Error updating blinking recording icon for user notification: " << e.what() << std::endl;
 		t->blink_enabled = false;
 		return FALSE;
@@ -383,7 +383,7 @@ void Interface::on_save_response(GtkDialog *, int response) {
 		}
 		t->reset_gui_from_file_dialog();
 	}
-	catch (std::exception &e) {// handle recoverable std::exceptions during file save
+	catch (const std::exception &e) {// handle recoverable std::exceptions during file save
 		if (response == GTK_RESPONSE_ACCEPT) {
 			std::string str_err = "Error during file save: ";
 			str_err.append(e.what());
@@ -571,7 +571,7 @@ void Interface::startRecording() {
 		gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), false);
 
 	}
-	catch (avException &e) {// handle recoverable libav exceptions during initialization
+	catch (const avException &e) {// handle recoverable libav exceptions during initialization
 		log_error("Error initializing recorder structures: " + std::string(e.what()));
 		t->reset_gui_from_start();
 		if (t->dialog) t->set_error_dialog_msg(e.what());
@@ -712,7 +712,7 @@ void Interface::handlePause(GtkWidget *, gpointer) {
 		log_info("Pause button pressed");
 		t->rec.get();
 	}
-	catch (avException &e) {// handle recoverable libav exceptions during pausing
+	catch (const avException &e) {// handle recoverable libav exceptions during pausing
 		log_error("Error closing output streams: " + std::string(e.what()));
 		t->reset_gui_from_pause();
 		//show error message dialog
@@ -743,7 +743,7 @@ void Interface::handleStop(GtkWidget *, gpointer) {
 #endif
 		gtk_window_present(GTK_WINDOW(t->fileChoiceDialog));
 	}
-	catch (avException &e) {// handle recoverable libav exceptions during termination
+	catch (const avException &e) {// handle recoverable libav exceptions during termination
 		log_error("Error closing output streams: " + std::string(e.what()));
 		t->reset_gui_from_stop();
 		//show error message dialog
