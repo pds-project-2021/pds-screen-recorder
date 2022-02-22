@@ -616,6 +616,7 @@ void Interface::stopRecording() {
 	gtk_file_chooser_set_current_name(t->fileChooser, file_name.c_str());
 	// reset action buttons
 	gtk_button_set_label(reinterpret_cast<GtkButton *>(t->recordButton), "Record");
+    gtk_button_set_label(reinterpret_cast<GtkButton *>(t->pauseButton), "Pause");
 	gtk_widget_set_sensitive(GTK_WIDGET(t->pauseButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->stopButton), false);
 	gtk_widget_set_sensitive(GTK_WIDGET(t->muteButton), true);
