@@ -19,7 +19,7 @@ Recorder::~Recorder() {
 }
 
 /**
- * Set audio layout [choices: MONO, STEREO]
+ * Set audio layout [choices: NONE, MONO, STEREO]
  * @return
  */
 [[maybe_unused]] void Recorder::set_audio_layout(AudioLayout layout) {
@@ -276,7 +276,6 @@ void Recorder::init() {
 #ifdef WIN32
 	CoUninitialize();
 #endif
-//    throw avException("Error");
 }
 
 /**
@@ -612,8 +611,6 @@ void Recorder::CaptureVideoFrames() {
 		t.detach();
 	}
 }
-
-
 
 /**
  * audio demuxing thread
@@ -953,7 +950,6 @@ void Recorder::DemuxVideoInput() {
 		t.detach();
 	}
 }
-
 
 /**
  * video conversion thread
