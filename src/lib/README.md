@@ -68,7 +68,7 @@ dei thread è automaticamente calcolato dal numero di core della cpu con `std::t
 vieta però all'utente di scegliere il profilo di esecuzione della cattura con `set_low_profile()` e
 `set_high_profile()` che rilasciano rispettivamente due e quattro thread per la cattura.
 
-Per interazione asincrona con i thread di cattura sono esposte delle funzioni di controllo:
+Per interazione con i thread di cattura sono esposte delle funzioni di controllo:
 `pause()` e `is_paused()` per mettere in pausa e controllare che la cattura sia in pausa,
 `resume()` per riprendere dopo un comando di pausa, `is_capturing()` che controlla che sia stato avviato il muxing/demux
 e quindi sia finita la fase di inizializzazione e infine `terminate()` che permette di terminare la cattura.
