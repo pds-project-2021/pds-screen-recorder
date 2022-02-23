@@ -238,7 +238,7 @@ chiamante.
 
 - `convertAndWriteLastAudioFrames`: estrae i pacchetti rimasti nella coda di resampling, li codifica e chiama la
 funzione opportuna per scrivere i pacchetti in uscita. Eventuali eccezioni generate da queste funzioni si propagano al
-chiamante. Se richiesto, viene effettuata resincronia del pts dei frame in base ai valori forniti.
+chiamante.
 
 
 ### Controllo e gestione errori durante l'esecuzione dei thread asincroni
