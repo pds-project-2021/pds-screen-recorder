@@ -122,13 +122,13 @@ void
 convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecContext, AVCodecContext *inputCodecContext,
                           AVStream *videoStream, AVFormatContext *outputFormatContext, AVFrame *frame,
                           int64_t *pts_p, std::mutex *wR, std::mutex *r, int64_t *mx_pts, int64_t *mn_pts,
-                          std::atomic<bool> *paused, bool resync) {
+                          const bool *paused, bool resync) {
 
 	int64_t min_pts = 0;
 	int64_t max_pts = 0;
     //check resync values if enabled
 	if (resync) {
-		std::unique_lock<std::mutex> rl(*r);
+		std::lock_guard<std::mutex> rl(*r);
 		min_pts = *mn_pts;
 		max_pts = *mx_pts;
 	}
@@ -180,9 +180,9 @@ convertAndWriteVideoFrame(SwsContext *swsContext, AVCodecContext *outputCodecCon
 
     //update resync values if enabled
 	if (resync) {
-		std::unique_lock<std::mutex> rl(*r);
-		*mx_pts = max_pts;
-		if (paused->load()) *mn_pts = *mx_pts;
+        std::lock_guard<std::mutex> rl(*r);
+		if(max_pts > *mx_pts) *mx_pts = max_pts;
+		if (*paused) *mn_pts = *mx_pts;
 	}
 }
 
@@ -253,14 +253,14 @@ void convertAndWriteAudioFrames(SwrContext *swrContext,
                                 std::mutex *r,
                                 int64_t *mx_pts,
                                 int64_t *mn_pts,
-                                std::atomic<bool> *paused,
+                                const bool *paused,
                                 bool resync) {
 
 	int64_t min_pts = 0;
 	int64_t max_pts = 0;
     //check resync values if enabled
 	if (resync) {
-		std::unique_lock<std::mutex> rl(*r);
+		std::lock_guard<std::mutex> rl(*r);
 		min_pts = *mn_pts;
 		max_pts = *mx_pts;
 	}
@@ -345,11 +345,11 @@ void convertAndWriteAudioFrames(SwrContext *swrContext,
 	}
 
     //update resync values if enabled
-	if (resync) {
-		std::unique_lock<std::mutex> rl(*r);
-		*mx_pts = max_pts;
-		if (paused->load()) *mn_pts = *mx_pts;
-	}
+    if (resync) {
+        std::lock_guard<std::mutex> rl(*r);
+        if(max_pts > *mx_pts) *mx_pts = max_pts;
+        if (*paused) *mn_pts = *mx_pts;
+    }
 }
 
 /**

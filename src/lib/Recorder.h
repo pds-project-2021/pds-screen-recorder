@@ -30,10 +30,10 @@ class Recorder {
 	// action variable for pause and terminate
 	std::atomic<bool> capturing = false;
 	std::atomic<bool> stopped = false;
-	std::atomic<bool> resuming = false;
-	std::atomic<bool> pausing = false;
-	std::atomic<bool> pausedVideo = false;
-	std::atomic<bool> pausedAudio = false;
+	bool resuming = false;
+	bool pausing = false;
+	bool pausedVideo = false;
+	bool pausedAudio = false;
 	std::atomic<bool> finishedVideoDemux = false;
 	std::atomic<bool> finishedAudioDemux = false;
 	std::atomic<bool> resync_enabled = true;

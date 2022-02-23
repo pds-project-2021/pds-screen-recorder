@@ -57,7 +57,7 @@ void convertAndWriteVideoFrame(SwsContext *swsContext,
                                std::mutex *r,
                                int64_t *mx_pts,
                                int64_t *mn_pts,
-                               std::atomic<bool> *paused,
+                               const bool *paused,
                                bool resync);
 
 void convertAndWriteDelayedVideoFrames(AVCodecContext *outputCodecContext,
@@ -78,7 +78,7 @@ void convertAndWriteAudioFrames(SwrContext *swrContext,
                                 std::mutex *r,
                                 int64_t *mx_pts,
                                 int64_t *mn_pts,
-                                std::atomic<bool> *paused,
+                                const bool *paused,
                                 bool resync);
 
 void convertAndWriteLastAudioFrames(SwrContext *swrContext, AVCodecContext *outputCodecContext,
