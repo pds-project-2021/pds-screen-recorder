@@ -63,7 +63,7 @@ Questo registra un'area di `1920x1080` pixel con offset di `(10,10)` pixel dall'
 salva il video di durata 10 secondi nel file `file_prova.mp4`
 nella cartella corrente.
 
-Da notare che la funzione `capture()` rilascia automaticamente dei thread per la registrazione audio e vide; il numero
+Da notare che la funzione `capture()` rilascia automaticamente dei thread per la registrazione audio e video; il numero
 dei thread è automaticamente calcolato dal numero di core della cpu con `std::thread::hardware_concurrency()`, ciò non
 vieta però all'utente di scegliere il profilo di esecuzione della cattura con `set_low_profile()` e
 `set_high_profile()` che rilasciano rispettivamente due e quattro thread per la cattura.
